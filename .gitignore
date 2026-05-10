@@ -1,0 +1,34 @@
+# Entornos virtuales
+venv/
+env/
+.env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Archivos de SO
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Bases de datos locales
+demo/backend/local_db/*.pkl
+demo/backend/local_db/*.json
+!demo/backend/local_db/.gitkeep
+
+# Archivos pesados
+*.zip
+*.tar.gz
+*.rar
+!demo/backend/targetscan_full.json.zip
+
+# Logs
+*.log
+
+# Entornos IDE
+.vscode/
+.idea/
+*.swp
+*.swo
