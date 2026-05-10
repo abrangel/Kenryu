@@ -1,0 +1,35 @@
+name: KENRYU CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install fastapi uvicorn pandas numpy httpx gseapy pytest matplotlib seaborn Bio matplotlib_venn
+    - name: Run Backend Tests
+      run: |
+        pytest demo/backend/tests/
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Deploy to GitHub Pages (Frontend)
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: demo/frontend
