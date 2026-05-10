@@ -1,0 +1,223 @@
+
+<style>
+  .section { margin-bottom: 2rem; }
+  .section-title { font-size: 16px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 1rem; display: flex; align-items: center; gap: 8px; }
+  .section-title i { font-size: 18px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; }
+  .card-problem { border-left: 3px solid #E24B4A; }
+  .card-add { border-left: 3px solid #1D9E75; }
+  .card-improve { border-left: 3px solid #BA7517; }
+  .card-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 6px; }
+  .label-red { color: #A32D2D; }
+  .label-green { color: #0F6E56; }
+  .label-amber { color: #854F0B; }
+  .card-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 4px; }
+  .card-body { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; margin: 0; }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; margin: 3px 3px 0 0; }
+  .pill-blue { background: #E6F1FB; color: #0C447C; }
+  .pill-green { background: #EAF3DE; color: #27500A; }
+  .pill-amber { background: #FAEEDA; color: #633806; }
+  .pill-red { background: #FCEBEB; color: #791F1F; }
+  .pill-purple { background: #EEEDFE; color: #3C3489; }
+  .pill-teal { background: #E1F5EE; color: #085041; }
+  .divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 1.5rem 0; }
+  .score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .score-bar-wrap { flex: 1; height: 6px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; }
+  .score-bar { height: 100%; border-radius: 3px; }
+  .score-label { font-size: 12px; color: var(--color-text-secondary); min-width: 140px; }
+  .score-val { font-size: 12px; font-weight: 500; color: var(--color-text-primary); min-width: 36px; text-align: right; }
+  .add-btn { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 6px 12px; font-size: 12px; color: var(--color-text-secondary); cursor: pointer; display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+  .add-btn:hover { background: var(--color-background-secondary); }
+  .badge { font-size: 10px; padding: 2px 7px; border-radius: var(--border-radius-md); font-weight: 500; }
+  .badge-critical { background: #FCEBEB; color: #791F1F; }
+  .badge-high { background: #FAEEDA; color: #633806; }
+  .badge-medium { background: #E6F1FB; color: #0C447C; }
+  .header-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .stat-row { display: flex; gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { flex: 1; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+  .stat-num { font-size: 24px; font-weight: 500; color: var(--color-text-primary); }
+  .stat-lbl { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+</style>
+
+<div class="header-bar">
+  <div>
+    <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0;">Diagnóstico completo del sistema KENRYU</p>
+  </div>
+  <span class="badge badge-high">v1.0 → v2.0</span>
+</div>
+
+<div class="stat-row">
+  <div class="stat-card">
+    <div class="stat-num" style="color:#A32D2D">4</div>
+    <div class="stat-lbl">Problemas críticos</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" style="color:#0F6E56">11</div>
+    <div class="stat-lbl">Funciones por agregar</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" style="color:#854F0B">6</div>
+    <div class="stat-lbl">Mejoras de lo existente</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">~70%</div>
+    <div class="stat-lbl">Potencial sin explotar</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Problemas críticos actuales</div>
+  <div class="grid-2">
+    <div class="card card-problem">
+      <div class="card-label label-red">CRÍTICO <span class="badge badge-critical">Bug</span></div>
+      <div class="card-title">PMIDs inventados en el reporte</div>
+      <p class="card-body">El reporte PDF genera PMIDs aleatorios con <code>Math.random()</code> — son citas falsas. En una tesis esto es gravísimo. Las citas deben venir siempre de la API de PubMed.</p>
+    </div>
+    <div class="card card-problem">
+      <div class="card-label label-red">CRÍTICO <span class="badge badge-critical">Lógica</span></div>
+      <div class="card-title">Mapeo de enfermedades hardcodeado</div>
+      <p class="card-body">La tabla de enfermedades (ABCA1→Tangier, SCN1A→Dravet) está escrita fija en el JS. Si el análisis devuelve genes nuevos, aparecen como "Requiere correlación" sin información real.</p>
+    </div>
+    <div class="card card-problem">
+      <div class="card-label label-red">ALTO <span class="badge badge-high">Datos</span></div>
+      <div class="card-title">Solo 4 resultados de enriquecimiento</div>
+      <p class="card-body">El CSV muestra 4 términos únicamente porque el análisis usa p-adj &lt; 0.05 que con solo 5 genes raramente se alcanza. Falta incluir p-valor nominal y más bases de datos.</p>
+    </div>
+    <div class="card card-problem">
+      <div class="card-label label-red">ALTO <span class="badge badge-high">Fuentes</span></div>
+      <div class="card-title">Búsqueda de genes incompleta</div>
+      <p class="card-body">Solo combina TargetScan + miRTarBase. Falta Miranda, PicTar, DIANA-microT, TarBase — la intersección de múltiples predictores da mayor confianza estadística.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section">
+  <div class="section-title"><i class="ti ti-plus" aria-hidden="true"></i> Funciones nuevas que agregaría</div>
+  <div class="grid-2" style="margin-bottom:10px">
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO — Enfermedades</div>
+      <div class="card-title">Conexión a OMIM + DisGeNET</div>
+      <p class="card-body">Consultar automáticamente qué enfermedades están asociadas a cada gen diana usando las APIs de OMIM y DisGeNET. Reemplaza el mapeo fijo con datos reales y actualizados.</p>
+      <div><span class="pill pill-green">OMIM API</span><span class="pill pill-green">DisGeNET REST</span><span class="pill pill-blue">NCBI Gene</span></div>
+    </div>
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO — Fuentes</div>
+      <div class="card-title">Más bases de datos de predicción</div>
+      <p class="card-body">Integrar Miranda, PicTar, DIANA-microT y TarBase. Mostrar un "score de consenso" por gen según cuántas bases de datos lo predicen simultáneamente.</p>
+      <div><span class="pill pill-teal">Miranda</span><span class="pill pill-teal">PicTar</span><span class="pill pill-teal">DIANA-microT</span><span class="pill pill-teal">TarBase</span></div>
+    </div>
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO — Análisis</div>
+      <div class="card-title">Enriquecimiento en más ontologías</div>
+      <p class="card-body">Agregar HPO (Human Phenotype Ontology), MSigDB (Hallmark gene sets), DrugBank targets, y ClinVar. Cubrir el espectro completo: biología → fenotipo → clínica → farmacología.</p>
+      <div><span class="pill pill-purple">HPO</span><span class="pill pill-purple">MSigDB</span><span class="pill pill-amber">DrugBank</span><span class="pill pill-red">ClinVar</span></div>
+    </div>
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO — Clínica</div>
+      <div class="card-title">Panel de relevancia clínica automático</div>
+      <p class="card-body">Para cada gen común, obtener: variantes patogénicas en ClinVar, score de haploinsuficiencia, OMIM MIM number, y si existen fármacos aprobados que lo targetan (DrugBank/DGIdb).</p>
+      <div><span class="pill pill-red">ClinVar</span><span class="pill pill-amber">DGIdb</span><span class="pill pill-blue">gnomAD</span></div>
+    </div>
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO — Expresión</div>
+      <div class="card-title">Perfil de expresión tisular (GTEx/HPA)</div>
+      <p class="card-body">Mostrar en qué tejidos se expresan los genes diana usando la API de GTEx o Human Protein Atlas. Ayuda a entender en qué órganos el miRNA tiene efecto real.</p>
+      <div><span class="pill pill-teal">GTEx API</span><span class="pill pill-teal">HPA REST</span></div>
+    </div>
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO — Red</div>
+      <div class="card-title">Red de interacción gen-gen (STRING)</div>
+      <p class="card-body">Ya hay un intento con STRING-DB pero no funciona siempre. Integrar correctamente la API de STRING v11 para mostrar la red de proteínas interactuantes con score de confianza.</p>
+      <div><span class="pill pill-blue">STRING v12</span><span class="pill pill-blue">BioGRID</span></div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO</div>
+      <div class="card-title">Exportar lista de genes a Cytoscape</div>
+      <p class="card-body">Descargar la red en formato .xgmml o .sif para análisis en Cytoscape.</p>
+    </div>
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO</div>
+      <div class="card-title">Score de confianza por gen</div>
+      <p class="card-body">Calcular un puntaje 0-100 por gen basado en: cuántos predictores lo detectan, si tiene validación experimental, y relevancia clínica.</p>
+    </div>
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO</div>
+      <div class="card-title">Histórico de análisis guardados</div>
+      <p class="card-body">Guardar y comparar análisis anteriores para ver cómo cambian los resultados al variar los miRNAs de entrada.</p>
+    </div>
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO</div>
+      <div class="card-title">Análisis de enriquecimiento de tejidos</div>
+      <p class="card-body">¿En qué tejido tienen más impacto estos miRNAs juntos? Usar el dataset de expresión de miRNAs de miRBase + GTEx.</p>
+    </div>
+    <div class="card card-add">
+      <div class="card-label label-green">NUEVO</div>
+      <div class="card-title">Búsqueda de literatura en tiempo real</div>
+      <p class="card-body">Por cada gen + miRNA, buscar en PubMed artículos reales con PMID verificado. Mostrar título, autores, año y abstract resumido.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section">
+  <div class="section-title"><i class="ti ti-settings" aria-hidden="true"></i> Mejoras de lo que ya existe</div>
+  <div class="grid-2">
+    <div class="card card-improve">
+      <div class="card-label label-amber">MEJORAR — Backend</div>
+      <div class="card-title">Reemplazar PMIDs falsos por reales</div>
+      <p class="card-body">El endpoint de PubMed ya existe en el código (<code>get_pubmed_details</code>) pero no siempre se usa en el reporte. Conectarlo correctamente a cada gen y pathway.</p>
+    </div>
+    <div class="card card-improve">
+      <div class="card-label label-amber">MEJORAR — Análisis</div>
+      <div class="card-title">Relajar umbral de enriquecimiento</div>
+      <p class="card-body">Con 5 genes, p-adj &lt; 0.05 es demasiado estricto. Mostrar también p-valor nominal &lt; 0.05 y ordenar por Combined Score. Incluir el campo "Overlap" en la tabla visible.</p>
+    </div>
+    <div class="card card-improve">
+      <div class="card-label label-amber">MEJORAR — UI</div>
+      <div class="card-title">Dashboard de genes con más detalle</div>
+      <p class="card-body">Los "gene pills" solo muestran el nombre. Agregar: al hacer clic en un gen, abrir un panel lateral con su función, expresión tisular, variantes clínicas y artículos.</p>
+    </div>
+    <div class="card card-improve">
+      <div class="card-label label-amber">MEJORAR — Tests</div>
+      <div class="card-title">Ampliar la cobertura de tests</div>
+      <p class="card-body">Solo hay 3 tests y uno de ellos (<code>test_pipeline_request_validation</code>) está vacío. Agregar tests de integración para cada endpoint y para el pipeline completo.</p>
+    </div>
+    <div class="card card-improve">
+      <div class="card-label label-amber">MEJORAR — Datos</div>
+      <div class="card-title">Modo "umbral de consenso"</div>
+      <p class="card-body">Actualmente la intersección es estricta (gen debe estar en TODOS los miRNAs). Agregar modo "≥N de M miRNAs" para detectar más genes con alta confianza pero no perfecta.</p>
+    </div>
+    <div class="card card-improve">
+      <div class="card-label label-amber">MEJORAR — Reporte</div>
+      <div class="card-title">Reporte PDF con formato académico</div>
+      <p class="card-body">El PDF actual es funcional pero no tiene formato APA/Vancouver para citas. Agregar sección de bibliografía real, resumen estructurado (Objetivo, Métodos, Resultados, Conclusión).</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section">
+  <div class="section-title"><i class="ti ti-chart-bar" aria-hidden="true"></i> Estado actual vs potencial</div>
+  <div class="card" style="padding: 16px 20px;">
+    <div class="score-row"><span class="score-label">Cobertura de fuentes de datos</span><div class="score-bar-wrap"><div class="score-bar" style="width:25%;background:#E24B4A"></div></div><span class="score-val">25%</span></div>
+    <div class="score-row"><span class="score-label">Detección de enfermedades</span><div class="score-bar-wrap"><div class="score-bar" style="width:15%;background:#E24B4A"></div></div><span class="score-val">15%</span></div>
+    <div class="score-row"><span class="score-label">Integridad de citas (PubMed)</span><div class="score-bar-wrap"><div class="score-bar" style="width:30%;background:#EF9F27"></div></div><span class="score-val">30%</span></div>
+    <div class="score-row"><span class="score-label">Análisis de enriquecimiento</span><div class="score-bar-wrap"><div class="score-bar" style="width:45%;background:#EF9F27"></div></div><span class="score-val">45%</span></div>
+    <div class="score-row"><span class="score-label">Calidad del reporte científico</span><div class="score-bar-wrap"><div class="score-bar" style="width:40%;background:#EF9F27"></div></div><span class="score-val">40%</span></div>
+    <div class="score-row"><span class="score-label">Visualizaciones</span><div class="score-bar-wrap"><div class="score-bar" style="width:65%;background:#1D9E75"></div></div><span class="score-val">65%</span></div>
+    <div class="score-row"><span class="score-label">Arquitectura del sistema</span><div class="score-bar-wrap"><div class="score-bar" style="width:70%;background:#1D9E75"></div></div><span class="score-val">70%</span></div>
+    <div style="margin-top:12px;font-size:12px;color:var(--color-text-secondary);">Las barras muestran el porcentaje de potencial ya implementado en cada dimensión</div>
+  </div>
+</div>
+
+<button class="add-btn" onclick="sendPrompt('Quiero que me ayudes a implementar la conexión a OMIM y DisGeNET para detectar enfermedades automáticamente en el backend de KENRYU')"><i class="ti ti-code" aria-hidden="true"></i> Implementar conexión a OMIM + DisGeNET ↗</button>
+<button class="add-btn" onclick="sendPrompt('Ayúdame a corregir el bug de los PMIDs falsos en el reporte PDF de KENRYU y conectar PubMed correctamente')"><i class="ti ti-bug" aria-hidden="true"></i> Corregir bug de PMIDs inventados ↗</button>
+<button class="add-btn" onclick="sendPrompt('Quiero agregar HPO, MSigDB, ClinVar y DrugBank al análisis de enriquecimiento de KENRYU')"><i class="ti ti-database" aria-hidden="true"></i> Expandir bases de datos de enriquecimiento ↗</button>

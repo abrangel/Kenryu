@@ -1,0 +1,165 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .wrap { padding: 1rem 0; }
+  h2 { font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 1rem; }
+  h3 { font-size: 15px; font-weight: 500; color: var(--color-text-primary); margin: 1.2rem 0 0.5rem; }
+  .section { margin-bottom: 1.8rem; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px; margin-right: 6px; }
+  .badge.bug { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .badge.warn { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .badge.design { background: var(--color-background-info); color: var(--color-text-info); }
+  .badge.fix { background: var(--color-background-success); color: var(--color-text-success); }
+  .issue { border-left: 3px solid var(--color-border-primary); padding: 10px 14px; margin-bottom: 10px; background: var(--color-background-secondary); border-radius: 0 8px 8px 0; }
+  .issue.danger { border-left-color: #E24B4A; }
+  .issue.warn { border-left-color: #BA7517; }
+  .issue.info { border-left-color: #185FA5; }
+  .issue-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .issue-body { font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; }
+  code { font-family: var(--font-mono); font-size: 11px; background: var(--color-background-tertiary); padding: 1px 5px; border-radius: 3px; color: var(--color-text-primary); }
+  .divider { height: 1px; background: var(--color-border-tertiary); margin: 1.5rem 0; }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .summary-card { border: 1px solid var(--color-border-tertiary); border-radius: 8px; padding: 12px; text-align: center; background: var(--color-background-secondary); }
+  .summary-card .num { font-size: 28px; font-weight: 500; }
+  .summary-card .label { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .num.red { color: #E24B4A; }
+  .num.amber { color: #BA7517; }
+  .num.blue { color: #185FA5; }
+</style>
+<div class="wrap">
+  <h2>Diagnóstico KENRYU — Análisis completo</h2>
+
+  <div class="summary-grid">
+    <div class="summary-card"><div class="num red">4</div><div class="label">Bugs críticos (backend)</div></div>
+    <div class="summary-card"><div class="num amber">3</div><div class="label">Problemas de lógica / datos</div></div>
+    <div class="summary-card"><div class="num blue">6</div><div class="label">Mejoras de diseño (frontend)</div></div>
+  </div>
+
+  <!-- BACKEND -->
+  <div class="section">
+    <h2>🔴 Backend — Errores críticos</h2>
+
+    <h3>1 · Los genes core no se investigan correctamente</h3>
+
+    <div class="issue danger">
+      <div class="issue-title"><span class="badge bug">Bug</span> <code>get_pubmed_details</code> — f-string rompe la query</div>
+      <div class="issue-body">
+        La línea <code>f'("{2026-years}"[Date...])'</code> <strong>evalúa la expresión aritmética</strong> <code>2026 - 10 = 2016</code> en tiempo de parseo, pero si <code>years</code> fuera 0 daría un número incorrecto. Además, si el resultado es un número y no un string, PubMed rechaza la query silenciosamente devolviendo 0 resultados.<br><br>
+        <strong>Solución:</strong> calcular el año antes: <code>start_year = 2026 - years</code> y usar <code>f'("{start_year}"[Date...])'</code>.
+      </div>
+    </div>
+
+    <div class="issue danger">
+      <div class="issue-title"><span class="badge bug">Bug</span> Solo se investigan los <strong>primeros 40 genes</strong>, pero enriquecimiento usa hasta 500</div>
+      <div class="issue-body">
+        <code>gene_details</code> se llena con <code>common_all[:40]</code>. El frontend intenta <code>data.gene_details[gene]</code> para todos los <code>common_genes</code>, lo que causa <strong>TypeError silencioso</strong> en JS (<code>undefined</code>) para genes del 41 al N.<br><br>
+        <strong>Solución:</strong> subir el límite a al menos 100, o usar el mismo slice que <code>common_genes</code>.
+      </div>
+    </div>
+
+    <div class="issue danger">
+      <div class="issue-title"><span class="badge bug">Bug</span> <code>get_targetscan_genes_local</code> — nunca encuentra el archivo</div>
+      <div class="issue-body">
+        Busca el archivo como <code>RAW_DATA_DIR / f"{mirna}.txt"</code>, donde <code>mirna</code> ya está normalizado a <code>hsa-miR-33a-5p</code>. Pero los archivos en el repo se llaman igual (<code>hsa-miR-33a-5p.txt</code>). El problema es que <code>RAW_DATA_DIR</code> apunta a <code>../../../repo_tesis/data/raw</code>, que es una ruta <strong>relativa al ejecutable</strong>, no garantizada en producción. Si el backend corre desde otra carpeta, devuelve <code>set()</code> siempre y los genes core son vacíos.<br><br>
+        <strong>Solución:</strong> usar <code>Path(__file__).parent / "../../.." / "repo_tesis/data/raw"</code> con <code>.resolve()</code> para obtener la ruta absoluta.
+      </div>
+    </div>
+
+    <div class="issue danger">
+      <div class="issue-title"><span class="badge bug">Bug</span> <code>await get_kegg_scientific_summary</code> dentro de <code>async with</code> — se llama dos veces</div>
+      <div class="issue-body">
+        En <code>run_pipeline</code>, <code>get_kegg_scientific_summary</code> está decorada como <code>async</code> pero no hace ningún I/O — devuelve un string local. Se puede hacerla síncrona, eliminando un <code>await</code> innecesario que puede causar warnings en algunas versiones de Python.
+      </div>
+    </div>
+
+    <h3>2 · Problemas de lógica y datos</h3>
+
+    <div class="issue warn">
+      <div class="issue-title"><span class="badge warn">Lógica</span> <code>consensus_mode = "n-2"</code> puede devolver genes de un solo miRNA</div>
+      <div class="issue-body">
+        Si hay 3 miRNAs y <code>threshold = max(1, len-2) = 1</code>, el sistema devuelve todos los genes que aparezcan en <strong>cualquier</strong> base de datos, no los consensuados. Esto infla artificialmente los resultados sin validez científica real.
+      </div>
+    </div>
+
+    <div class="issue warn">
+      <div class="issue-title"><span class="badge warn">Datos</span> <code>score</code> del gen se calcula como porcentaje pero se trata como puntos</div>
+      <div class="issue-body">
+        <code>score = (suma/total)*40 + 30 + 30</code> — el resultado va de 0 a 100, pero en el frontend se muestra como <code>"Índice de confianza del 70.5%"</code>. Si el score ya es sobre 100, el texto debería decir <em>puntos</em>, no porcentaje, o normalizarse bien.
+      </div>
+    </div>
+
+    <div class="issue warn">
+      <div class="issue-title"><span class="badge warn">API</span> La clave PubMed API está hardcodeada en el código fuente</div>
+      <div class="issue-body">
+        <code>PUBMED_API_KEY = "f6cba57..."</code> — nunca debe ir en el código. Moverla a una variable de entorno: <code>os.getenv("PUBMED_API_KEY")</code>.
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- FRONTEND -->
+  <div class="section">
+    <h2>🔵 Frontend — Problemas de diseño y editor</h2>
+
+    <div class="issue info">
+      <div class="issue-title"><span class="badge design">Conflicto CSS</span> Dos hojas de estilo se contradicen</div>
+      <div class="issue-body">
+        <code>style.css</code> define el tema oscuro (<code>--bg-dark: #0d1117</code>, sidebar de 280px). El <code>&lt;style&gt;</code> dentro del <code>&lt;head&gt;</code> redefine sidebar a 240px y card headers con color claro. Hay <strong>conflictos de especificidad</strong> que hacen que algunos elementos se vean distintos dependiendo del orden de carga. Unificar todo en un solo archivo CSS.
+      </div>
+    </div>
+
+    <div class="issue info">
+      <div class="issue-title"><span class="badge design">Editor</span> La toolbar del editor no funciona sobre contenido generado dinámicamente</div>
+      <div class="issue-body">
+        <code>execCmd('bold')</code> usa <code>document.execCommand</code>, que está <strong>deprecado</strong> y no funciona en Firefox moderno. Además, los elementos <code>contenteditable</code> se crean dentro del canvas del informe <em>después</em> de que se ejecuta el análisis — la toolbar sólo afecta la selección activa, y si el usuario no ha seleccionado texto primero, no hace nada visible.
+      </div>
+    </div>
+
+    <div class="issue info">
+      <div class="issue-title"><span class="badge design">UX</span> Los "gene pills" clickeables no tienen estado de carga visible</div>
+      <div class="issue-body">
+        Al hacer clic en un gen, el sidebar aparece con texto genérico y luego cambia. No hay indicador de <em>qué gen</em> se está cargando, ni skeleton/loader diferenciado. En redes lentas, el usuario puede clicar varias veces pensando que no funcionó.
+      </div>
+    </div>
+
+    <div class="issue info">
+      <div class="issue-title"><span class="badge design">Diseño</span> El dashboard mezcla dos identidades visuales</div>
+      <div class="issue-body">
+        El sidebar usa el tema oscuro tipo GitHub Dark (<code>#0d1117</code>), mientras que las cards usan fondo blanco con bordes grises claros. El resultado es una app que parece ensamblada con piezas de dos proyectos distintos. El <code>viz-container</code> fuerza <code>background: #fff</code> dentro del tema oscuro, creando un contraste brusco.
+      </div>
+    </div>
+
+    <div class="issue info">
+      <div class="issue-title"><span class="badge design">Diseño</span> El editor de informe no tiene feedback cuando está vacío</div>
+      <div class="issue-body">
+        Si el usuario navega al editor antes de ejecutar el análisis, ve páginas en blanco sin ninguna instrucción. Se necesita un <em>estado vacío</em> claro: "Ejecuta un análisis primero para ver el informe generado."
+      </div>
+    </div>
+
+    <div class="issue info">
+      <div class="issue-title"><span class="badge design">Tipografía</span> La fuente <code>JetBrains Mono</code> no está cargada</div>
+      <div class="issue-body">
+        El CSS referencia <code>font-family: 'JetBrains Mono', monospace</code> en <code>.logo</code> y <code>.status-badge</code>, pero en el <code>&lt;head&gt;</code> solo se cargan Spectral, Inter e IBM Plex Mono desde Google Fonts. El logo y el badge caen al monospace del sistema.
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <h3>Prioridad de corrección sugerida</h3>
+    <div class="issue" style="border-left-color: #E24B4A;">
+      <div class="issue-body" style="font-size:13px;">
+        1. <span class="badge bug">Crítico</span> Ruta absoluta de <code>RAW_DATA_DIR</code> → los genes core siempre devuelven vacío<br><br>
+        2. <span class="badge bug">Crítico</span> F-string en <code>get_pubmed_details</code> → PubMed no retorna evidencias<br><br>
+        3. <span class="badge bug">Crítico</span> Límite <code>[:40]</code> en <code>gene_details</code> → crash silencioso en frontend<br><br>
+        4. <span class="badge warn">Importante</span> Unificar CSS (<code>style.css</code> vs <code>&lt;style&gt;</code> inline)<br><br>
+        5. <span class="badge warn">Importante</span> Reemplazar <code>execCmd</code> por <code>Selection API</code> moderna<br><br>
+        6. <span class="badge design">Mejora</span> Mover API key a variable de entorno<br><br>
+        7. <span class="badge design">Mejora</span> Cargar JetBrains Mono o reemplazar por IBM Plex Mono (ya cargada)
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,7 @@
+{
+    "hsa-miR-33a-5p": ["ABCA1", "KPNA3", "SCN1A", "TSC22D2", "SNTB2", "NPC1", "OSBPL7", "EZH2", "ABCG1", "STAT3", "E2F1"],
+    "hsa-miR-33b-5p": ["ABCA1", "KPNA3", "SCN1A", "TSC22D2", "SNTB2", "NPC1", "OSBPL7", "EZH2", "ABCG1", "CPT1A", "FASN"],
+    "hsa-miR-144-3p": ["ABCA1", "KPNA3", "SCN1A", "TSC22D2", "SNTB2", "NPC1", "OSBPL7", "EZH2", "ABCG1", "MIR144", "PTEN"],
+    "hsa-miR-758-3p": ["ABCA1", "KPNA3", "SCN1A", "TSC22D2", "SNTB2", "NPC1", "OSBPL7", "EZH2", "ABCG1", "CERP", "CYP27A1"],
+    "hsa-miR-106b-5p": ["ABCA1", "KPNA3", "SCN1A", "TSC22D2", "SNTB2", "NPC1", "OSBPL7", "EZH2", "ABCG1", "E2F1", "CCND1"]
+}

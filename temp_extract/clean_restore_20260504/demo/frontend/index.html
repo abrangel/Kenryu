@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KENRYU — Motor Científico</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+/* ── TOKENS ───────────────────────────────────────────── */
+:root {
+  --bg:        #0a0c0f;
+  --bg1:       #101318;
+  --bg2:       #161b22;
+  --bg3:       #1e252f;
+  --border:    rgba(255,255,255,.07);
+  --border-md: rgba(255,255,255,.12);
+  --text:      #e8edf3;
+  --text-dim:  #7a8694;
+  --text-faint:#3d4857;
+  --gold:      #c8a96e;
+  --gold-dim:  rgba(200,169,110,.15);
+  --gold-glow: rgba(200,169,110,.08);
+  --teal:      #4fc3a1;
+  --teal-dim:  rgba(79,195,161,.12);
+  --red:       #e05c5c;
+  --red-dim:   rgba(224,92,92,.12);
+  --blue:      #6eaadc;
+  --blue-dim:  rgba(110,170,220,.12);
+  --r:         8px;
+  --r-lg:      14px;
+  --shadow:    0 8px 32px rgba(0,0,0,.45);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.3);
+  --font-serif: 'DM Serif Display', Georgia, serif;
+  --font-sans:  'DM Sans', system-ui, sans-serif;
+  --font-mono:  'DM Mono', 'Fira Code', monospace;
+}
+
+/* ── RESET ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  display: flex;
+  line-height: 1.6;
+}
+
+/* ── SIDEBAR ──────────────────────────────────────────── */
+.sidebar {
+  width: 256px;
+  min-width: 256px;
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+  z-index: 10;
+}
+
+.logo-area {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-wordmark {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  letter-spacing: .5px;
+  color: var(--gold);
+  line-height: 1;
+}
+.logo-sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+}
+
+.nav { padding: 12px 0; flex: 1; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all .15s;
+  border-left: 2px solid transparent;
+  user-select: none;
+}
+.nav-item i { width: 16px; text-align: center; font-size: 13px; }
+.nav-item:hover { background: var(--bg2); color: var(--text); }
+.nav-item.active { background: var(--gold-glow); color: var(--gold); border-left-color: var(--gold); }
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.btn-side {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 14px; border-radius: var(--r); border: none;
+  font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all .15s; width: 100%;
+}
+.btn-side.pdf  { background: rgba(224,92,92,.15); color: #e07070; border: 1px solid rgba(224,92,92,.2); }
+.btn-side.pdf:hover  { background: rgba(224,92,92,.25); }
+.btn-side.md   { background: var(--bg3); color: var(--text-dim); border: 1px solid var(--border-md); }
+.btn-side.md:hover   { background: var(--bg2); color: var(--text); }
+
+.status-pill {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--teal);
+  padding: 6px 10px; background: var(--teal-dim); border-radius: 20px;
+  border: 1px solid rgba(79,195,161,.15); justify-content: center;
+}
+.pulse { width: 6px; height: 6px; background: var(--teal); border-radius: 50%;
+  animation: pulse 2.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+
+/* ── MAIN LAYOUT ──────────────────────────────────────── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; height: 56px; min-height: 56px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg1);
+}
+.topbar-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  color: var(--text);
+}
+.topbar-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── CONTENT ──────────────────────────────────────────── */
+.view { flex: 1; overflow-y: auto; display: none; }
+.view.active { display: block; }
+.view-pad { padding: 28px; }
+
+/* ── INPUT PANEL ──────────────────────────────────────── */
+.input-panel {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 22px 24px;
+  margin-bottom: 24px;
+}
+.input-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  display: block;
+}
+.input-row { display: flex; gap: 12px; align-items: flex-end; }
+.mirna-field {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 11px 14px;
+  resize: none;
+  height: 48px;
+  line-height: 1.4;
+  outline: none;
+  transition: border-color .2s;
+}
+.mirna-field:focus { border-color: var(--gold); }
+.select-field {
+  background: var(--bg);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r);
+  color: var(--text-dim);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 0 12px;
+  height: 48px;
+  outline: none;
+  min-width: 160px;
+  appearance: none;
+  cursor: pointer;
+}
+.btn-run {
+  background: var(--gold);
+  color: #0a0c0f;
+  border: none;
+  border-radius: var(--r);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0 28px;
+  height: 48px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  letter-spacing: .3px;
+}
+.btn-run:hover { background: #d9ba82; transform: translateY(-1px); }
+.btn-run:active { transform: translateY(0); }
+
+/* ── TERMINAL ─────────────────────────────────────────── */
+.terminal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 14px 16px;
+  height: 96px;
+  overflow-y: auto;
+  margin-bottom: 24px;
+  color: var(--text-dim);
+}
+.terminal::-webkit-scrollbar { width: 4px; }
+.terminal::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+.log-line { display: flex; gap: 10px; margin-bottom: 3px; animation: fadeIn .2s ease; }
+.log-ts { color: var(--text-faint); font-size: 10px; padding-top: 1px; }
+.log-msg { color: var(--text-dim); }
+.log-msg.ok { color: var(--teal); }
+.log-msg.err { color: var(--red); }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+
+/* ── GRID ─────────────────────────────────────────────── */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.span2 { grid-column: span 2; }
+
+/* ── CARD ─────────────────────────────────────────────── */
+.card {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  animation: rise .4s ease both;
+}
+@keyframes rise { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.card-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+}
+.card-badge {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 2px 8px; border-radius: 20px;
+}
+.badge-teal { background: var(--teal-dim); color: var(--teal); }
+.badge-gold { background: var(--gold-dim); color: var(--gold); }
+.card-body { padding: 18px; }
+
+/* ── VIZ CONTAINERS ───────────────────────────────────── */
+.viz { min-height: 320px; display: flex; align-items: center; justify-content: center; }
+.viz img { width: 100%; border-radius: var(--r); }
+.viz-placeholder {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: var(--text-faint); font-size: 12px; font-family: var(--font-mono);
+}
+.viz-placeholder i { font-size: 28px; opacity: .3; }
+
+/* ── GENE PILLS ───────────────────────────────────────── */
+.genes-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.gene-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; background: var(--bg3); border: 1px solid var(--border-md);
+  border-radius: 4px; font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-dim); cursor: pointer; transition: all .12s;
+}
+.gene-pill:hover { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+
+/* ── ENRICHMENT TABLE ─────────────────────────────────── */
+.sci-table { width: 100%; border-collapse: collapse; }
+.sci-table th {
+  text-align: left; padding: 10px 14px; font-family: var(--font-mono);
+  font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-dim); border-bottom: 1px solid var(--border);
+  font-weight: 400;
+}
+.sci-table td {
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  font-size: 12.5px; color: var(--text); vertical-align: top;
+}
+.sci-table tr:last-child td { border-bottom: none; }
+.sci-table tr:hover td { background: var(--bg2); }
+.sci-table .term-name { font-weight: 500; display: block; }
+.sci-table .term-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; display: block; }
+.source-tag {
+  display: inline-block; font-family: var(--font-mono); font-size: 9.5px;
+  padding: 2px 7px; border-radius: 3px; font-weight: 500;
+}
+.src-KEGG     { background: rgba(200,169,110,.15); color: var(--gold); }
+.src-Reactome { background: var(--blue-dim); color: var(--blue); }
+.src-GO_BP    { background: var(--teal-dim); color: var(--teal); }
+.pval-badge {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--teal); background: var(--teal-dim);
+  padding: 2px 7px; border-radius: 3px;
+}
+.pubmed-link {
+  color: var(--gold); text-decoration: none; font-family: var(--font-mono);
+  font-size: 11px; font-weight: 500;
+}
+.pubmed-link:hover { text-decoration: underline; }
+
+/* ── GENE SIDEBAR ─────────────────────────────────────── */
+.gene-panel {
+  position: fixed; right: 0; top: 0; bottom: 0; width: 340px;
+  background: var(--bg1); border-left: 1px solid var(--border-md);
+  box-shadow: -8px 0 40px rgba(0,0,0,.5);
+  z-index: 200; transform: translateX(100%);
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.gene-panel.open { transform: none; }
+.gene-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px; border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.gene-panel-name { font-family: var(--font-serif); font-size: 22px; color: var(--gold); }
+.gene-panel-close {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-md);
+  background: none; color: var(--text-dim); cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.gene-panel-close:hover { background: var(--bg3); color: var(--text); }
+.gene-panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+.gene-field { margin-bottom: 18px; }
+.gene-field-label {
+  font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 1.2px; color: var(--text-faint); margin-bottom: 5px;
+}
+.gene-field-val { font-size: 13px; color: var(--text); line-height: 1.5; }
+.confidence-bar {
+  height: 4px; background: var(--bg3); border-radius: 2px; margin-top: 8px;
+}
+.confidence-fill { height: 100%; border-radius: 2px; background: var(--gold); transition: width .5s ease; }
+.chip {
+  display: inline-block; padding: 3px 9px; border-radius: 4px; font-size: 11.5px;
+  font-weight: 500; background: var(--bg3); color: var(--text-dim);
+  border: 1px solid var(--border-md);
+}
+.gene-loader { text-align: center; padding: 40px 20px; color: var(--text-dim);
+  font-family: var(--font-mono); font-size: 12px; }
+.spinner-sm {
+  width: 20px; height: 20px; border: 2px solid var(--bg3);
+  border-top-color: var(--gold); border-radius: 50%;
+  animation: spin .7s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── LOADING TOAST ────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--bg2); border: 1px solid var(--gold);
+  border-radius: 30px; padding: 10px 20px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; color: var(--text-dim); font-family: var(--font-mono);
+  box-shadow: 0 4px 24px rgba(0,0,0,.5); z-index: 1000;
+  opacity: 0; pointer-events: none; transform: translateY(12px);
+  transition: all .25s;
+}
+.toast.show { opacity: 1; pointer-events: auto; transform: none; }
+.toast-spinner {
+  width: 14px; height: 14px; border: 2px solid rgba(200,169,110,.2);
+  border-top-color: var(--gold); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+/* ── EDITOR VIEW ──────────────────────────────────────── */
+.editor-wrap { display: flex; flex-direction: column; height: 100%; }
+
+.editor-toolbar {
+  display: flex; align-items: center; gap: 4px;
+  padding: 8px 16px; background: var(--bg1);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.tb-sep { width: 1px; height: 18px; background: var(--border-md); margin: 0 4px; }
+.tb-btn {
+  background: none; border: 1px solid transparent; border-radius: 4px;
+  color: var(--text-dim); padding: 5px 9px; font-size: 12px;
+  cursor: pointer; font-family: var(--font-sans); transition: all .12s;
+}
+.tb-btn:hover { background: var(--bg2); border-color: var(--border-md); color: var(--text); }
+.tb-btn.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+.tb-select {
+  background: var(--bg); border: 1px solid var(--border-md); border-radius: 4px;
+  color: var(--text-dim); font-family: var(--font-sans); font-size: 12px;
+  padding: 4px 8px; cursor: pointer;
+}
+.tb-select:focus { outline: none; }
+
+.report-canvas-wrap {
+  flex: 1; overflow-y: auto; background: #525659; padding: 32px 0;
+}
+.a4-page {
+  width: 210mm; min-height: 297mm; background: #fafaf8;
+  margin: 0 auto 28px; padding: 18mm 14mm;
+  box-shadow: 0 4px 32px rgba(0,0,0,.4);
+  color: #1a1a1a; position: relative;
+  font-family: 'DM Sans', sans-serif;
+}
+.rep-header {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  border-bottom: 2px solid #1a2d52; padding-bottom: 12px; margin-bottom: 28px;
+}
+.rep-title { font-family: 'DM Serif Display', Georgia, serif; font-size: 28px; color: #1a2d52; }
+.rep-meta { font-size: 10px; color: #777; text-align: right; line-height: 1.7; }
+.rep-h2 {
+  font-size: 13px; font-weight: 600; color: #1a2d52;
+  border-bottom: 1px solid #ddd; padding-bottom: 6px; margin: 24px 0 14px;
+  text-transform: uppercase; letter-spacing: .8px;
+}
+.rep-text {
+  font-size: 12.5px; color: #222; line-height: 1.75; text-align: justify;
+  outline: none;
+}
+.rep-text[contenteditable=true]:empty:before {
+  content: attr(data-placeholder); color: #bbb; pointer-events: none;
+}
+.rep-table { width: 100%; border-collapse: collapse; font-size: 10px; color: #111; }
+.rep-table th { background: #f0f0f0; border: 1px solid #ccc; padding: 7px 9px; text-align: left; font-weight: 600; }
+.rep-table td { border: 1px solid #ccc; padding: 6px 9px; vertical-align: top; }
+.rep-table tr:nth-child(even) td { background: #fafafa; }
+.evidence-block {
+  border-left: 3px solid #1a2d52; padding: 10px 14px;
+  margin: 12px 0; background: #f2f5fb; border-radius: 0 4px 4px 0;
+}
+.evidence-block .ev-gene { font-weight: 700; color: #1a2d52; font-size: 13.5px; }
+.evidence-block .ev-body { font-size: 11.5px; color: #333; line-height: 1.6; margin-top: 4px; }
+.evidence-block .ev-link { font-size: 10.5px; color: #1a2d52; font-weight: 600; margin-top: 6px; display: block; }
+
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 80px 40px; text-align: center; height: 100%;
+  color: var(--text-faint); font-family: var(--font-mono); font-size: 12px;
+  gap: 12px;
+}
+.empty-state i { font-size: 36px; opacity: .2; }
+.empty-state .es-title { font-size: 14px; color: var(--text-dim); }
+
+/* ── SCROLLBAR GLOBAL ─────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-md); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo-area">
+    <div class="logo-wordmark">KENRYU</div>
+    <div class="logo-sub">Motor Científico · v2.0</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" id="nav-dash" onclick="switchView('dashboard')">
+      <i class="fas fa-chart-network"></i> Panel de Análisis
+    </div>
+    <div class="nav-item" id="nav-report" onclick="switchView('report')">
+      <i class="fas fa-file-lines"></i> Editor de Informe
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="status-pill">
+      <div class="pulse"></div> SISTEMA ACTIVO
+    </div>
+    <button class="btn-side pdf" onclick="exportToPDF()">
+      <i class="fas fa-file-pdf"></i> Exportar PDF
+    </button>
+    <button class="btn-side md" onclick="exportToMarkdown()">
+      <i class="fab fa-markdown"></i> Exportar Markdown
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <span class="topbar-title" id="view-title">Panel de Análisis</span>
+    <span class="topbar-meta" id="topbar-meta">KENRYU SCIENTIFIC ENGINE</span>
+  </header>
+
+  <!-- ── DASHBOARD VIEW ──────────────────────────────── -->
+  <div class="view active" id="view-dashboard">
+    <div class="view-pad">
+
+      <!-- INPUT -->
+      <div class="input-panel">
+        <label class="input-label">Panel de microRNAs — ingrese IDs separados por coma</label>
+        <div class="input-row">
+          <textarea class="mirna-field" id="mirna-input" spellcheck="false">hsa-miR-33a-5p, hsa-miR-144-3p, hsa-miR-758-3p, hsa-miR-106b-5p, hsa-miR-33b-5p</textarea>
+          <select class="select-field" id="consensus-mode">
+            <option value="strict">Consenso Estricto</option>
+            <option value="n-1">Consenso N-1</option>
+            <option value="n-2">Consenso N-2</option>
+          </select>
+          <button class="btn-run" onclick="analyzePro()">
+            <i class="fas fa-play"></i>&nbsp; Ejecutar
+          </button>
+        </div>
+      </div>
+
+      <!-- TERMINAL -->
+      <div class="terminal" id="process-logs">
+        <div class="log-line">
+          <span class="log-ts">00:00:00</span>
+          <span class="log-msg">Motor listo. Ingrese miRNAs y presione Ejecutar.</span>
+        </div>
+      </div>
+
+      <!-- GRID -->
+      <div class="dash-grid" id="results-grid" style="display:none;">
+
+        <!-- VENN -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><i class="fas fa-circle-nodes"></i>&nbsp; Identificación de Dianas</span>
+            <span class="card-badge badge-teal">TargetScan · miRTarBase</span>
+          </div>
+          <div class="card-body">
+            <div class="viz" id="venn-container">
+              <div class="viz-placeholder"><i class="fas fa-chart-pie"></i><span>Sin datos</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VOLCANO -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title"><i class="fas fa-chart-scatter"></i>&nbsp; Significancia Biológica</span>
+            <span class="card-badge badge-gold">Volcano Plot</span>
+          </div>
+          <div class="card-body">
+            <div class="viz" id="volcano-container">
+              <div class="viz-placeholder"><i class="fas fa-atom"></i><span>Sin datos</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BIOMARCADORES CORE -->
+        <div class="card span2">
+          <div class="card-head">
+            <span class="card-title"><i class="fas fa-dna"></i>&nbsp; Biomarcadores Core Identificados</span>
+            <span class="card-badge badge-gold" id="gene-count-badge">—</span>
+          </div>
+          <div class="card-body">
+            <div class="genes-wrap" id="core-genes-list">
+              <span style="color:var(--text-faint);font-size:12px;font-family:var(--font-mono);">Ejecute un análisis para ver los genes core.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PPI -->
+        <div class="card span2">
+          <div class="card-head">
+            <span class="card-title"><i class="fas fa-share-nodes"></i>&nbsp; Red de Interacción Proteica</span>
+            <span class="card-badge badge-teal">STRING-DB</span>
+          </div>
+          <div class="card-body">
+            <div class="viz" style="min-height:420px;" id="ppi-container">
+              <div class="viz-placeholder"><i class="fas fa-project-diagram"></i><span>Sin datos</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENRICHMENT -->
+        <div class="card span2">
+          <div class="card-head">
+            <span class="card-title"><i class="fas fa-flask"></i>&nbsp; Enriquecimiento Funcional</span>
+            <span class="card-badge badge-teal">KEGG · Reactome · GO-BP</span>
+          </div>
+          <div class="card-body" style="padding:0; overflow-x:auto;">
+            <div id="enrich-container" style="padding:18px;">
+              <span style="color:var(--text-faint);font-size:12px;font-family:var(--font-mono);">Sin datos de enriquecimiento.</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /grid -->
+    </div>
+  </div>
+
+  <!-- ── REPORT VIEW ──────────────────────────────────── -->
+  <div class="view" id="view-report">
+    <div class="editor-wrap">
+      <div class="editor-toolbar">
+        <button class="tb-btn" title="Negrita" onclick="fmtText('bold')"><b>B</b></button>
+        <button class="tb-btn" title="Cursiva" onclick="fmtText('italic')"><i>I</i></button>
+        <button class="tb-btn" title="Subrayado" onclick="fmtText('underline')"><u>U</u></button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="fmtText('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+        <button class="tb-btn" onclick="fmtText('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="fmtText('justifyLeft')"><i class="fas fa-align-left"></i></button>
+        <button class="tb-btn" onclick="fmtText('justifyFull')"><i class="fas fa-align-justify"></i></button>
+        <div class="tb-sep"></div>
+        <select class="tb-select" onchange="fmtText('fontSize', this.value); this.value=''">
+          <option value="">Tamaño</option>
+          <option value="2">Pequeño</option>
+          <option value="3">Normal</option>
+          <option value="4">Grande</option>
+          <option value="5">Extra</option>
+        </select>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="addPage()"><i class="fas fa-plus"></i> Página</button>
+      </div>
+
+      <!-- Empty state when no analysis -->
+      <div id="editor-empty" class="empty-state">
+        <i class="fas fa-file-waveform"></i>
+        <div class="es-title">Sin informe generado</div>
+        <div>Ejecuta un análisis en el Panel Principal para generar el informe científico.</div>
+      </div>
+
+      <div id="report-canvas-wrap" class="report-canvas-wrap" style="display:none;">
+        <div id="report-canvas">
+          <!-- Page 1 -->
+          <div class="a4-page" id="rep-page-1">
+            <div class="rep-header">
+              <div>
+                <div class="rep-title">INFORME CIENTÍFICO</div>
+                <div style="font-size:11px;color:#888;margin-top:3px;font-family:'DM Mono',monospace;">
+                  ID: <span id="rep-id"></span>
+                </div>
+              </div>
+              <div class="rep-meta">
+                <span id="rep-date"></span><br>
+                Investigación miRNA · mRNA<br>
+                Motor KENRYU Scientific Engine
+              </div>
+            </div>
+
+            <div class="rep-h2">I. Síntesis de Investigación</div>
+            <div class="rep-text" id="rep-synthesis" contenteditable="true"
+                 data-placeholder="El resumen del análisis aparecerá aquí..."></div>
+
+            <div class="rep-h2">II. Panel de Biomarcadores Core</div>
+            <div id="rep-table-container"></div>
+          </div>
+
+          <!-- Page 2 -->
+          <div class="a4-page" id="rep-page-2">
+            <div class="rep-h2">III. Traducción Patológica Detallada</div>
+            <div id="rep-detail-container"></div>
+
+            <div class="rep-h2">IV. Evidencia Gráfica</div>
+            <div id="rep-venn-img" style="text-align:center;margin-bottom:16px;"></div>
+            <div id="rep-volcano-img" style="text-align:center;margin-bottom:16px;"></div>
+            <div id="rep-ppi-img" style="text-align:center;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-spinner"></div>
+  <span id="toast-msg">Procesando...</span>
+</div>
+
+<!-- GENE SIDEBAR PANEL -->
+<div class="gene-panel" id="gene-panel">
+  <div class="gene-panel-head">
+    <span class="gene-panel-name" id="gp-name">—</span>
+    <button class="gene-panel-close" onclick="closeGenePanel()"><i class="fas fa-xmark"></i></button>
+  </div>
+  <div class="gene-panel-body" id="gene-panel-body">
+    <div class="gene-loader">
+      <div class="spinner-sm"></div>
+      Cargando evidencia clínica...
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = "http://localhost:8080";
+let lastData = null;
+
+/* ── VIEW SWITCH ─────────────────────────────────────── */
+function switchView(v) {
+  document.getElementById('view-dashboard').classList.toggle('active', v === 'dashboard');
+  document.getElementById('view-report').classList.toggle('active', v === 'report');
+  document.getElementById('nav-dash').classList.toggle('active', v === 'dashboard');
+  document.getElementById('nav-report').classList.toggle('active', v === 'report');
+  document.getElementById('view-title').textContent =
+    v === 'dashboard' ? 'Panel de Análisis' : 'Editor de Informe';
+  if (v === 'report' && lastData) populateReport();
+}
+
+/* ── TOAST ───────────────────────────────────────────── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+}
+function hideToast() { document.getElementById('toast').classList.remove('show'); }
+
+/* ── LOGS ────────────────────────────────────────────── */
+function addLog(msg, type = '') {
+  const log = document.getElementById('process-logs');
+  const d = document.createElement('div');
+  d.className = 'log-line';
+  const ts = new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  d.innerHTML = `<span class="log-ts">${ts}</span><span class="log-msg ${type}">${msg}</span>`;
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+}
+
+/* ── ANALYZE ─────────────────────────────────────────── */
+async function analyzePro() {
+  const input = document.getElementById('mirna-input').value;
+  const mirnas = input.split(',').map(m => m.trim()).filter(Boolean);
+  const mode = document.getElementById('consensus-mode').value;
+  if (!mirnas.length) return;
+
+  showToast('Sincronizando con motor bioinformático...');
+  addLog('Iniciando análisis integral...');
+
+  try {
+    const res = await fetch(`${API_URL}/api/v1/analyze`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({mirnas, years: 10, consensus_mode: mode})
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    lastData = data;
+    renderDashboard(data);
+    addLog(`✓ Análisis completo — ${data.common_genes.length} biomarcadores encontrados.`, 'ok');
+  } catch (e) {
+    addLog(`✕ ERROR: ${e.message}`, 'err');
+  } finally {
+    hideToast();
+  }
+}
+
+/* ── RENDER DASHBOARD ────────────────────────────────── */
+function renderDashboard(data) {
+  document.getElementById('results-grid').style.display = 'grid';
+
+  // Gene count badge
+  document.getElementById('gene-count-badge').textContent = `${data.common_genes.length} genes`;
+
+  // Gene pills — color por sistema biológico
+  const sysColor = s => (s && (s.includes('Cardio') || s.includes('Metab'))) ? 'var(--red)'
+    : (s && s.includes('Neuro')) ? 'var(--blue)'
+    : (s && s.includes('Onco')) ? 'var(--gold)'
+    : 'var(--teal)';
+  const genesEl = document.getElementById('core-genes-list');
+  genesEl.innerHTML = data.common_genes.map(g => {
+    const d = data.gene_details && data.gene_details[g];
+    const tip = (d && d.fullName) ? ' title="' + d.fullName + '"' : '';
+    const dot = sysColor(d && d.system);
+    return '<span class="gene-pill" onclick="openGenePanel(\'' + g + '\')"' + tip + '><i class="fas fa-circle" style="font-size:5px;color:' + dot + ';"></i>' + g + '</span>';
+  }).join('');
+
+  // Images
+  const setImg = (id, b64) => {
+    const el = document.getElementById(id);
+    if (el && b64) el.innerHTML = `<img src="data:image/png;base64,${b64}" alt="visualization">`;
+  };
+  setImg('venn-container', data.venn_plot);
+  setImg('volcano-container', data.volcano_plot);
+  setImg('ppi-container', data.ppi_plot);
+
+  // Enrichment table
+  const enEl = document.getElementById('enrich-container');
+  if (data.enrichment && data.enrichment.length) {
+    let html = `<table class="sci-table"><thead><tr>
+      <th>Ruta Biológica</th><th>Fuente</th><th>p-valor</th><th>Referencia</th>
+    </tr></thead><tbody>`;
+    data.enrichment.forEach(item => {
+      const srcCls = `src-${item.Source}`;
+      const pLink = item.Evidence
+        ? `<a class="pubmed-link" href="https://pubmed.ncbi.nlm.nih.gov/${item.Evidence.id}" target="_blank">PMID: ${item.Evidence.id}</a>`
+        : '<span style="color:var(--text-faint);font-size:11px;">—</span>';
+      html += `<tr>
+        <td>
+          <span class="term-name">${item.Term}</span>
+          <span class="term-desc">${item.ScientificDesc}</span>
+        </td>
+        <td><span class="source-tag ${srcCls}">${item.Source}</span></td>
+        <td><span class="pval-badge">${item.Pval.toExponential(2)}</span></td>
+        <td>${pLink}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    enEl.innerHTML = html;
+  }
+}
+
+/* ── GENE PANEL ──────────────────────────────────────── */
+async function openGenePanel(gene) {
+  document.getElementById('gp-name').textContent = gene;
+  document.getElementById('gene-panel-body').innerHTML = `
+    <div class="gene-loader">
+      <div class="spinner-sm"></div>
+      Cargando evidencia clínica para <strong>${gene}</strong>...
+    </div>`;
+  document.getElementById('gene-panel').classList.add('open');
+
+  try {
+    const resp = await fetch(`${API_URL}/api/v1/gene-info/${gene}`);
+    const info = await resp.json();
+    const d = lastData?.gene_details?.[gene] || {system:'—', pathology:'—', confidence:{score:0, label:'—'}, pmid:null};
+
+    // Rutas asociadas desde gene_details (backend FIX) o fallback desde enrichment
+    const routes = (d.associated_routes && d.associated_routes.length)
+      ? d.associated_routes
+      : lastData.enrichment.filter(e => e.Genes.split(';').map(x=>x.trim()).includes(gene)).slice(0,3).map(e=>e.Term);
+
+    document.getElementById('gene-panel-body').innerHTML = `
+      <div class="gene-field">
+        <div class="gene-field-label">Nombre completo</div>
+        <div class="gene-field-val">${info.fullName || '<em style="color:var(--text-faint)">No disponible en base de datos</em>'}</div>
+      </div>
+      <div class="gene-field">
+        <div class="gene-field-label">Sistema biológico</div>
+        <div class="gene-field-val"><span class="chip">${d.system}</span></div>
+      </div>
+      <div class="gene-field">
+        <div class="gene-field-label">Índice de confianza</div>
+        <div class="gene-field-val">
+          ${d.confidence.score}% — <span style="color:var(--text-dim)">${d.confidence.label}</span>
+          <div class="confidence-bar"><div class="confidence-fill" style="width:${Math.min(d.confidence.score,100)}%"></div></div>
+        </div>
+      </div>
+      ${routes.length ? `
+      <div class="gene-field">
+        <div class="gene-field-label">Rutas biológicas asociadas</div>
+        <div class="gene-field-val" style="display:flex;flex-direction:column;gap:4px;">
+          ${routes.map(r => '<span class="chip" style="font-size:10.5px;display:block;">' + r + '</span>').join('')}
+        </div>
+      </div>` : ''}
+      <div class="gene-field">
+        <div class="gene-field-label">Relevancia patológica</div>
+        <div class="gene-field-val">${d.pathology}</div>
+      </div>
+      ${d.pmid ? `
+      <div class="gene-field">
+        <div class="gene-field-label">Evidencia PubMed</div>
+        <div class="gene-field-val">
+          <a class="pubmed-link" href="https://pubmed.ncbi.nlm.nih.gov/${d.pmid}" target="_blank">
+            <i class="fas fa-bookmark"></i> PMID: ${d.pmid}
+          </a>
+        </div>
+      </div>` : ''}
+    `;
+  } catch(e) {
+    document.getElementById('gene-panel-body').innerHTML =
+      `<div class="gene-loader" style="color:var(--red)">Error al cargar datos.</div>`;
+  }
+}
+function closeGenePanel() { document.getElementById('gene-panel').classList.remove('open'); }
+
+/* ── FORMAT TEXT (editor moderno) ───────────────────────*/
+function fmtText(cmd, val) {
+  // Encuentra el área contenteditable activa en el canvas del reporte
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  const inCanvas = document.getElementById('report-canvas').contains(range.commonAncestorContainer);
+  if (!inCanvas) return;
+
+  if (cmd === 'fontSize') {
+    document.execCommand('styleWithCSS', false, true);
+    const size = ['','0.85em','1em','1.15em','1.3em','1.5em'][parseInt(val)] || '1em';
+    document.execCommand('fontSize', false, val);
+  } else {
+    document.execCommand(cmd, false, val || null);
+  }
+}
+
+/* ── ADD PAGE ────────────────────────────────────────── */
+function addPage() {
+  const canvas = document.getElementById('report-canvas');
+  const page = document.createElement('div');
+  page.className = 'a4-page';
+  page.innerHTML = `<div class="rep-text" contenteditable="true"
+    data-placeholder="Contenido de la página adicional..."></div>`;
+  canvas.appendChild(page);
+  page.scrollIntoView({behavior:'smooth'});
+}
+
+/* ── POPULATE REPORT ─────────────────────────────────── */
+function populateReport() {
+  if (!lastData) return;
+  const data = lastData;
+
+  // Show canvas, hide empty
+  document.getElementById('editor-empty').style.display = 'none';
+  document.getElementById('report-canvas-wrap').style.display = 'block';
+
+  document.getElementById('rep-id').textContent = 'KENRYU-' + Math.random().toString(36).substr(2,6).toUpperCase();
+  document.getElementById('rep-date').textContent = new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
+
+  // Synthesis
+  const pathways = data.enrichment.slice(0,6).map(e => `<li><strong>${e.Term}:</strong> ${e.ScientificDesc}</li>`).join('');
+  document.getElementById('rep-synthesis').innerHTML = `
+    <p>El análisis genómico integral revela una convergencia molecular significativa mediada por el panel de microRNAs analizado. Mediante algoritmos de intersección multivariante, se identificó un núcleo regulatorio compuesto por <strong>${data.common_genes.length} biomarcadores core</strong>.</p>
+    <p style="margin-top:10px;">La desregulación coordinada de estos genes impacta de manera directa en la estabilidad de procesos celulares y rutas metabólicas críticas, con los siguientes hallazgos prioritarios:</p>
+    <ul style="margin:10px 0;padding-left:20px;">${pathways}</ul>
+    <p style="margin-top:10px;">Este paisaje epigenético, validado mediante la integración de predictores bioinformáticos y evidencia experimental recuperada de PubMed, sugiere que el panel analizado actúa como orquestador central de la respuesta sistémica.</p>
+  `;
+
+  // Biomarcadores table
+  let tbl = `<table class="rep-table"><thead><tr>
+    <th>Gen Core</th><th>Sistema</th><th>Rutas Asociadas</th><th>Relevancia Patológica</th>
+  </tr></thead><tbody>`;
+  data.common_genes.slice(0,30).forEach(g => {
+    const d = data.gene_details?.[g] || {system:'Sistémico', pathology:'-'};
+    // associated_routes ya viene calculado desde el backend (FIX)
+    const routes = (d.associated_routes && d.associated_routes.length)
+      ? d.associated_routes.join('; ')
+      : (data.enrichment.filter(e => e.Genes.split(';').map(x=>x.trim()).includes(g)).slice(0,2).map(e=>e.Term).join('; ') || 'Interacción directa');
+    tbl += `<tr><td><strong>${g}</strong></td><td>${d.system}</td><td><em>${routes}</em></td><td>${d.pathology}</td></tr>`;
+  });
+  tbl += '</tbody></table>';
+  document.getElementById('rep-table-container').innerHTML = tbl;
+
+  // Detail blocks
+  let det = '';
+  data.common_genes.slice(0,12).forEach(g => {
+    const d = data.gene_details?.[g] || {system:'—', pathology:'—', confidence:{score:0}, pmid:null};
+    det += `<div class="evidence-block">
+      <div class="ev-gene">${g}</div>
+      <div class="ev-body">Biomarcador con nodo regulatorio en el sistema <strong>${d.system.toLowerCase()}</strong>. ${d.pathology} Índice de confianza: ${d.confidence.score}%.</div>
+      ${d.pmid ? `<a class="ev-link" href="https://pubmed.ncbi.nlm.nih.gov/${d.pmid}" target="_blank">📎 PubMed PMID: ${d.pmid}</a>` : ''}
+    </div>`;
+  });
+  document.getElementById('rep-detail-container').innerHTML = det;
+
+  // Imgs
+  const setI = (id, b64) => {
+    const el = document.getElementById(id);
+    if (el && b64) el.innerHTML = `<img src="data:image/png;base64,${b64}" style="width:100%;border:1px solid #ddd;border-radius:4px;margin:10px 0;">`;
+  };
+  setI('rep-venn-img', data.venn_plot);
+  setI('rep-volcano-img', data.volcano_plot);
+  setI('rep-ppi-img', data.ppi_plot);
+}
+
+/* ── EXPORTS ─────────────────────────────────────────── */
+function exportToPDF() {
+  if (!lastData) return alert('Realice un análisis primero.');
+  const el = document.getElementById('report-canvas');
+  html2pdf().set({
+    margin: 0, filename: 'Informe_KENRYU.pdf',
+    html2canvas: {scale: 2, backgroundColor: '#fafaf8'},
+    jsPDF: {unit: 'mm', format: 'a4'}
+  }).from(el).save();
+}
+
+function exportToMarkdown() {
+  if (!lastData) return alert('Sin datos.');
+  const data = lastData;
+  let md = `# INFORME CIENTÍFICO — KENRYU\n\n**Fecha:** ${new Date().toLocaleDateString()}\n\n`;
+  md += `## I. Síntesis\n${document.getElementById('rep-synthesis')?.innerText || ''}\n\n`;
+  md += `## II. Panel de Biomarcadores\n| Gen | Sistema | Patología |\n| :-- | :------ | :-------- |\n`;
+  data.common_genes.slice(0,30).forEach(g => {
+    const d = data.gene_details?.[g] || {system:'-', pathology:'-'};
+    md += `| **${g}** | ${d.system} | ${d.pathology} |\n`;
+  });
+  md += `\n## III. Evidencia PubMed\n`;
+  data.common_genes.slice(0,15).forEach(g => {
+    const d = data.gene_details?.[g];
+    if (d?.pmid) md += `- **${g}**: [PMID ${d.pmid}](https://pubmed.ncbi.nlm.nih.gov/${d.pmid})\n`;
+  });
+  const blob = new Blob([md], {type:'text/markdown;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Reporte_KENRYU.md';
+  a.click();
+}
+</script>
+</body>
+</html>
