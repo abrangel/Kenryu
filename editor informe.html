@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KENRYU — Editor de Reporte Profesional</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Spectral:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ========== ESTILOS BASE (pantalla) ========== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --ink: #0f0f0f; --ink-mid: #444; --ink-dim: #888; --ink-faint: #ccc;
+  --paper: #fafaf8; --page-bg: #e8e6e0; --accent: #1a3a6b; --accent-light: #e8eef7;
+  --accent-green: #0f5e3a; --danger: #8b1a1a; --border: #d4d0c8; --shadow: rgba(0,0,0,0.12);
+  --toolbar-bg: #1e1e1e; --toolbar-text: #d4d4d4; --toolbar-border: #333;
+  --toolbar-hover: #2d2d2d; --toolbar-active: #094771;
+  --sidebar-bg: #252525; --sidebar-text: #e0e0e0; --sidebar-hover: #3a3a3a;
+}
+body { font-family: 'DM Sans', sans-serif; background: var(--page-bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+#toolbar {
+  position: sticky; top: 0; z-index: 100; background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--toolbar-border); display: flex; align-items: center;
+  gap: 2px; padding: 6px 12px; flex-wrap: wrap; flex-shrink: 0;
+}
+.tb-group { display: flex; align-items: center; gap: 2px; padding: 0 8px; border-right: 1px solid var(--toolbar-border); }
+.tb-group:last-child { border-right: none; }
+.tb-btn {
+  background: none; border: none; color: var(--toolbar-text); padding: 5px 9px;
+  border-radius: 4px; cursor: pointer; font-size: 13px; font-family: 'IBM Plex Mono', monospace;
+  display: flex; align-items: center; gap: 5px; transition: 0.15s; white-space: nowrap;
+}
+.tb-btn:hover { background: var(--toolbar-hover); }
+.tb-btn.active { background: var(--toolbar-active); color: #fff; }
+.tb-select {
+  background: var(--toolbar-hover); border: 1px solid var(--toolbar-border);
+  color: var(--toolbar-text); padding: 4px 8px; border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer;
+}
+.tb-spacer { flex: 1; }
+.tb-export {
+  background: var(--accent); color: white; border: none; padding: 6px 16px;
+  border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: 0.15s;
+}
+.tb-export:hover { background: #0f2a50; }
+.tb-export-md { background: #4a1a6b; }
+.tb-export-md:hover { background: #3a0f55; }
+#workspace { display: flex; flex: 1; overflow: hidden; }
+#sidebar-panel {
+  width: 260px; background: var(--sidebar-bg); border-right: 1px solid #3a3a3a;
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.panel-tabs { display: flex; border-bottom: 1px solid #3a3a3a; background: #1f1f1f; }
+.panel-tab {
+  flex: 1; padding: 9px; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  color: #aaa; text-align: center; cursor: pointer; text-transform: uppercase;
+  border-bottom: 2px solid transparent; transition: 0.1s;
+}
+.panel-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; background: #2a2a2a; }
+.panel-content { flex: 1; overflow-y: auto; padding: 12px; color: var(--sidebar-text); }
+.panel-section { margin-bottom: 20px; }
+.panel-section-title {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px; text-transform: uppercase;
+  color: #aaa; margin-bottom: 8px; border-bottom: 1px solid #3a3a3a; padding-bottom: 4px;
+  letter-spacing: 1px;
+}
+.outline-item {
+  padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+  color: #ccc; transition: 0.1s; margin-bottom: 2px;
+  font-family: 'DM Sans', sans-serif;
+}
+.outline-item:hover { background: var(--sidebar-hover); color: white; }
+.outline-item.active { background: #1a3a6b44; color: #58a6ff; }
+.prop-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.prop-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #ccc; min-width: 90px; }
+.prop-input {
+  flex: 1; background: #2a2a2a; border: 1px solid #444; color: #eee;
+  padding: 4px 7px; border-radius: 3px; font-size: 12px;
+}
+.color-chip { width: 20px; height: 20px; border-radius: 3px; cursor: pointer; border: 2px solid transparent; }
+.color-chip.selected { border-color: #58a6ff; }
+.insert-btn {
+  background: #2a2a2a; border: 1px solid #444; color: #ddd; padding: 6px;
+  border-radius: 4px; cursor: pointer; font-size: 11px; text-align: center; margin-bottom: 6px;
+  transition: 0.1s;
+}
+.insert-btn:hover { background: #3a3a3a; color: white; border-color: #58a6ff; }
+#canvas {
+  flex: 1; overflow: auto; padding: 40px 20px;
+  background: var(--page-bg);
+}
+.a4-page {
+  width: 210mm; min-height: 297mm; background: var(--paper); margin: 0 auto 32px;
+  box-shadow: 0 4px 32px var(--shadow); border-radius: 2px;
+  position: relative;
+  overflow: visible;
+}
+.page-inner { padding: 18mm 16mm 20mm; }
+.report-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding-bottom: 12px; margin-bottom: 24px; border-bottom: 2.5px solid var(--ink);
+}
+.report-title { font-family: 'Spectral', serif; font-size: 36px; font-weight: 600; color: var(--ink); line-height: 1; }
+.report-subtitle { font-size: 11px; color: var(--ink-dim); text-transform: uppercase; font-family: 'IBM Plex Mono', monospace; }
+.report-meta { text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink-dim); line-height: 1.6; }
+.meta-id { font-size: 13px; font-weight: 600; color: var(--accent); }
+.report-section { margin-bottom: 28px; position: relative; }
+.section-actions {
+  position: absolute; right: -36px; top: 0; display: flex; flex-direction: column;
+  gap: 3px; opacity: 0; transition: 0.15s; z-index: 10;
+}
+.report-section:hover .section-actions { opacity: 1; }
+.section-act-btn {
+  width: 28px; height: 28px; background: #1e1e1e; border: 1px solid #333;
+  border-radius: 4px; color: #aaa; cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
+.section-act-btn.danger:hover { background: #5a1a1a; color: #f88; }
+.section-heading {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px; text-transform: uppercase;
+  color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.editable-block {
+  font-size: 12.5px; line-height: 1.72; color: var(--ink); font-family: 'Spectral', serif;
+  outline: none; min-height: 1.72em;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.editable-block p { margin-bottom: 0.7em; text-align: justify; }
+.bio-table {
+  width: 100%; border-collapse: collapse; font-size: 11px; margin: 8px 0;
+  table-layout: fixed;
+  word-break: break-word;
+}
+.bio-table th {
+  background: var(--accent); color: white; padding: 7px 10px; text-align: left;
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+}
+.bio-table td {
+  padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--ink);
+}
+.gene-tag {
+  background: var(--accent-light); color: var(--accent); padding: 1px 7px;
+  border-radius: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  font-weight: 600; display: inline-block; margin: 2px 0;
+}
+.disease-tag {
+  background: #fef3f0; color: #8b2500; padding: 1px 7px; border-radius: 3px;
+  font-size: 10px; margin: 1px 2px; display: inline-block;
+}
+.gene-block {
+  border-left: 3px solid var(--accent); padding: 12px 14px; margin-bottom: 14px;
+  background: var(--accent-light); border-radius: 0 4px 4px 0;
+  word-wrap: break-word;
+}
+.gene-block-name { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 2px; }
+.gene-block-type { font-size: 10px; color: var(--accent); opacity: 0.7; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; margin-bottom: 6px; }
+.gene-block-text { font-size: 11.5px; line-height: 1.65; color: var(--ink-mid); font-family: 'Spectral', serif; outline: none; }
+.gene-pmid { margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--accent); }
+.gene-pmid a { color: var(--accent); text-decoration: none; }
+.note-block { border: 1px dashed var(--border); border-radius: 4px; padding: 12px 14px; margin: 12px 0; background: #fffef5; }
+.quote-block { border-left: 3px solid var(--ink-faint); padding: 8px 14px; margin: 12px 0; color: var(--ink-mid); font-style: italic; font-family: 'Spectral', serif; font-size: 12.5px; }
+.confidence-bar { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.conf-fill { height: 4px; border-radius: 2px; flex: 1; background: var(--border); overflow: hidden; }
+.conf-fill-inner { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent-green), #1D9E75); }
+.conf-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--ink-dim); }
+.page-footer {
+  position: absolute; bottom: 10mm; left: 16mm; right: 16mm; border-top: 1px solid var(--border);
+  padding-top: 6px; display: flex; justify-content: space-between; font-size: 8px;
+  color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace;
+}
+.add-section-btn {
+  display: flex; justify-content: center; padding: 8px; border: 1.5px dashed var(--border);
+  border-radius: 4px; color: var(--ink-faint); cursor: pointer; margin-top: 8px;
+  width: 100%; background: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+}
+.add-section-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+body.preview-mode .section-actions, body.preview-mode .add-section-btn, body.preview-mode #toolbar .edit-only { display: none !important; }
+body.preview-mode .editable-block, body.preview-mode .gene-block-text { pointer-events: none; }
+
+/* ========== ESTILOS DE IMPRESIÓN (márgenes corregidos) ========== */
+@media print {
+  #toolbar, #sidebar-panel, .section-actions, .add-section-btn {
+    display: none !important;
+  }
+  body, #workspace, #canvas {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  #canvas {
+    display: block !important;
+  }
+  .a4-page {
+    margin: 0 !important;
+    box-shadow: none !important;
+    page-break-after: always !important;
+    page-break-inside: avoid !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    background: white !important;
+  }
+  .page-inner {
+    padding: 0 !important;     /* Eliminamos el padding interno, los márgenes los controla @page */
+  }
+  /* Definimos márgenes de página uniformes y pequeños */
+  @page {
+    size: A4;
+    margin: 15mm;  /* Ajusta este valor según prefieras (12mm a 18mm suele ir bien) */
+  }
+  /* Ajustes para evitar desbordamiento */
+  .report-section, .gene-block, table, .editable-block {
+    page-break-inside: avoid;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  .bio-table {
+    table-layout: auto;
+  }
+  .page-footer {
+    position: relative !important;
+    bottom: auto !important;
+    margin-top: 10mm !important;
+    border-top: 1px solid #ccc;
+  }
+}
+</style>
+</head>
+<body>
+<!-- La barra de herramientas y el panel lateral se mantienen igual; solo se modifica el CSS de impresión. 
+     El contenido HTML y JavaScript es idéntico a la versión anterior pero ajustaremos ligeramente la creación de nuevas páginas para que usen los mismos márgenes y estructura. -->
+<div id="toolbar">
+  <div class="tb-group"><span class="tb-label">KENRYU</span></div>
+  <div class="tb-group edit-only">
+    <button class="tb-btn" onclick="fmt('bold')">B</button>
+    <button class="tb-btn" onclick="fmt('italic')">I</button>
+    <button class="tb-btn" onclick="fmt('underline')">U</button>
+  </div>
+  <div class="tb-group edit-only">
+    <select class="tb-select" onchange="setFontSize(this.value)"><option>11px</option><option selected>12px</option><option>13px</option><option>14px</option><option>16px</option></select>
+  </div>
+  <div class="tb-group edit-only">
+    <button class="tb-btn" onclick="insertBlock('note')">✏️ Nota</button>
+    <button class="tb-btn" onclick="insertBlock('quote')">❝ Cita</button>
+    <button class="tb-btn" onclick="insertBlock('gene')">🧬 Gen</button>
+    <button class="tb-btn" onclick="insertBlock('divider')">— Sep.</button>
+  </div>
+  <div class="tb-group edit-only"><button class="tb-btn" onclick="addPage()">+ Página</button></div>
+  <div class="tb-group"><button class="tb-btn" id="preview-btn" onclick="togglePreview()">👁 Vista previa</button></div>
+  <div class="tb-spacer"></div>
+  <div class="tb-group">
+    <span id="save-status" style="margin-right:8px">💾 Auto</span>
+    <button class="tb-export" onclick="exportText()">📄 .TXT</button>
+    <button class="tb-export tb-export-md" onclick="exportMarkdown()">↓ .MD</button>
+    <button class="tb-export" onclick="window.print()">⬇ PDF</button>
+  </div>
+</div>
+<div id="workspace">
+  <div id="sidebar-panel">
+    <div class="panel-tabs"><div class="panel-tab active" onclick="switchPanel('outline')">Esquema</div><div class="panel-tab" onclick="switchPanel('insert')">Insertar</div><div class="panel-tab" onclick="switchPanel('props')">Propiedades</div></div>
+    <div class="panel-content" id="panel-outline">
+      <div class="panel-section"><div class="panel-section-title">Secciones del informe</div><div id="outline-list"></div></div>
+      <div class="panel-section"><div class="panel-section-title">Estadísticas</div><div id="doc-stats" style="font-size:11px; color:#bbb;"></div></div>
+    </div>
+    <div class="panel-content" id="panel-insert" style="display:none">
+      <div class="panel-section"><div class="panel-section-title">Insertar bloque</div>
+        <div class="insert-btn" onclick="insertBlock('note')">📝 Nota manual</div>
+        <div class="insert-btn" onclick="insertBlock('quote')">❝ Cita textual</div>
+        <div class="insert-btn" onclick="insertBlock('gene')">🧬 Bloque gen</div>
+        <div class="insert-btn" onclick="addTableRow()">📊 Fila tabla</div>
+        <div class="insert-btn" onclick="insertBlock('divider')">— Separador</div>
+        <div class="insert-btn" onclick="addPage()">📄 Nueva página</div>
+      </div>
+      <div class="panel-section"><div class="panel-section-title">Texto rápido</div>
+        <div class="insert-btn" onclick="insertSnippet('conclusion')">Conclusión</div>
+        <div class="insert-btn" onclick="insertSnippet('methods')">Métodos</div>
+        <div class="insert-btn" onclick="insertSnippet('limitations')">Limitaciones</div>
+        <div class="insert-btn" onclick="insertSnippet('future')">Trabajo futuro</div>
+      </div>
+    </div>
+    <div class="panel-content" id="panel-props" style="display:none">
+      <div class="panel-section"><div class="panel-section-title">Metadatos</div>
+        <div class="prop-row"><span class="prop-label">Institución</span><input class="prop-input" id="prop-inst" value="Universidad" oninput="updateMeta()"></div>
+        <div class="prop-row"><span class="prop-label">Fecha</span><input class="prop-input" id="prop-date" type="date" oninput="updateMeta()"></div>
+        <div class="prop-row"><span class="prop-label">Versión</span><input class="prop-input" id="prop-ver" value="1.0" oninput="updateMeta()"></div>
+      </div>
+      <div class="panel-section"><div class="panel-section-title">Color acento</div><div style="display:flex;gap:6px;"><div class="color-chip selected" style="background:#1a3a6b" onclick="setAccent('#1a3a6b','#e8eef7')"></div><div class="color-chip" style="background:#0f5e3a" onclick="setAccent('#0f5e3a','#e6f4ed')"></div><div class="color-chip" style="background:#5b1a5a" onclick="setAccent('#5b1a5a','#f5e8f5')"></div><div class="color-chip" style="background:#8b1a1a" onclick="setAccent('#8b1a1a','#fef0f0')"></div></div></div>
+      <div class="panel-section"><div class="panel-section-title">Fuente del cuerpo</div><select class="prop-input" id="body-font-select" onchange="setBodyFont(this.value)"><option value="'Spectral', serif">Spectral (Serif)</option><option value="'DM Sans', sans-serif">DM Sans (Sans)</option><option value="'IBM Plex Mono', monospace">IBM Plex Mono</option></select></div>
+      <div class="panel-section"><div class="panel-section-title">Personalizar</div>
+        <div class="prop-row"><span class="prop-label">Color papel</span><input type="color" id="paper-color" class="prop-input" value="#fafaf8" onchange="setPaperColor(this.value)"></div>
+        <div class="prop-row"><span class="prop-label">Color texto</span><input type="color" id="ink-color" class="prop-input" value="#0f0f0f" onchange="setInkColor(this.value)"></div>
+        <div class="prop-row"><span class="prop-label">Tema rápido</span><select class="prop-input" id="theme-select" onchange="applyTheme(this.value)"><option value="light">Claro (defecto)</option><option value="sepia">Sepia</option><option value="dark">Oscuro</option></select></div>
+      </div>
+    </div>
+  </div>
+  <div id="canvas">
+    <!-- La primera página se genera con JS -->
+  </div>
+</div>
+<script>
+// ========== FUNCIONES DE EDICIÓN Y GESTIÓN (idénticas a la versión anterior que funcionaba, solo ajustamos creación de página para evitar conflictos de padding) ==========
+let pageCount = 1;
+let sectionCount = 4;
+let autoSaveTimer = null;
+let isPreview = false;
+
+function getNewPageHTML(pageNumber) {
+  const inst = document.getElementById('prop-inst').value;
+  const ver = document.getElementById('prop-ver').value;
+  const dateElem = document.getElementById('prop-date').value;
+  let dateStr = new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  if (dateElem) {
+    const d = new Date(dateElem + 'T12:00:00');
+    dateStr = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  }
+  const metaId = 'KR-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+  return `
+    <div class="page-inner" id="page-${pageNumber}-inner">
+      <div class="report-header">
+        <div>
+          <div class="report-title" contenteditable="true">INFORME<br>BIOINFORMÁTICO</div>
+          <div class="report-subtitle" contenteditable="true">Análisis de dianas comunes de miRNAs</div>
+        </div>
+        <div class="report-meta">
+          <div class="meta-id">${metaId}</div>
+          <div class="meta-date">${dateStr}</div>
+          <div class="meta-inst">${inst}</div>
+          <div class="meta-ver">v${ver}</div>
+        </div>
+      </div>
+      <div class="report-section" id="sec-new-${sectionCount+1}">
+        <div class="section-heading" contenteditable="true"><span class="s-num">${romanize(sectionCount+1)}.</span> Nueva sección en esta página</div>
+        <div class="editable-block" contenteditable="true" data-placeholder="Escriba el contenido..."></div>
+        <div class="section-actions"><button class="section-act-btn danger" onclick="removeSection('sec-new-${sectionCount+1}')">✕</button></div>
+      </div>
+      <button class="add-section-btn" onclick="addNewSection()">+ Agregar nueva sección</button>
+    </div>
+    <div class="page-footer"><span>KENRYU Bioinformatics</span><span class="page-num">${pageNumber}</span></div>
+  `;
+}
+
+function initFirstPage() {
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = '';
+  const firstPage = document.createElement('div');
+  firstPage.className = 'a4-page';
+  firstPage.id = 'page-1';
+  firstPage.innerHTML = `
+    <div class="page-inner" id="page-1-inner">
+      <div class="report-header">
+        <div><div class="report-title" contenteditable="true">INFORME<br>BIOINFORMÁTICO</div><div class="report-subtitle" contenteditable="true">Análisis de dianas comunes de miRNAs</div></div>
+        <div class="report-meta"><div class="meta-id" id="meta-id">KR-DEMO01</div><div id="meta-date">Mayo 2026</div><div id="meta-inst">Universidad</div><div id="meta-ver">v1.0</div></div>
+      </div>
+      <div class="report-section" id="sec-1"><div class="section-heading"><span class="s-num">I.</span> Síntesis de investigación bioinformática</div><div class="editable-block" contenteditable="true"><p>El presente análisis identificó <strong>5 genes diana consenso</strong> (ABCA1, KPNA3, SCN1A, SNTB2, TSC22D2) sometidos a regulación post-transcripcional simultánea por las familias de miRNAs analizadas: <em>hsa-miR-106b-5p, hsa-miR-144-3p, hsa-miR-33a-5p, hsa-miR-33b-5p y hsa-miR-758-3p</em>.</p><p>Se observa una convergencia epigenética significativa hacia fenotipos cardiovasculares y neurológicos, con especial énfasis en rutas de metabolismo lipídico (ABC transporters, KEGG 2021), transporte nucleocitoplasmático y excitabilidad neuronal mediada por canales iónicos.</p></div><div class="section-actions"><button class="section-act-btn" onclick="moveSection('sec-1','up')">↑</button><button class="section-act-btn" onclick="moveSection('sec-1','down')">↓</button><button class="section-act-btn danger" onclick="removeSection('sec-1')">✕</button></div></div>
+      <div class="report-section" id="sec-2"><div class="section-heading"><span class="s-num">II.</span> Resumen del análisis genómico</div><div class="editable-block" contenteditable="true"><p><strong>miRNAs analizados:</strong> hsa-miR-33a-5p, hsa-miR-144-3p, hsa-miR-758-3p, hsa-miR-106b-5p, hsa-miR-33b-5p<br><strong>Organismo:</strong> Homo sapiens [GN: hsa]<br><strong>Fuente de datos:</strong> TargetScanHuman v8.0 + miRTarBase<br><strong>Genes diana comunes:</strong> 5 biomarcadores de alta confianza</p></div><div class="section-actions"><button class="section-act-btn" onclick="moveSection('sec-2','up')">↑</button><button class="section-act-btn" onclick="moveSection('sec-2','down')">↓</button><button class="section-act-btn danger" onclick="removeSection('sec-2')">✕</button></div></div>
+      <div class="report-section" id="sec-3"><div class="section-heading"><span class="s-num">III.</span> Panel de biomarcadores core</div><table class="bio-table" id="bio-table"><thead><tr><th>Gen core</th><th>Sistema afectado</th><th>Relevancia patológica</th><th>Confianza</th></tr></thead><tbody id="bio-tbody"><tr><td><span class="gene-tag">ABCA1</span></td><td>Cardiovascular / Metabólico</td><td><span class="disease-tag">Síndrome de Tangier</span><span class="disease-tag">Aterosclerosis</span></td><td><div class="confidence-bar"><div class="conf-fill"><div class="conf-fill-inner" style="width:92%"></div></div><span class="conf-label">92%</span></div></td></tr>
+      <tr><td><span class="gene-tag">SCN1A</span></td><td>Neurológico</td><td><span class="disease-tag">Síndrome de Dravet</span></td><td><div class="confidence-bar"><div class="conf-fill"><div class="conf-fill-inner" style="width:88%"></div></div><span class="conf-label">88%</span></div></td></tr>
+      <tr><td><span class="gene-tag">SNTB2</span></td><td>Cardiovascular / Muscular</td><td><span class="disease-tag">Cardiomiopatía</span><span class="disease-tag">Distrofia muscular</span></td><td><div class="confidence-bar"><div class="conf-fill"><div class="conf-fill-inner" style="width:75%"></div></div><span class="conf-label">75%</span></div></td></tr>
+      <tr><td><span class="gene-tag">KPNA3</span></td><td>Inmunológico / Celular</td><td><span class="disease-tag">Transporte nuclear alterado</span></td><td><div class="confidence-bar"><div class="conf-fill"><div class="conf-fill-inner" style="width:70%"></div></div><span class="conf-label">70%</span></div></td></tr>
+      <tr><td><span class="gene-tag">TSC22D2</span></td><td>Sistémico / Oncológico</td><td><span class="disease-tag">Regulación ciclo celular</span></td><td><div class="confidence-bar"><div class="conf-fill"><div class="conf-fill-inner" style="width:65%"></div></div><span class="conf-label">65%</span></div></td></tr>
+      </tbody></table><button class="add-section-btn" onclick="addTableRow()">+ Agregar gen</button><div class="section-actions"><button class="section-act-btn" onclick="moveSection('sec-3','up')">↑</button><button class="section-act-btn" onclick="moveSection('sec-3','down')">↓</button></div></div>
+      <div class="report-section" id="sec-4"><div class="section-heading"><span class="s-num">IV.</span> Traducción patológica detallada</div><div class="gene-block"><div class="gene-block-name">ABCA1</div><div class="gene-block-type">Transportador ABC · Metabolismo lipídico</div><div class="gene-block-text" contenteditable="true">Actúa como transportador de eflujo de colesterol y fosfolípidos. En tejidos periféricos y hepatocitos, bombea colesterol libre hacia apolipoproteína A-I no lipidada, iniciando la formación de HDL naciente. Este proceso es fundamental para el transporte inverso del colesterol y la prevención de la aterosclerosis.</div><div class="gene-pmid">Evidencia: <a href="https://pubmed.ncbi.nlm.nih.gov/12386087" target="_blank">PMID: 12386087</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/28196965" target="_blank">PMID: 28196965</a></div></div><div class="gene-block"><div class="gene-block-name">SCN1A</div><div class="gene-block-type">Canal Na⁺ · Excitabilidad neuronal</div><div class="gene-block-text" contenteditable="true">Codifica la subunidad alfa del canal de sodio voltaje-dependiente, crucial para la generación y propagación del potencial de acción en neuronas inhibitorias GABAérgicas. Mutaciones con pérdida de función conducen al Síndrome de Dravet, una epilepsia severa de inicio infantil con farmacorresistencia alta.</div><div class="gene-pmid">Evidencia: <a href="https://pubmed.ncbi.nlm.nih.gov/11373615" target="_blank">PMID: 11373615</a></div></div><div class="section-actions"><button class="section-act-btn" onclick="moveSection('sec-4','up')">↑</button><button class="section-act-btn" onclick="moveSection('sec-4','down')">↓</button></div></div>
+      <button class="add-section-btn" onclick="addNewSection()">+ Agregar nueva sección</button>
+    </div>
+    <div class="page-footer"><span>KENRYU Bioinformatics</span><span class="page-num">1</span></div>
+  `;
+  canvas.appendChild(firstPage);
+  updateOutline();
+}
+
+function createNewPage() {
+  pageCount++;
+  const newPageDiv = document.createElement('div');
+  newPageDiv.className = 'a4-page';
+  newPageDiv.id = `page-${pageCount}`;
+  newPageDiv.innerHTML = getNewPageHTML(pageCount);
+  document.getElementById('canvas').appendChild(newPageDiv);
+  newPageDiv.scrollIntoView({ behavior: 'smooth' });
+  updateOutline();
+  scheduleAutoSave();
+}
+
+// ========== RESTO DE FUNCIONES (fmt, setFontSize, updateMeta, etc.) exactamente igual que en la versión anterior funcional ==========
+// (Se incluyen para completitud; son idénticas al código previo)
+function fmt(cmd) { document.execCommand(cmd, false, null); }
+function setFontSize(size) {
+  document.execCommand('fontSize', false, '7');
+  document.querySelectorAll('font[size="7"]').forEach(el => { el.removeAttribute('size'); el.style.fontSize = size; });
+}
+function updateMeta() {
+  const inst = document.getElementById('prop-inst').value;
+  const ver = document.getElementById('prop-ver').value;
+  const date = document.getElementById('prop-date').value;
+  document.querySelectorAll('.meta-inst').forEach(el => el.innerText = inst);
+  document.querySelectorAll('.meta-ver').forEach(el => el.innerText = 'v' + ver);
+  if (date) {
+    const d = new Date(date + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    document.querySelectorAll('.meta-date').forEach(el => el.innerText = dateStr);
+  }
+  if (document.getElementById('meta-inst')) document.getElementById('meta-inst').innerText = inst;
+  if (document.getElementById('meta-ver')) document.getElementById('meta-ver').innerText = 'v' + ver;
+  if (document.getElementById('meta-date') && date) {
+    const d = new Date(date + 'T12:00:00');
+    document.getElementById('meta-date').innerText = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  }
+}
+function setAccent(color, light) { document.documentElement.style.setProperty('--accent', color); document.documentElement.style.setProperty('--accent-light', light); savePrefs(); }
+function setBodyFont(font) { document.querySelectorAll('.editable-block, .gene-block-text').forEach(el => el.style.fontFamily = font); localStorage.setItem('bodyFont', font); }
+function setPaperColor(color) { document.documentElement.style.setProperty('--paper', color); document.documentElement.style.setProperty('--page-bg', color); localStorage.setItem('paperColor', color); }
+function setInkColor(color) { document.documentElement.style.setProperty('--ink', color); localStorage.setItem('inkColor', color); }
+function applyTheme(theme) {
+  if (theme === 'light') { setPaperColor('#fafaf8'); setInkColor('#0f0f0f'); document.getElementById('paper-color').value='#fafaf8'; document.getElementById('ink-color').value='#0f0f0f'; }
+  else if (theme === 'sepia') { setPaperColor('#f9f4e8'); setInkColor('#3b2a1f'); document.getElementById('paper-color').value='#f9f4e8'; document.getElementById('ink-color').value='#3b2a1f'; }
+  else if (theme === 'dark') { setPaperColor('#2d2d2d'); setInkColor('#e0e0e0'); document.getElementById('paper-color').value='#2d2d2d'; document.getElementById('ink-color').value='#e0e0e0'; }
+  localStorage.setItem('theme', theme);
+}
+function savePrefs() { localStorage.setItem('accent', document.documentElement.style.getPropertyValue('--accent')); localStorage.setItem('accentLight', document.documentElement.style.getPropertyValue('--accent-light')); }
+function loadPrefs() {
+  const p = localStorage.getItem('paperColor'); const i = localStorage.getItem('inkColor'); const t = localStorage.getItem('theme');
+  const a = localStorage.getItem('accent'); const al = localStorage.getItem('accentLight'); const bf = localStorage.getItem('bodyFont');
+  if (t) applyTheme(t); if (p) setPaperColor(p); if (i) setInkColor(i);
+  if (a && al) { document.documentElement.style.setProperty('--accent', a); document.documentElement.style.setProperty('--accent-light', al); }
+  if (bf) setBodyFont(bf);
+}
+function switchPanel(name) { ['outline','insert','props'].forEach(p=>{ document.getElementById('panel-'+p).style.display = p===name?'block':'none'; }); if (name==='outline') updateOutline(); }
+function updateOutline() {
+  const list = document.getElementById('outline-list');
+  const sections = document.querySelectorAll('.report-section');
+  list.innerHTML = '';
+  sections.forEach((sec, i) => {
+    const heading = sec.querySelector('.section-heading');
+    let text = heading ? heading.innerText.trim() : ('Sección '+(i+1));
+    const div = document.createElement('div'); div.className='outline-item'; div.innerHTML = `<span style="margin-right:6px;color:#888;">${i+1}</span> ${text}`;
+    div.onclick = () => sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    list.appendChild(div);
+  });
+  const allText = document.getElementById('canvas').innerText || '';
+  const words = allText.trim().split(/\s+/).filter(w=>w.length>0).length;
+  const chars = allText.replace(/\s/g,'').length;
+  document.getElementById('doc-stats').innerHTML = `Páginas: ${pageCount}<br>Secciones: ${sections.length}<br>Palabras: ${words}<br>Caracteres: ${chars}`;
+}
+function insertBlock(type) {
+  const canvas = document.getElementById('canvas');
+  const lastPage = canvas.querySelector('.a4-page:last-of-type .page-inner');
+  const addBtn = lastPage.querySelector('.add-section-btn');
+  let html = '';
+  if (type === 'note') html = `<div class="report-section note-block" id="sec-${++sectionCount}"><div class="editable-block" contenteditable="true" data-placeholder="Escriba su nota aquí..."></div><div class="section-actions"><button class="section-act-btn danger" onclick="removeSection('sec-${sectionCount}')">✕</button></div></div>`;
+  else if (type === 'quote') html = `<div class="report-section" id="sec-${++sectionCount}"><div class="quote-block editable-block" contenteditable="true">Texto de la cita...</div><div class="section-actions"><button class="section-act-btn danger" onclick="removeSection('sec-${sectionCount}')">✕</button></div></div>`;
+  else if (type === 'gene') html = `<div class="report-section" id="sec-${++sectionCount}"><div class="gene-block"><div class="gene-block-name" contenteditable="true">NOMBRE_GEN</div><div class="gene-block-type" contenteditable="true">Función</div><div class="gene-block-text" contenteditable="true">Descripción...</div><div class="gene-pmid" contenteditable="true">Evidencia: PMID</div></div><div class="section-actions"><button class="section-act-btn danger" onclick="removeSection('sec-${sectionCount}')">✕</button></div></div>`;
+  else if (type === 'divider') html = `<div class="report-section" id="sec-${++sectionCount}" style="border:none; margin:8px 0;"><hr style="border-top:1px solid var(--border); margin:8px 0;"><div class="section-actions"><button class="section-act-btn danger" onclick="removeSection('sec-${sectionCount}')">✕</button></div></div>`;
+  if (html && addBtn) { addBtn.insertAdjacentHTML('beforebegin', html); const newEl = lastPage.querySelector(`#sec-${sectionCount}`); if (newEl) { newEl.scrollIntoView({ behavior: 'smooth' }); const ed = newEl.querySelector('[contenteditable]'); if (ed) ed.focus(); } }
+  updateOutline(); scheduleAutoSave();
+}
+function insertSnippet(type) {
+  const texts = { conclusion: '<p>En conclusión, la regulación simultánea de estos genes sugiere una red regulatoria convergente con implicaciones diagnósticas y terapéuticas significativas.</p>', methods: '<p>El análisis bioinformático se realizó mediante la intersección de listas de genes diana obtenidas de TargetScanHuman v8.0. El enriquecimiento funcional se evaluó utilizando las bases de datos KEGG 2021, Gene Ontology (BP, MF, CC) y Reactome, con un umbral de significancia de p &lt; 0.05 (valor ajustado por corrección de Benjamini-Hochberg).</p>', limitations: '<p>Entre las limitaciones del presente estudio se debe considerar que las predicciones de dianas de miRNAs son computacionales y requieren validación experimental. Asimismo, la intersección estricta entre múltiples miRNAs puede excluir genes con regulación parcial igualmente relevantes.</p>', future: '<p>Como trabajo futuro se propone la validación experimental mediante qRT-PCR y Western Blot de los genes identificados, la expansión del panel de miRNAs analizados, y la integración de datos de expresión tisular (GTEx).</p>' };
+  const focused = document.querySelector('[contenteditable]:focus');
+  if (focused) { document.execCommand('insertHTML', false, texts[type] || ''); }
+  else { insertBlock('note'); setTimeout(() => { const lastNote = document.querySelector('.note-block [contenteditable]:last-of-type'); if (lastNote) lastNote.innerHTML = texts[type] || ''; }, 100); }
+}
+function addNewSection() {
+  const id = 'sec-' + (++sectionCount);
+  const html = `<div class="report-section" id="${id}"><div class="section-heading" contenteditable="true"><span class="s-num">${romanize(sectionCount)}.</span> Nueva sección</div><div class="editable-block" contenteditable="true" data-placeholder="Escriba el contenido de esta sección..."></div><div class="section-actions"><button class="section-act-btn" onclick="moveSection('${id}','up')">↑</button><button class="section-act-btn" onclick="moveSection('${id}','down')">↓</button><button class="section-act-btn danger" onclick="removeSection('${id}')">✕</button></div></div>`;
+  const addBtn = document.querySelector('#page-' + pageCount + '-inner .add-section-btn');
+  if (addBtn) { addBtn.insertAdjacentHTML('beforebegin', html); const newEl = document.getElementById(id); if (newEl) { const ed = newEl.querySelector('.editable-block'); if (ed) ed.focus(); newEl.scrollIntoView({ behavior: 'smooth' }); } }
+  updateOutline(); scheduleAutoSave();
+}
+function moveSection(id, dir) {
+  const el = document.getElementById(id); if (!el) return;
+  if (dir === 'up' && el.previousElementSibling && !el.previousElementSibling.classList.contains('report-header')) el.parentNode.insertBefore(el, el.previousElementSibling);
+  else if (dir === 'down' && el.nextElementSibling && !el.nextElementSibling.classList.contains('add-section-btn')) el.parentNode.insertBefore(el.nextElementSibling, el);
+  updateOutline();
+}
+function removeSection(id) { const el = document.getElementById(id); if (el && confirm('¿Eliminar esta sección?')) { el.remove(); updateOutline(); } }
+function addTableRow() {
+  const tbody = document.getElementById('bio-tbody'); if (!tbody) return;
+  const row = document.createElement('tr');
+  row.innerHTML = `<td><span class="gene-tag" contenteditable="true">GEN</span></td><td contenteditable="true">Sistema</td><td contenteditable="true"><span class="disease-tag">Enfermedad</span></td><td><div class="confidence-bar"><div class="conf-fill"><div class="conf-fill-inner" style="width:50%"></div></div><span class="conf-label">50%</span></div></td>`;
+  tbody.appendChild(row);
+  row.querySelector('[contenteditable]').focus();
+}
+function addPage() { createNewPage(); }
+function togglePreview() { isPreview = !isPreview; document.body.classList.toggle('preview-mode', isPreview); const btn = document.getElementById('preview-btn'); btn.classList.toggle('active', isPreview); btn.textContent = isPreview ? '✏️ Editar' : '👁 Vista previa'; }
+function exportText() { const text = document.getElementById('canvas').innerText; const blob = new Blob([text], {type:'text/plain'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Informe_KENRYU.txt'; a.click(); }
+function exportMarkdown() {
+  let md = '# Informe KENRYU\n\n';
+  document.querySelectorAll('.report-section').forEach(sec => {
+    const heading = sec.querySelector('.section-heading'); if (heading) md += `## ${heading.innerText}\n\n`;
+    const geneBlocks = sec.querySelectorAll('.gene-block');
+    geneBlocks.forEach(gb => { const name = gb.querySelector('.gene-block-name')?.innerText||''; const text = gb.querySelector('.gene-block-text')?.innerText||''; md += `### ${name}\n\n${text}\n\n`; });
+    const editable = sec.querySelector('.editable-block:not(.gene-block-text)'); if (editable && !sec.querySelector('.gene-block')) md += `${editable.innerText}\n\n`;
+  });
+  const blob = new Blob([md], {type:'text/markdown'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Informe_KENRYU.md'; a.click();
+}
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => { try { localStorage.setItem('kenryu_report_draft', document.getElementById('canvas').innerHTML); const status = document.getElementById('save-status'); status.innerHTML = '💾 Guardado'; setTimeout(() => status.innerHTML = '💾 Auto', 1500); } catch(e) {} }, 1200);
+}
+function loadDraft() { const saved = localStorage.getItem('kenryu_report_draft'); if (saved && confirm('Restaurar borrador?')) { document.getElementById('canvas').innerHTML = saved; const pages = document.querySelectorAll('.a4-page'); pageCount = pages.length; const sections = document.querySelectorAll('.report-section'); sectionCount = sections.length; updateOutline(); } }
+function romanize(n) { const map = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']]; return map.reduce((acc,[v,r]) => { while (n >= v) { acc += r; n -= v; } return acc; }, ''); }
+function genId() { return 'KR-' + Math.random().toString(36).substr(2,7).toUpperCase(); }
+
+document.addEventListener('DOMContentLoaded', () => {
+  initFirstPage();
+  document.getElementById('meta-id').innerText = genId();
+  document.getElementById('prop-date').valueAsDate = new Date();
+  updateMeta();
+  loadPrefs();
+  loadDraft();
+  document.getElementById('canvas').addEventListener('input', () => { scheduleAutoSave(); updateOutline(); });
+  document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); window.print(); } if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); scheduleAutoSave(); } });
+  const observer = new MutationObserver(() => updateOutline()); observer.observe(document.getElementById('canvas'), { childList: true, subtree: true, characterData: true });
+});
+</script>
+</body>
+</html>

@@ -8,6 +8,9 @@ from pathlib import Path
 from typing import List, Optional, Dict
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib_venn import venn2, venn3
 import base64
 from io import BytesIO
 import httpx
@@ -22,6 +25,7 @@ logger = logging.getLogger(__name__)
 # Definición de Modelos
 class AnalysisRequest(BaseModel):
     mirnas: List[str]
+    mode: str = "strict"
 
 app = FastAPI(title="KENRYU API - Cesar Manzo")
 
@@ -140,27 +144,40 @@ def find_targets_flexible(query: str):
     """Búsqueda ultra-flexible para microRNAs de TargetScan."""
     query = query.lower().replace('hsa-', '').strip()
     
-    # 1. Intento exacto (ej. mir-33a-5p)
     if query in TARGETSCAN_DB: return TARGETSCAN_DB[query], query
     
-    # 2. Intento sin sufijo member (ej. mir-33a-5p -> mir-33-5p)
-    base_no_member = re.sub(r'([a-z])', '', query) # Esto es muy agresivo, mejor manual
-    
-    # Intento 2: mir-33a-5p -> mir-33-5p
     m1 = re.sub(r'([0-9]+)[a-z]', r'\1', query)
     if m1 in TARGETSCAN_DB: return TARGETSCAN_DB[m1], m1
     
-    # Intento 3: mir-33a-5p -> mir-33
     m2 = query.split('-')
     if len(m2) > 1:
         m2_str = f"{m2[0]}-{re.sub(r'[a-z]', '', m2[1])}"
         if m2_str in TARGETSCAN_DB: return TARGETSCAN_DB[m2_str], m2_str
-        
-        # mir-33
         m3_str = f"{m2[0]}-{m2[1]}"
         if m3_str in TARGETSCAN_DB: return TARGETSCAN_DB[m3_str], m3_str
 
     return None, None
+
+def create_viz(gene_sets, mirnas):
+    """Genera Diagrama de Venn real en Base64."""
+    plt.style.use('dark_background')
+    fig, ax = plt.subplots(figsize=(6, 5))
+    try:
+        if len(gene_sets) == 2:
+            venn2(gene_sets, set_labels=mirnas[:2])
+        elif len(gene_sets) == 3:
+            venn3(gene_sets, set_labels=mirnas[:3])
+        else:
+            ax.axis('off')
+            ax.text(0.5, 0.5, f"Análisis de {len(mirnas)} miRNAs\nConvergencia detectada", ha='center', color='white', fontsize=12)
+    except:
+        ax.axis('off')
+        ax.text(0.5, 0.5, "Visualización simplificada", ha='center', color='white')
+    
+    buf = BytesIO()
+    plt.savefig(buf, format='png', transparent=True, bbox_inches='tight', dpi=150)
+    plt.close()
+    return base64.b64encode(buf.getvalue()).decode()
 
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):
@@ -174,13 +191,27 @@ async def analyze(req: AnalysisRequest):
         targets, db_name = find_targets_flexible(m)
         if targets:
             gene_sets.append(set(targets))
-            found_names.append(f"{m} (as {db_name})")
+            found_names.append(m)
     
     if not gene_sets:
-        return {"common_genes": [], "logs": "No se encontraron resultados reales en TargetScan."}
+        return {"common_genes": [], "logs": "No se encontraron resultados reales."}
     
-    common = set.intersection(*gene_sets)
+    # Lógica de Consenso Dinámica
+    if req.mode == "strict":
+        common = set.intersection(*gene_sets)
+    elif req.mode == "n-1" and len(gene_sets) > 1:
+        all_genes = set.union(*gene_sets)
+        common = {g for g in all_genes if sum(g in s for s in gene_sets) >= len(gene_sets)-1}
+    elif req.mode == "n-2" and len(gene_sets) > 2:
+        all_genes = set.union(*gene_sets)
+        common = {g for g in all_genes if sum(g in s for s in gene_sets) >= len(gene_sets)-2}
+    else:
+        common = set.intersection(*gene_sets)
+        
     sorted_common = sorted(list(common))
+    
+    # Generar Visualización
+    venn_b64 = create_viz(gene_sets, req.mirnas)
     
     async with httpx.AsyncClient() as client:
         tasks = [get_detailed_gene_info(g, client) for g in sorted_common[:15]]
@@ -194,12 +225,15 @@ async def analyze(req: AnalysisRequest):
         "found_mirnas": found_names,
         "gene_details": gene_details,
         "scientific_synthesis": synthesis,
-        "report_references": report_refs
+        "report_references": report_refs,
+        "venn_plot": venn_b64,
+        "volcano_plot": None,
+        "ppi_plot": None
     }
 
 @app.get("/")
 async def root():
-    return {"status": "READY" if TARGETSCAN_DB else "DATA_MISSING", "author": "Cesar Manzo"}
+    return {"status": "READY" if TARGETSCAN_DB else "DATA_MISSING", "author": "Cesar Manzo", "records": len(TARGETSCAN_DB)}
 
 @app.on_event("startup")
 async def startup_event():
