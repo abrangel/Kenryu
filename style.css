@@ -158,3 +158,25 @@ textarea, select { width: 100%; background: var(--code-bg); border: 1px solid va
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); color: var(--text-dim); font-size: 0.7rem; }
 .data-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+
+/* Estilos de Botones de Exportación */
+.btn-export {
+    background: #238636;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.btn-export:hover { background: #2ea043; }
+
+.vs-code-theme {
+    background-color: var(--bg-dark);
+}
