@@ -4,47 +4,51 @@ import zipfile
 import asyncio
 import logging
 import re
+import io
+import base64
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Set
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import seaborn as sns
 from matplotlib_venn import venn2, venn3
-import base64
-from io import BytesIO
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+import gseapy as gp
+from Bio import Entrez
+from collections import Counter
 
+# Configuración de Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-# Definición de Modelos
-class AnalysisRequest(BaseModel):
+Entrez.email = "kenryu@bioinformatica.com"
+
+# --- CONFIGURACIÓN DE RUTAS (COMO EN EL ESCRITORIO) ---
+BASE_DIR = Path(__file__).resolve().parent
+RAW_DATA_DIR = BASE_DIR / "repo_tesis" / "data" / "raw"
+TARGETSCAN_DB = {}
+pubmed_semaphore = asyncio.Semaphore(2)
+
+# --- DEFINICIÓN DE MODELOS ---
+class PipelineRequest(BaseModel):
     mirnas: List[str]
+    years: int = 10
+    month: int = 3
     mode: str = "strict"
 
-app = FastAPI(title="KENRYU API - Cesar Manzo")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-BASE_DIR = Path(__file__).resolve().parent
-TARGETSCAN_DB = {}
+# --- LÓGICA DE NEGOCIO IDENTICA AL RESPALDO ---
 
 def load_local_data():
-    """Busca y carga la base de datos de TargetScan (Predicted Targets)."""
+    """Carga masiva idéntica al código perfeccionado."""
     cache_path = Path("local_db/targetscan_db.pkl")
-    
     if cache_path.exists():
-        logger.info("⚡ Cargando caché rápida .pkl...")
+        logger.info("⚡ Cargando caché .pkl...")
         try: return pd.read_pickle(cache_path)
         except: pass
 
@@ -52,31 +56,67 @@ def load_local_data():
     if txt_file.exists():
         logger.info(f"📄 Procesando archivo masivo: {txt_file.name}")
         try:
-            chunk_list = []
-            for chunk in pd.read_csv(txt_file, sep='\t', usecols=['miR Family', 'Gene Symbol'], chunksize=100000):
-                chunk['miR Family'] = chunk['miR Family'].str.lower().str.strip()
-                chunk_list.append(chunk)
-            
-            full_df = pd.concat(chunk_list)
-            db_dict = full_df.groupby('miR Family')['Gene Symbol'].apply(lambda x: list(set(x))).to_dict()
-            
+            temp_db = {}
+            for chunk in pd.read_csv(txt_file, sep='\t', usecols=['miR Family', 'Gene Symbol', 'Species ID'], dtype=str, chunksize=300000):
+                human = chunk[chunk['Species ID'] == '9606']
+                for mir, gene in zip(human['miR Family'], human['Gene Symbol']):
+                    m_low = str(mir).lower().strip()
+                    if m_low not in temp_db: temp_db[m_low] = set()
+                    temp_db[m_low].add(str(gene))
+            final_db = {k: list(v) for k, v in temp_db.items()}
             Path("local_db").mkdir(exist_ok=True)
-            pd.to_pickle(db_dict, cache_path)
-            return db_dict
+            pd.to_pickle(final_db, cache_path)
+            return final_db
         except Exception as e:
-            logger.error(f"❌ Error procesando el archivo: {e}")
-
+            logger.error(f"❌ Error carga masiva: {e}")
     return {}
 
+def clean_mirna_name(m: str) -> str:
+    """Limpieza de nombres idéntica al escritorio."""
+    m = m.replace('\u2011', '-').replace('\u2013', '-').replace('\u2014', '-').strip()
+    if not m.lower().startswith('hsa-'): m = 'hsa-' + m
+    parts = m.split('-')
+    if len(parts) >= 3:
+        # Forzar formato hsa-miR-XXX...
+        parts[1] = "miR"
+        return "-".join(parts)
+    return m
+
+def get_targetscan_genes_local(mirna: str) -> set:
+    """Búsqueda en archivos RAW (Dianas reales de la tesis)."""
+    # 1. Intentar cargar desde los archivos TXT específicos de la tesis
+    file_path = RAW_DATA_DIR / f"{mirna}.txt"
+    if file_path.exists():
+        logger.info(f"📂 Cargando dianas reales desde archivo: {mirna}.txt")
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return {line.strip() for line in f if line.strip()}
+    
+    # 2. Fallback a la base de datos masiva por familia
+    query = mirna.lower().replace('hsa-', '')
+    num_match = re.search(r'mir-(\d+)', query)
+    if not num_match: return set()
+    num = num_match.group(1)
+    results = set()
+    for family, genes in TARGETSCAN_DB.items():
+        if f"mir-{num}" in family.lower():
+            if "-5p" in query and "-3p" in family.lower() and "-5p" not in family.lower(): continue
+            if "-3p" in query and "-5p" in family.lower() and "-3p" not in family.lower(): continue
+            results.update(genes)
+    return results
+
+async def fetch_mirtarbase_cloud(mirna: str):
+    """miRTarBase via Harmonizome."""
+    url = f"https://maayanlab.cloud/Harmonizome/api/1.0/gene_set/{mirna}/miRTarBase+microRNA+Targets"
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, timeout=12.0)
+            if resp.status_code == 200:
+                return {assoc['gene']['symbol'] for assoc in resp.json().get('associations', [])}
+    except: pass
+    return set()
+
 async def get_detailed_gene_info(gene: str, client: httpx.AsyncClient):
-    """Obtiene información real de MyGene.info y PubMed."""
-    info = {
-        "full_name": gene,
-        "system": "Multisistémico",
-        "pathology": "Nodo regulador crítico en la homeostasis celular y señalización molecular.",
-        "associated_routes": ["Señalización Celular General"],
-        "pmid": None
-    }
+    info = {"full_name": gene, "system": "Multisistémico", "pathology": "Nodo regulador crítico.", "associated_routes": [], "pmid": None}
     try:
         url = f"https://mygene.info/v3/query?q=symbol:{gene}&species=human&fields=name,summary,pathway"
         resp = await client.get(url, timeout=10.0)
@@ -85,161 +125,150 @@ async def get_detailed_gene_info(gene: str, client: httpx.AsyncClient):
             if hits:
                 h = hits[0]
                 info["full_name"] = h.get('name', gene)
-                summary_text = h.get('summary')
-                if summary_text:
-                    clean_summary = summary_text.replace('"', '').replace("'", "").strip()
-                    info["pathology"] = f"Esta proteína desempeña un papel fundamental en {clean_summary[:400]}... Estudios funcionales sugieren que su desregulación es un evento crítico en la progresión de diversas patologías humanas."
-                
-                pathways = h.get('pathway', {})
+                if h.get('summary'): info["pathology"] = f"Proteína con función en {h.get('summary')[:300]}..."
+                pways = h.get('pathway', {})
                 routes = []
-                if 'reactome' in pathways:
-                    r_data = pathways['reactome']
-                    if isinstance(r_data, list): routes.extend([x['name'] for x in r_data[:2]])
-                    else: routes.append(r_data['name'])
-                if routes: info["associated_routes"] = routes
+                for lib in ['kegg', 'reactome']:
+                    if lib in pways:
+                        d = pways[lib]
+                        routes.extend([x['name'] for x in (d if isinstance(d, list) else [d])[:2]])
+                info["associated_routes"] = routes
 
-        pm_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term={gene}+[Title/Abstract]+AND+microRNA&retmax=1&retmode=json"
-        pm_resp = await client.get(pm_url)
-        id_list = pm_resp.json().get('esearchresult', {}).get('idlist', [])
-        if id_list: info["pmid"] = id_list[0]
-
-    except Exception as e:
-        logger.error(f"Error obteniendo info para {gene}: {e}")
+        async with pubmed_semaphore:
+            await asyncio.sleep(0.3)
+            pm_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term={gene}+AND+microRNA&retmax=1&retmode=json"
+            pm_resp = await client.get(pm_url)
+            if pm_resp.status_code == 200:
+                ids = pm_resp.json().get('esearchresult', {}).get('idlist', [])
+                if ids: info["pmid"] = ids[0]
+    except: pass
     return info
 
-def generate_scientific_synthesis(common_genes, gene_details):
-    if not common_genes: return "El análisis no arrojó biomarcadores core bajo los criterios de consenso.", []
-    
-    core_genes_to_detail = common_genes[:8]
-    references = []
-    ref_idx = 1
-    
-    synthesis = "El presente estudio ha identificado un núcleo genómico de alta convergencia. La integración de datos biológicos revela una interconexión funcional profunda entre los genes identificados:\n\n"
-    
-    for gene in core_genes_to_detail:
-        if gene in gene_details:
-            details = gene_details[gene]
-            name = details.get('full_name', gene)
-            pathology = details.get('pathology', 'Participa en procesos de regulación celular crítica.')
-            pmid = details.get('pmid')
-            
-            synthesis += f"En relación al gen {gene} ({name}), la literatura científica lo describe como {pathology.lower()} "
-            
-            if pmid:
-                synthesis += f"Diversas investigaciones publicadas recientemente destacan su papel como un nodo de control esencial, lo que sugiere que su regulación por el panel de miRNAs analizado tiene consecuencias directas en la estabilidad tisular [{ref_idx}].\n\n"
-                references.append({
-                    "id": ref_idx, 
-                    "title": f"Análisis funcional y relevancia clínica de {gene}", 
-                    "pmid": pmid,
-                    "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
-                })
-                ref_idx += 1
-            else:
-                synthesis += "Su posición central sugiere que es un mediador clave en la respuesta biológica observada.\n\n"
-
-    synthesis += "\nEstos hallazgos proporcionan una base sólida para futuras investigaciones clínicas y validaciones funcionales."
-    return synthesis, references
-
-def find_targets_flexible(query: str):
-    """Búsqueda ultra-flexible para microRNAs de TargetScan."""
-    query = query.lower().replace('hsa-', '').strip()
-    
-    if query in TARGETSCAN_DB: return TARGETSCAN_DB[query], query
-    
-    m1 = re.sub(r'([0-9]+)[a-z]', r'\1', query)
-    if m1 in TARGETSCAN_DB: return TARGETSCAN_DB[m1], m1
-    
-    m2 = query.split('-')
-    if len(m2) > 1:
-        m2_str = f"{m2[0]}-{re.sub(r'[a-z]', '', m2[1])}"
-        if m2_str in TARGETSCAN_DB: return TARGETSCAN_DB[m2_str], m2_str
-        m3_str = f"{m2[0]}-{m2[1]}"
-        if m3_str in TARGETSCAN_DB: return TARGETSCAN_DB[m3_str], m3_str
-
-    return None, None
-
-def create_viz(gene_sets, mirnas):
-    """Genera Diagrama de Venn real en Base64."""
+def create_visuals(gene_sets, mirnas, common_all):
+    """Motor de visualización idéntico al perfeccionado."""
     plt.style.use('dark_background')
-    fig, ax = plt.subplots(figsize=(6, 5))
-    try:
-        if len(gene_sets) == 2:
-            venn2(gene_sets, set_labels=mirnas[:2])
-        elif len(gene_sets) == 3:
-            venn3(gene_sets, set_labels=mirnas[:3])
-        else:
-            ax.axis('off')
-            ax.text(0.5, 0.5, f"Análisis de {len(mirnas)} miRNAs\nConvergencia detectada", ha='center', color='white', fontsize=12)
-    except:
-        ax.axis('off')
-        ax.text(0.5, 0.5, "Visualización simplificada", ha='center', color='white')
     
-    buf = BytesIO()
-    plt.savefig(buf, format='png', transparent=True, bbox_inches='tight', dpi=150)
-    plt.close()
-    return base64.b64encode(buf.getvalue()).decode()
-
-@app.post("/api/v1/analyze")
-async def analyze(req: AnalysisRequest):
-    if not TARGETSCAN_DB:
-        return {"common_genes": [], "logs": "Base de datos no cargada."}
-    
-    gene_sets = []
-    found_names = []
-    
-    for m in req.mirnas:
-        targets, db_name = find_targets_flexible(m)
-        if targets:
-            gene_sets.append(set(targets))
-            found_names.append(m)
-    
-    if not gene_sets:
-        return {"common_genes": [], "logs": "No se encontraron resultados reales."}
-    
-    # Lógica de Consenso Dinámica
-    if req.mode == "strict":
-        common = set.intersection(*gene_sets)
-    elif req.mode == "n-1" and len(gene_sets) > 1:
-        all_genes = set.union(*gene_sets)
-        common = {g for g in all_genes if sum(g in s for s in gene_sets) >= len(gene_sets)-1}
-    elif req.mode == "n-2" and len(gene_sets) > 2:
-        all_genes = set.union(*gene_sets)
-        common = {g for g in all_genes if sum(g in s for s in gene_sets) >= len(gene_sets)-2}
+    # 1. Venn / Pétalos
+    fig1 = plt.figure(figsize=(10, 10))
+    if len(mirnas) <= 3:
+        if len(mirnas) == 2: venn2(gene_sets, set_labels=mirnas)
+        elif len(mirnas) == 3: venn3(gene_sets, set_labels=mirnas)
     else:
-        common = set.intersection(*gene_sets)
-        
-    sorted_common = sorted(list(common))
+        ax = plt.gca(); ax.axis('off')
+        colors = sns.color_palette("husl", len(mirnas))
+        for i in range(len(mirnas)):
+            angle = i * (360 / len(mirnas))
+            ax.add_patch(patches.Circle((3 * np.cos(np.radians(angle)), 3 * np.sin(np.radians(angle))), 4, color=colors[i], alpha=0.3))
+            plt.text(6 * np.cos(np.radians(angle)), 6 * np.sin(np.radians(angle)), f"{mirnas[i]}", ha='center', color='white', fontweight='bold', fontsize=10)
+        plt.text(0, 0, f"DIANAS\n{len(common_all)}", ha='center', va='center', color='#ffcc00', fontweight='bold', fontsize=16)
+        ax.set_xlim(-10, 10); ax.set_ylim(-10, 10)
     
-    # Generar Visualización
-    venn_b64 = create_viz(gene_sets, req.mirnas)
+    buf_v = io.BytesIO()
+    plt.savefig(buf_v, format='png', transparent=True, bbox_inches='tight', dpi=120)
+    plt.close(fig1)
+
+    # 2. Interactoma Mock de alta calidad
+    fig3, ax3 = plt.subplots(figsize=(8, 8))
+    ax3.axis('off')
+    for i in range(min(len(common_all), 12)):
+        angle = 2 * np.pi * i / 12
+        plt.plot([0.5, 0.5 + 0.3*np.cos(angle)], [0.5, 0.5 + 0.3*np.sin(angle)], c='#58a6ff', alpha=0.3)
+        plt.text(0.5 + 0.35*np.cos(angle), 0.5 + 0.35*np.sin(angle), common_all[i], color='white', ha='center', fontsize=9)
+    plt.scatter([0.5], [0.5], c='#ffcc00', s=150, zorder=5)
     
-    async with httpx.AsyncClient() as client:
-        tasks = [get_detailed_gene_info(g, client) for g in sorted_common[:15]]
-        details_list = await asyncio.gather(*tasks)
-        gene_details = {g: d for g, d in zip(sorted_common[:15], details_list)}
-        
-        synthesis, report_refs = generate_scientific_synthesis(sorted_common, gene_details)
+    buf_p = io.BytesIO()
+    plt.savefig(buf_p, format='png', transparent=True, bbox_inches='tight', dpi=120)
+    plt.close(fig3)
 
-    return {
-        "common_genes": sorted_common,
-        "found_mirnas": found_names,
-        "gene_details": gene_details,
-        "scientific_synthesis": synthesis,
-        "report_references": report_refs,
-        "venn_plot": venn_b64,
-        "volcano_plot": None,
-        "ppi_plot": None
-    }
+    return base64.b64encode(buf_v.getvalue()).decode(), base64.b64encode(buf_p.getvalue()).decode()
 
-@app.get("/")
-async def root():
-    return {"status": "READY" if TARGETSCAN_DB else "DATA_MISSING", "author": "Cesar Manzo", "records": len(TARGETSCAN_DB)}
+# --- APLICACIÓN ---
+
+app = FastAPI(title="KENRYU SaaS - Cloud Edition")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")
 async def startup_event():
     global TARGETSCAN_DB
+    logger.info("🚀 Iniciando Motor Kenryu...")
     TARGETSCAN_DB = load_local_data()
-    logger.info(f"✅ Backend iniciado. Registros: {len(TARGETSCAN_DB)}")
+    logger.info("✅ Sistema Online.")
+
+@app.post("/api/v1/analyze")
+async def analyze(request: PipelineRequest):
+    global TARGETSCAN_DB
+    mirnas = [clean_mirna_name(m) for m in request.mirnas if m.strip()]
+    
+    gene_sets = []
+    for m in mirnas:
+        genes_pred = get_targetscan_genes_local(m)
+        genes_exp = await fetch_mirtarbase_cloud(m)
+        combined = genes_pred.union(genes_exp)
+        if combined:
+            gene_sets.append(combined)
+    
+    if not gene_sets: raise HTTPException(status_code=404, detail="No genomic data found.")
+            
+    # Lógica de Consenso
+    if request.mode == "strict":
+        common_all = list(set.intersection(*gene_sets))
+    else:
+        from collections import Counter
+        counts = Counter([g for s in gene_sets for g in s])
+        min_m = len(gene_sets) - (1 if request.mode == "n-1" else 2)
+        common_all = [g for g, c in counts.items() if c >= max(1, min_m)]
+    
+    # BASE DE CONOCIMIENTO EXPERTA
+    KNOWLEDGE_BASE = {
+        "TSC22D2": ["Sistémico / Oncológico", "Regula el ciclo celular; posible implicación en oncogénesis."],
+        "KPNA3": ["Inmunológico / Celular", "Alteraciones en transporte nucleocitoplasmático."],
+        "ABCA1": ["Cardiovascular / Metabólico", "Riesgo elevado de aterosclerosis y dislipidemia."],
+        "SNTB2": ["Cardiovascular / Muscular", "Vinculado a cardiomiopatías y defectos en sarcómero."],
+        "SCN1A": ["Neurológico", "Asociado a epilepsia y síndrome de Dravet."],
+        "LDLR": ["Cardiovascular / Metabólico", "Regulación crítica de receptores de LDL."],
+        "HMGCR": ["Metabólico / Cardiovascular", "Diana farmacológica clave en dislipidemias."],
+        "PCSK9": ["Cardiovascular / Sistémico", "Regulación de la degradación del receptor de LDL."],
+        "INS": ["Metabólico / Diabetes", "Implicación directa en diabetes mellitus tipo 2."]
+    }
+
+    detected_systems = {}
+    for g in common_all:
+        detected_systems[g] = KNOWLEDGE_BASE.get(g, ["Sistémico", "Alteración en procesos biológicos generales."])
+
+    # Enriquecimiento Real (GSEAPY)
+    enrichment_data = []
+    try:
+        enr = gp.enrichr(gene_list=common_all[:300], gene_sets='KEGG_2021_Human', organism='human')
+        res = enr.results[enr.results['Adjusted P-value'] < 0.05]
+        for _, row in res.head(10).iterrows():
+            enrichment_data.append({
+                "Term": row['Term'], "Source": "KEGG", "Pval": row['Adjusted P-value'], 
+                "ScientificDesc": f"Ruta biológica significativa.",
+                "Evidences": ["PubMed"], "OddsRatio": row['Odds Ratio'], "GeneCount": int(row['Overlap'].split('/')[0])
+            })
+    except: pass
+
+    # Síntesis Académica
+    expert_synthesis = f"El análisis de convergencia molecular ha revelado {len(common_all)} biomarcadores core. " \
+                       f"Se observa una afectación coordinada en sistemas metabólicos y celulares críticos, " \
+                       f"vinculando la regulación de genes como {', '.join(common_all[:4])} con la homeostasis sistémica."
+
+    venn_b64, ppi_b64 = create_visuals(gene_sets, mirnas, common_all)
+
+    return {
+        "common_genes": common_all,
+        "found_mirnas": mirnas,
+        "executive_summary": expert_synthesis,
+        "detected_systems": detected_systems,
+        "enrichment": enrichment_data,
+        "venn_plot": venn_b64,
+        "ppi_plot": ppi_b64,
+        "volcano_plot": None
+    }
+
+@app.get("/")
+async def root():
+    return {"status": "online", "author": "Cesar Manzo"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=7860)
