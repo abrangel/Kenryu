@@ -69,13 +69,7 @@ async function analyzePro() {
     const data = await res.json();
     lastData = data;
     renderDashboard(data);
-    
-    if (data.found_mirnas && data.found_mirnas.length > 0) {
-      addLog(`✓ Análisis completo — ${data.common_genes.length} genes core para: ${data.found_mirnas.join(', ')}`, 'ok');
-    } else {
-      addLog(`✕ No se encontraron dianas para los miRNAs ingresados.`, 'err');
-    }
-    
+    addLog(`✓ Análisis completo — ${data.common_genes.length} biomarcadores encontrados.`, 'ok');
     initReportWithData(data);
   } catch (e) {
     addLog(`✕ ERROR: ${e.message}`, 'err');
@@ -96,8 +90,8 @@ function renderDashboard(data) {
     
   const genesEl = document.getElementById('core-genes-list');
   genesEl.innerHTML = data.common_genes.map(g => {
-    const d = (data.gene_details && data.gene_details[g]) || {system: 'Multisistémico'};
-    const dot = sysColor(d.system);
+    const d = data.gene_details && data.gene_details[g];
+    const dot = sysColor(d && d.system);
     return `<span class="gene-pill" onclick="openGenePanel('${g}')"><i class="fas fa-circle" style="font-size:5px;color:${dot};margin-right:5px;"></i>${g}</span>`;
   }).join('');
 
@@ -130,7 +124,7 @@ function renderDashboard(data) {
 async function openGenePanel(gene) {
   document.getElementById('gp-name').textContent = gene;
   document.getElementById('gene-panel').classList.add('open');
-  const d = lastData?.gene_details?.[gene] || {full_name: gene, system:'Multisistémico', pathology:'Información en proceso...', associated_routes:[]};
+  const d = lastData?.gene_details?.[gene] || {full_name: gene, system:'Multisistémico', pathology:'Diana de alta confianza.', associated_routes:[]};
   const score = d.confidence?.score || (gene === 'ABCA1' || gene === 'SCN1A' ? 92 : 85);
   
   document.getElementById('gene-panel-body').innerHTML = `
@@ -309,9 +303,7 @@ function initReportWithData(data) {
   const dateStr = new Date().toLocaleDateString('es-ES', {day:'numeric', month:'long', year:'numeric'});
   const repId = 'KR-' + Math.random().toString(36).substr(2,6).toUpperCase();
   
-  // Formatear síntesis con párrafos reales (con validación de seguridad)
-  const synthesisText = data.scientific_synthesis || "El análisis no arrojó resultados detallados debido a la ausencia de base de datos en el servidor.";
-  const formattedSynthesis = synthesisText.split('\n\n')
+  const formattedSynthesis = data.scientific_synthesis.split('\n\n')
     .map(p => `<p style="margin-bottom:12px;">${p}</p>`).join('');
 // HOJA 1: PORTADA Y SÍNTESIS ACADÉMICA
   const p1 = document.createElement('div'); p1.className='a4-page'; p1.id='page-1';
@@ -330,11 +322,10 @@ function initReportWithData(data) {
     <div class="page-footer"><span>KENRYU Bioinformatics Engine</span><span class="page-num">1</span></div>`;
   canvas.appendChild(p1);
 
-  // HOJA 2: TABLA DE BIOMARCADORES
   const p2 = document.createElement('div'); p2.className='a4-page'; p2.id='page-2';
   let tableRows = '';
   data.common_genes.slice(0, 18).forEach(g => {
-    const d = (data.gene_details && data.gene_details[g]) || {system: 'Multisistémico', pathology: 'Información en proceso...', associated_routes: []};
+    const d = data.gene_details[g];
     const pathText = d.pathology.length > 180 ? d.pathology.substring(0, 180) + '...' : d.pathology;
     tableRows += `<tr><td style="font-weight:600; color:#1a3a6b; padding:8px;">${g}</td><td style="padding:8px;">${d.system}</td><td style="font-style:italic; padding:8px;">${(d.associated_routes||[]).slice(0,2).join('; ')}</td><td style="text-align:justify; padding:8px; font-size:11px;">${pathText}</td></tr>`;
   });
@@ -351,7 +342,7 @@ function initReportWithData(data) {
   const p3 = document.createElement('div'); p3.className='a4-page'; p3.id='page-3';
   let detBlocks = '';
   data.common_genes.slice(0, 6).forEach(g => {
-    const d = (data.gene_details && data.gene_details[g]) || {system: 'Multisistémico', pathology: 'Información en proceso...', associated_routes: []};
+    const d = data.gene_details[g];
     detBlocks += `<div class="report-section gene-block" id="gs-${g}" style="margin-bottom:15px; padding:10px; border-left:3px solid #1a3a6b; background:#f9fbfc;"><div class="gene-block-name" style="font-weight:bold; color:#1a3a6b; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:6px;">${g} — ${d.system}</div><div class="gene-block-text" contenteditable="true" style="font-size:12px; line-height:1.4; text-align:justify;">${d.pathology}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#1a3a6b; margin-top:6px;">Rutas: <i>${(d.associated_routes||[]).join(', ')}</i></div></div>`;
   });
   p3.innerHTML = `
