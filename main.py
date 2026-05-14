@@ -33,7 +33,7 @@ class AnalysisRequest(BaseModel):
 BASE_DIR = Path(__file__).resolve().parent
 RAW_DATA_DIR = BASE_DIR
 TARGETSCAN_DB = {}
-pubmed_semaphore = asyncio.Semaphore(2)
+pubmed_semaphore = asyncio.Semaphore(3)
 TRANS_CACHE = {}
 
 async def translate_to_spanish(text: str, client: httpx.AsyncClient) -> str:
@@ -274,31 +274,47 @@ async def fetch_mirtarbase(mirna: str) -> set:
 async def get_pubmed_evidence(term: str, years: int, client: httpx.AsyncClient):
     # Limpiar el término para una búsqueda más efectiva
     clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)', '', term).strip()
-    if not clean or len(clean) < 4: return []
+    if not clean or len(clean) < 3: return []
     
     start_year = datetime.datetime.now().year - years
-    # Query más flexible
-    query = f'({clean}) AND ("{start_year}"[Date - Publication] : "3000"[Date - Publication]) AND human[Organism]'
+    # Query balanceada: busca en título/resumen para mayor probabilidad de éxito
+    query = f'("{clean}"[Title/Abstract]) AND ("{start_year}"[Date - Publication] : "3000"[Date - Publication]) AND human[Organism]'
     
-    try:
-        async with pubmed_semaphore:
-            r = await client.get(
-                "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-                params={"db": "pubmed", "term": query, "retmax": 1, "retmode": "json"}, timeout=12.0)
-            ids = r.json().get("esearchresult", {}).get("idlist", [])
-        
-        if not ids: return []
-        
-        pid = ids[0]
-        async with pubmed_semaphore:
-            s = await client.get(
-                "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
-                params={"db": "pubmed", "id": pid, "retmode": "json"}, timeout=12.0)
-            art = s.json().get("result", {}).get(pid, {})
-        
-        return [{"title": art.get("title", "Estudio genómico"), "id": pid}]
-    except:
-        return []
+    for attempt in range(2): # Reintento simple
+        try:
+            async with pubmed_semaphore:
+                r = await client.get(
+                    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+                    params={"db": "pubmed", "term": query, "retmax": 1, "retmode": "json"}, 
+                    timeout=10.0)
+                if r.status_code != 200: continue
+                
+                data = r.json()
+                ids = data.get("esearchresult", {}).get("idlist", [])
+            
+            if not ids: 
+                # Si no hay resultados con la query estricta, probar una más laxa
+                if attempt == 0:
+                    query = f'({clean}) AND human[Organism]'
+                    continue
+                return []
+            
+            pid = ids[0]
+            async with pubmed_semaphore:
+                s = await client.get(
+                    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+                    params={"db": "pubmed", "id": pid, "retmode": "json"}, 
+                    timeout=10.0)
+                if s.status_code != 200: return []
+                
+                sum_data = s.json()
+                art = sum_data.get("result", {}).get(pid, {})
+            
+            return [{"title": art.get("title", "Estudio genómico"), "id": pid}]
+        except Exception as e:
+            if attempt == 1: logger.warning(f"Error PubMed para '{term}': {e}")
+            await asyncio.sleep(0.5)
+    return []
 
 # ── DETALLES DE GEN ───────────────────────────────────────────────────────────
 SYSTEM_MAP = {
@@ -757,7 +773,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex="https://.*\.hf\.space", # Soporte dinámico para subdominios de Hugging Face
+    allow_origin_regex=r"https://.*\.hf\.space", # Soporte dinámico para subdominios de Hugging Face
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
@@ -875,14 +891,24 @@ async def analyze(req: AnalysisRequest):
 
     # ── ENRIQUECIMIENTO FUNCIONAL ─────────────────────────────────────────────
     enrichment_results = []
-    async with httpx.AsyncClient(timeout=35.0) as client:
+    async with httpx.AsyncClient(timeout=45.0) as client:
         try:
-            enr = gp.enrichr(gene_list=sorted_common[:300],
-                             gene_sets=['GO_Biological_Process_2023', 'Reactome_Pathways_2024', 
-                                        'WikiPathways_2019_Human', 'KEGG_2021_Human'],
-                             organism='human')
-            # Balancear resultados por fuente para asegurar representación de KEGG y Reactome
-            all_results = enr.results[enr.results['Adjusted P-value'] < 0.25].sort_values('Adjusted P-value')
+            logger.info(f"🧪 Iniciando GSEApy para {len(sorted_common[:300])} genes...")
+            # gp.enrichr es síncrono, lo corremos en un hilo para no bloquear el loop async
+            enr = await asyncio.to_thread(
+                gp.enrichr,
+                gene_list=sorted_common[:300],
+                gene_sets=['GO_Biological_Process_2023', 'Reactome_Pathways_2024', 
+                           'WikiPathways_2019_Human', 'KEGG_2021_Human'],
+                organism='human'
+            )
+            
+            if enr.results.empty:
+                logger.warning("⚠️ GSEApy no devolvió resultados.")
+                all_results = pd.DataFrame()
+            else:
+                all_results = enr.results[enr.results['Adjusted P-value'] < 0.25].sort_values('Adjusted P-value')
+            
             top_frames = []
             sources_to_balance = [
                 "GO_Biological_Process_2023",
@@ -891,48 +917,55 @@ async def analyze(req: AnalysisRequest):
                 "KEGG_2021_Human"
             ]
             
-            for src in sources_to_balance:
-                subset = all_results[all_results['Gene_set'] == src].head(5)
-                if not subset.empty:
-                    top_frames.append(subset)
+            if not all_results.empty:
+                for src in sources_to_balance:
+                    subset = all_results[all_results['Gene_set'] == src].head(8)
+                    if not subset.empty:
+                        top_frames.append(subset)
             
             if top_frames:
                 top = pd.concat(top_frames)
+            elif not all_results.empty:
+                top = all_results.head(20)
             else:
-                top = all_results.head(15)
+                top = pd.DataFrame()
 
-            # Procesamiento en PARALELO para PubMed y Traducción
-            async def process_row(row):
-                term = row['Term']
-                pval = row['Adjusted P-value']
-                gs = str(row['Gene_set']).strip().lower()
-                
-                # Fetch PubMed y Traducción simultáneamente
-                pubmed_task = get_pubmed_evidence(term, req.years, client)
-                trans_task = translate_to_spanish(term, client)
-                
-                pubmed, trans_term = await asyncio.gather(pubmed_task, trans_task)
-                
-                source_label = "Base de datos"
-                if "kegg" in gs: source_label = "KEGG"
-                elif "reactome" in gs: source_label = "Reactome"
-                elif "wikipathways" in gs: source_label = "WikiPathways"
-                elif "go_biological" in gs: source_label = "GO"
-                
-                return {
-                    "Term": trans_term,
-                    "Source": source_label,
-                    "Pval": float(pval),
-                    "ScientificDesc": f"Ruta identificada con alta significancia (p={pval:.2e}).",
-                    "Evidence": pubmed[0] if pubmed else None,
-                    "Evidences": [a['id'] for a in pubmed]
-                }
+            if not top.empty:
+                # Procesamiento en PARALELO para PubMed y Traducción
+                async def process_row(row):
+                    term = row['Term']
+                    pval = row['Adjusted P-value']
+                    gs = str(row['Gene_set']).strip().lower()
+                    
+                    try:
+                        pubmed_task = get_pubmed_evidence(term, req.years, client)
+                        trans_task = translate_to_spanish(term, client)
+                        pubmed, trans_term = await asyncio.gather(pubmed_task, trans_task)
+                    except:
+                        pubmed, trans_term = [], term
+                    
+                    source_label = "Base de datos"
+                    if "kegg" in gs: source_label = "KEGG"
+                    elif "reactome" in gs: source_label = "Reactome"
+                    elif "wikipathways" in gs: source_label = "WikiPathways"
+                    elif "go_biological" in gs: source_label = "GO"
+                    
+                    return {
+                        "Term": trans_term,
+                        "Source": source_label,
+                        "Pval": float(pval),
+                        "ScientificDesc": f"Ruta identificada con alta significancia (p={pval:.2e}).",
+                        "Evidence": pubmed[0] if pubmed else None,
+                        "Evidences": [a['id'] for a in pubmed]
+                    }
 
-            tasks = [process_row(row) for _, row in top.iterrows()]
-            enrichment_results = await asyncio.gather(*tasks)
+                tasks = [process_row(row) for _, row in top.iterrows()]
+                enrichment_results = await asyncio.gather(*tasks)
+            else:
+                logger.warning("🔬 No se encontraron rutas significativas (Adj P < 0.25)")
 
         except Exception as e:
-            logger.error(f"Error enriquecimiento: {e}")
+            logger.error(f"❌ Error crítico enriquecimiento: {e}")
 
     # ── GRÁFICOS ──────────────────────────────────────────────────────────────
     v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, sorted_common)

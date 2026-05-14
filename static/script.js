@@ -82,46 +82,60 @@ async function analyzePro() {
 }
 
 function renderDashboard(data) {
-  document.getElementById('results-grid').style.display = 'grid';
-  document.getElementById('gene-count-badge').textContent = `${data.common_genes.length} genes`;
+  try {
+    document.getElementById('results-grid').style.display = 'grid';
+    document.getElementById('gene-count-badge').textContent = `${data.common_genes ? data.common_genes.length : 0} genes`;
 
-  const sysColor = s => (s && (s.includes('Cardio') || s.includes('Metab'))) ? 'var(--red)'
-    : (s && s.includes('Neuro')) ? 'var(--blue)'
-    : (s && s.includes('Onco')) ? 'var(--gold)'
-    : 'var(--teal)';
-    
-  const genesEl = document.getElementById('core-genes-list');
-  genesEl.innerHTML = data.common_genes.map(g => {
-    const d = data.gene_details && data.gene_details[g];
-    const dot = sysColor(d && d.system);
-    return `<span class="gene-pill" onclick="openGenePanel('${g}')"><i class="fas fa-circle" style="font-size:5px;color:${dot};margin-right:5px;"></i>${g}</span>`;
-  }).join('');
-
-  const setImg = (id, b64) => {
-    const el = document.getElementById(id);
-    if (el) {
-      if (b64) el.innerHTML = `<img src="data:image/png;base64,${b64}">`;
-      else el.innerHTML = '<div style="color:var(--text-faint); font-size:11px; padding:40px;">Imagen no disponible.</div>';
+    const sysColor = s => (s && (s.includes('Cardio') || s.includes('Metab'))) ? 'var(--red)'
+      : (s && s.includes('Neuro')) ? 'var(--blue)'
+      : (s && s.includes('Onco')) ? 'var(--gold)'
+      : 'var(--teal)';
+      
+    const genesEl = document.getElementById('core-genes-list');
+    if (genesEl && data.common_genes) {
+      genesEl.innerHTML = data.common_genes.map(g => {
+        const d = data.gene_details && data.gene_details[g];
+        const dot = sysColor(d && d.system);
+        return `<span class="gene-pill" onclick="openGenePanel('${g}')"><i class="fas fa-circle" style="font-size:5px;color:${dot};margin-right:5px;"></i>${g}</span>`;
+      }).join('');
     }
-  };
-  setImg('venn-container', data.venn_plot);
-  setImg('volcano-container', data.volcano_plot);
-  setImg('ppi-container', data.ppi_plot);
 
-  const enEl = document.getElementById('enrich-container');
-  if (data.enrichment && data.enrichment.length) {
-    let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p-valor</th><th>PubMed</th></tr></thead><tbody>`;
-    data.enrichment.slice(0, 15).forEach(item => {
-      const pLink = item.Evidence ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${item.Evidence.id}" target="_blank" style="color:var(--gold); font-family:var(--font-mono); font-size:10px;">PMID: ${item.Evidence.id}</a>` : '—';
-      html += `<tr><td><span style="font-weight:500;">${item.Term}</span><br><small style="color:var(--text-dim);">${item.ScientificDesc}</small></td>
-        <td><span class="source-tag">${item.Source}</span></td>
-        <td><span style="font-family:var(--font-mono); font-size:11px;">${typeof item.Pval === 'number' ? item.Pval.toExponential(2) : item.Pval}</span></td>
-        <td>${pLink}</td></tr>`;
-    });
-    html += '</tbody></table>';
-    enEl.innerHTML = html;
-  } else {
-    enEl.innerHTML = '<div style="color:var(--text-faint); padding:20px; text-align:center;">Sin resultados de enriquecimiento funcional.</div>';
+    const setImg = (id, b64) => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (b64) el.innerHTML = `<img src="data:image/png;base64,${b64}">`;
+        else el.innerHTML = '<div style="color:var(--text-faint); font-size:11px; padding:40px;">Imagen no disponible.</div>';
+      }
+    };
+    setImg('venn-container', data.venn_plot);
+    setImg('volcano-container', data.volcano_plot);
+    setImg('ppi-container', data.ppi_plot);
+
+    const enEl = document.getElementById('enrich-container');
+    if (enEl) {
+      if (data.enrichment && data.enrichment.length) {
+        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p-valor</th><th>PubMed</th></tr></thead><tbody>`;
+        data.enrichment.forEach(item => {
+          const pvalVal = (item.Pval !== undefined && item.Pval !== null) 
+            ? (typeof item.Pval === 'number' ? item.Pval.toExponential(2) : item.Pval)
+            : '—';
+          
+          const pmid = item.Evidence?.id || item.Evidence; // Manejar objeto o ID directo
+          const pLink = pmid ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${pmid}" target="_blank" style="color:var(--gold); font-family:var(--font-mono); font-size:10px;">PMID: ${pmid}</a>` : '—';
+          
+          html += `<tr><td><span style="font-weight:500;">${item.Term || '—'}</span><br><small style="color:var(--text-dim);">${item.ScientificDesc || ''}</small></td>
+            <td><span class="source-tag">${item.Source || '—'}</span></td>
+            <td><span style="font-family:var(--font-mono); font-size:11px;">${pvalVal}</span></td>
+            <td>${pLink}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        enEl.innerHTML = html;
+      } else {
+        enEl.innerHTML = '<div style="color:var(--text-faint); padding:20px; text-align:center;">Sin resultados de enriquecimiento funcional significativo.</div>';
+      }
+    }
+  } catch (err) {
+    console.error("Error renderizando dashboard:", err);
   }
 }
 
@@ -415,7 +429,7 @@ function initReportWithData(data) {
   const tableSec = document.createElement('div');
   tableSec.className = 'report-section force-page-break';
   let tableRows = '';
-  data.common_genes.slice(0, 18).forEach(g => {
+  data.common_genes.slice(0, 40).forEach(g => {
     const d = (data.gene_details && data.gene_details[g]) || {system:'—', associated_routes:[], pathology:'—'};
     const pathText = (d.pathology||'').length > 180 ? d.pathology.substring(0, 180) + '...' : (d.pathology||'—');
     tableRows += `<tr><td style="font-weight:600; color:#1a3a6b; padding:8px;">${g}</td><td style="padding:8px;">${d.system||'—'}</td><td style="font-style:italic; padding:8px;">${(d.associated_routes||[]).slice(0,2).join('; ')||'—'}</td><td style="text-align:justify; padding:8px; font-size:11px;">${pathText}</td></tr>`;
@@ -431,7 +445,7 @@ function initReportWithData(data) {
   detailHead.innerHTML = `<div class="section-heading"><span class="s-num">III.</span> Traducción Patológica Detallada</div>`;
   tempContainer.appendChild(detailHead);
 
-  data.common_genes.slice(0, 6).forEach(g => {
+  data.common_genes.slice(0, 12).forEach(g => {
     const d = (data.gene_details && data.gene_details[g]) || {system:'—', associated_routes:[], pathology:'—'};
     const block = document.createElement('div');
     block.className = 'report-section gene-block';
