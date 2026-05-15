@@ -316,46 +316,42 @@ async def get_pubmed_evidence(term: str, years: int, client: httpx.AsyncClient):
     # Limpiar el término para una búsqueda más efectiva
     clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)', '', term).strip()
     if not clean or len(clean) < 3: return []
-    
+
     start_year = datetime.datetime.now().year - years
-    # Query balanceada con año como string explícito para NCBI
-    query = f'("{clean}"[Title/Abstract]) AND ("{str(start_year)}"[Date - Publication] : "3000"[Date - Publication]) AND human[Organism]'
-    
-    for attempt in range(2): # Reintento simple
+
+    # Estrategia de búsqueda en cascada para máxima probabilidad de éxito
+    queries = [
+        f'("{clean}"[Title/Abstract]) AND ("{str(start_year)}"[Date - Publication] : "3000"[Date - Publication]) AND human[Organism]',
+        f'({clean}) AND human[Organism]',
+        f'{clean}'
+    ]
+
+    for query in queries:
         try:
             async with pubmed_semaphore:
                 r = await client.get(
                     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
                     params={"db": "pubmed", "term": query, "retmax": 1, "retmode": "json"}, 
-                    timeout=10.0)
+                    timeout=12.0)
                 if r.status_code != 200: continue
-                
+
                 data = r.json()
                 ids = data.get("esearchresult", {}).get("idlist", [])
-            
-            if not ids: 
-                if attempt == 0:
-                    query = f'({clean}) AND human[Organism]'
-                    continue
-                return []
-            
-            pid = ids[0]
-            async with pubmed_semaphore:
-                s = await client.get(
-                    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
-                    params={"db": "pubmed", "id": pid, "retmode": "json"}, 
-                    timeout=10.0)
-                if s.status_code != 200: return []
-                
-                sum_data = s.json()
-                art = sum_data.get("result", {}).get(pid, {})
-            
-            return [{"title": art.get("title", "Estudio genómico"), "id": pid}]
-        except Exception as e:
-            if attempt == 1: logger.warning(f"Error PubMed para '{term}': {e}")
-            await asyncio.sleep(0.5)
-    return []
 
+            if ids:
+                pid = ids[0]
+                async with pubmed_semaphore:
+                    s = await client.get(
+                        "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+                        params={"db": "pubmed", "id": pid, "retmode": "json"}, 
+                        timeout=12.0)
+                    if s.status_code == 200:
+                        sum_data = s.json()
+                        art = sum_data.get("result", {}).get(pid, {})
+                        return [{"title": art.get("title", "Estudio genómico"), "id": pid}]
+        except:
+            continue
+    return []
 # ── DETALLES DE GEN ───────────────────────────────────────────────────────────
 SYSTEM_MAP = {
     "Cardiovascular": ["heart", "cardio", "vessel", "blood", "artery", "atherosclerosis", "cholesterol", "hdl", "ldl", "lipoprotein"],
@@ -990,10 +986,11 @@ async def analyze(req: AnalysisRequest):
     v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, sorted_common)
 
     # ── DETALLES DE GENES ─────────────────────────────────────────────────────
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        tasks = [get_gene_details(g, client) for g in sorted_common[:15]]
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        # Aumentar a 40 para cubrir toda la tabla del informe
+        tasks = [get_gene_details(g, client) for g in sorted_common[:40]]
         details = await asyncio.gather(*tasks)
-    gene_details = {g: d for g, d in zip(sorted_common[:15], details)}
+    gene_details = {g: d for g, d in zip(sorted_common[:40], details)}
 
     # ── REFERENCIAS ───────────────────────────────────────────────────────────
     report_references, ref_id = [], 1
