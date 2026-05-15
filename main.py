@@ -743,7 +743,7 @@ def create_visuals(gene_sets: list, mirnas: list, common_all: list):
             base64.b64encode(buf3.getvalue()).decode())
 
 # ── SÍNTESIS ACADÉMICA ────────────────────────────────────────────────────────
-def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: list, references: list) -> str:
+def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: list, references: list) -> dict:
     n = len(common)
     core_str = ", ".join(common[:6]) + ("..." if n > 6 else "")
     
@@ -754,35 +754,28 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
           f"El análisis multiplataforma ejecutado sobre {len(mirnas)} microARN(s) ({', '.join(mirnas)}) "
           f"identificó estos biomarcadores mediante intersección de TargetScan y miRTarBase.")
 
-    # 2. Detalles por Gen Core (Top 5) con Evidencia Validada
+    # 2. Detalles por Gen Core (Top 5)
     gene_paragraphs = []
     for i, g in enumerate(common[:5]):
         d = gene_details.get(g, {})
         full_name = d.get('full_name', g)
         pathology = d.get('pathology', "Nodo regulador identificado.")
-        
-        # Bloque de descripción patológica
         para = (f"En relación al gen {g} ({full_name}), la literatura científica lo describe como {pathology.lower().replace('.', '')}. "
                 f"Diversas investigaciones destacan su papel como un nodo de control esencial.")
         
-        # Bloque de Rutas Validadas/Identificadas
         evidence_list = d.get('clinical_evidence', [])
         if evidence_list:
             route_lines = []
             for ev in evidence_list:
                 route_lines.append(f"• {ev['source']} {ev['term']}: {ev['desc']} (PMID: {ev['pmid']})")
             para += "\n\nRutas biológicas validadas:\n" + "\n".join(route_lines)
-        elif d.get('associated_routes'):
-            # Para genes nuevos, listar las rutas encontradas en APIs
-            route_lines = [f"• {r}" for r in d['associated_routes']]
-            para += "\n\nRutas biológicas identificadas:\n" + "\n".join(route_lines)
-            
-        if d.get('conclusion'):
-            para += f"\n\nConclusión clínica: {d['conclusion']}"
+            if d.get('conclusion'):
+                para += f"\n\nConclusión clínica: {d['conclusion']}"
         else:
             para += f" Su regulación por el panel de miRNAs analizado tiene consecuencias directas en la estabilidad tisular [{i+1}]."
-
         gene_paragraphs.append(para)
+
+    academic_text = p1 + "\n\n" + "\n\n".join(gene_paragraphs)
 
     # 3. Contexto Funcional Global
     route_details = []
@@ -793,21 +786,20 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
                 f"respuesta adaptativa celular, integrando las señales de los genes core para mantener el equilibrio fisiológico.")
         route_details.append(para)
     
-    p_functional = "Contexto Funcional y Rutas Biológicas Globales:\n" + "\n".join(route_details)
+    functional_text = "Contexto Funcional y Rutas Biológicas Globales:\n" + "\n".join(route_details)
 
     # 4. Referencias
     ref_lines = []
     for ref in references:
         ref_lines.append(f"[{ref['id']}] {ref['title']} PubMed Evidence. {ref['url']}")
     
-    p_references = "Referencias:\n" + "\n".join(ref_lines) if ref_lines else ""
+    references_text = "Referencias:\n" + "\n".join(ref_lines) if ref_lines else ""
 
-    # Unir todo
-    full_report = p1 + "\n\n" + "\n\n".join(gene_paragraphs) + "\n\n" + p_functional
-    if p_references:
-        full_report += "\n\n" + p_references
-    
-    return full_report
+    return {
+        "academic": academic_text,
+        "functional": functional_text,
+        "references": references_text
+    }
 
 # ── FASTAPI APP ───────────────────────────────────────────────────────────────
 app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.38")
@@ -1039,13 +1031,15 @@ async def analyze(req: AnalysisRequest):
             })
             ref_id += 1
 
-    synthesis = build_synthesis(found_names, sorted_common, gene_details, enrichment_results, report_references)
+    synthesis_obj = build_synthesis(found_names, sorted_common, gene_details, enrichment_results, report_references)
 
     return {
         "common_genes": sorted_common,
         "found_mirnas": found_names,
         "gene_details": gene_details,
-        "scientific_synthesis": synthesis,
+        "scientific_synthesis": synthesis_obj["academic"],
+        "functional_context": synthesis_obj["functional"],
+        "references_text": synthesis_obj["references"],
         "enrichment": enrichment_results,
         "venn_plot": v_p,
         "volcano_plot": volc_p,
