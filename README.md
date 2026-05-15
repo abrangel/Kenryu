@@ -38,7 +38,7 @@ Consulta simultáneamente cuatro fuentes globales: **KEGG**, **Reactome**, **Wik
 
 ### 4. Motor de Traducción y Paginación
 *   **Traducción Automática Real:** Traduce dinámicamente descripciones técnicas y rutas biológicas del inglés al español mediante la API MyMemory.
-*   **Maquetación Académica:** Genera reportes en formato A4 con paginación inteligente por medición de altura, asegurando que el contenido, los gráficos y la bibliografía se distribuyan profesionalmente sin solapamientos.
+*   **Maquetación Académica:** Genera reportes en formato A4 editable y descargables en formatos PDF, txt, MD, donde se puede modificar el contenido dentro de la pestaña editor de informe al estilo de cada persona con paginación inteligente por medición de altura, asegurando que el contenido, los gráficos y la bibliografía se distribuyan profesionalmente sin solapamientos.
 
 ---
 
