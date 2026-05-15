@@ -313,32 +313,39 @@ async def direct_enrichr(gene_list: list, client: httpx.AsyncClient):
 
 # ── PUBMED ────────────────────────────────────────────────────────────────────
 async def get_pubmed_evidence(term: str, start_year: int, month: str, client: httpx.AsyncClient):
-    # Limpiar el término
-    clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)', '', term).strip()
+    # 1. Limpieza profunda del término (quitar prefijos de fuentes y códigos)
+    clean = re.sub(r'^(KEGG|Reactome|WikiPathways|GO|Base de datos):\s*', '', term, flags=re.IGNORECASE)
+    clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)', '', clean).strip()
     if not clean or len(clean) < 3: return []
-    
-    # Filtro de fecha exacto: YYYY/MM/DD
+
+    # 2. Parámetros de fecha oficiales de NCBI
     m = month if month else "01"
-    date_filter = f'("{str(start_year)}/{m}/01"[Date - Publication] : "3000"[Date - Publication])'
-    
-    # Búsqueda en cascada con persistencia de fecha
-    queries = [
-        f'("{clean}"[Title/Abstract]) AND {date_filter} AND human[Organism]',
-        f'({clean} AND microRNA) AND {date_filter} AND human[Organism]',
-        f'({clean}) AND {date_filter} AND human[Organism]',
-        f'{clean} AND {date_filter}'
+    mindate = f"{start_year}/{m}/01"
+
+    # 3. Estrategia de búsqueda en cascada
+    search_strategies = [
+        f'("{clean}"[Title/Abstract]) AND human[Organism]',
+        f'({clean} AND microRNA) AND human[Organism]',
+        f'({clean}) AND human[Organism]',
+        f'{clean}'
     ]
-    
-    for query in queries:
+
+    for query in search_strategies:
         try:
+            params = {
+                "db": "pubmed",
+                "term": query,
+                "mindate": mindate,
+                "maxdate": "3000",
+                "datetype": "pdat",
+                "retmax": 1,
+                "retmode": "json"
+            }
             async with pubmed_semaphore:
-                r = await client.get(
-                    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-                    params={"db": "pubmed", "term": query, "retmax": 1, "retmode": "json"}, 
-                    timeout=9.0)
+                r = await client.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi", params=params, timeout=10.0)
                 if r.status_code != 200: continue
                 ids = r.json().get("esearchresult", {}).get("idlist", [])
-            
+
             if ids:
                 pid = ids[0]
                 return [{"title": "Evidencia científica identificada", "id": pid}]
