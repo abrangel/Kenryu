@@ -775,9 +775,15 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
             para += f" Su regulación por el panel de miRNAs analizado tiene consecuencias directas en la estabilidad tisular [{i+1}]."
         gene_paragraphs.append(para)
 
-    academic_text = p1 + "\n\n" + "\n\n".join(gene_paragraphs)
+    # 3. Referencias Integradas (Volver a incluirlas en el bloque académico)
+    ref_lines = []
+    for ref in references:
+        ref_lines.append(f"[{ref['id']}] {ref['title']} PubMed Evidence. {ref['url']}")
+    p_references = "Referencias:\n" + "\n".join(ref_lines) if ref_lines else ""
 
-    # 3. Contexto Funcional Global
+    academic_full = p1 + "\n\n" + "\n\n".join(gene_paragraphs) + "\n\n" + p_references
+
+    # 4. Contexto Funcional (Mantenerlo separado para la nueva página)
     route_details = []
     for item in enrichment[:15]:
         term = item.get('Term', 'Ruta biológica')
@@ -785,20 +791,11 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
         para = (f"La vía de {term} ({source}) destaca por su alta significancia. Las investigaciones asocian esta ruta con la "
                 f"respuesta adaptativa celular, integrando las señales de los genes core para mantener el equilibrio fisiológico.")
         route_details.append(para)
-    
     functional_text = "Contexto Funcional y Rutas Biológicas Globales:\n" + "\n".join(route_details)
 
-    # 4. Referencias
-    ref_lines = []
-    for ref in references:
-        ref_lines.append(f"[{ref['id']}] {ref['title']} PubMed Evidence. {ref['url']}")
-    
-    references_text = "Referencias:\n" + "\n".join(ref_lines) if ref_lines else ""
-
     return {
-        "academic": academic_text,
-        "functional": functional_text,
-        "references": references_text
+        "academic": academic_full,
+        "functional": functional_text
     }
 
 # ── FASTAPI APP ───────────────────────────────────────────────────────────────
@@ -1039,7 +1036,6 @@ async def analyze(req: AnalysisRequest):
         "gene_details": gene_details,
         "scientific_synthesis": synthesis_obj["academic"],
         "functional_context": synthesis_obj["functional"],
-        "references_text": synthesis_obj["references"],
         "enrichment": enrichment_results,
         "venn_plot": v_p,
         "volcano_plot": volc_p,

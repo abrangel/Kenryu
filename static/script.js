@@ -343,7 +343,7 @@ function paginateReport(sourceElement) {
   testInner.className = 'page-inner';
   testPage.appendChild(testInner);
 
-  const maxHeight = 960; // Altura útil
+  const maxHeight = 880; // Altura útil reducida para evitar solapamiento con el pie de página
 
   const children = Array.from(sourceElement.children);
   let currentPage = createNewPage();
@@ -507,29 +507,6 @@ function initReportWithData(data) {
       pTag.innerHTML = p.replace(/\n/g, '<br>');
       tempContainer.appendChild(pTag);
     });
-  }
-
-  // 8. REFERENCIAS (DESGLOSADAS PARA PAGINACIÓN INTELIGENTE)
-  const refHead = document.createElement('div');
-  refHead.className = 'report-section force-page-break';
-  refHead.innerHTML = `<div class="section-heading"><span class="s-num">VII.</span> Referencias Bibliográficas</div>`;
-  tempContainer.appendChild(refHead);
-
-  if (data.report_references && data.report_references.length) {
-    data.report_references.forEach(ref => {
-      const url = ref.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${ref.pmid}` : (ref.url||'#');
-      const refBlock = document.createElement('div');
-      refBlock.className = 'editable-block';
-      refBlock.contentEditable = 'true';
-      refBlock.style.cssText = "margin-bottom:12px; font-size:10.5px; text-align:justify; line-height:1.4; font-family:'Spectral', serif;";
-      refBlock.innerHTML = `<span style="font-weight:bold; margin-right:6px;">[${ref.id}]</span> ${ref.title}. <i>${ref.source||'PubMed'}</i>. <a href="${url}" target="_blank" style="color:#1a3a6b; text-decoration:none; word-break:break-all;">${url}</a>`;
-      tempContainer.appendChild(refBlock);
-    });
-  } else {
-    const noRef = document.createElement('div');
-    noRef.style.cssText = "padding:20px; color:#999; font-style:italic;";
-    noRef.textContent = 'No se han generado referencias.';
-    tempContainer.appendChild(noRef);
   }
 
   // Ejecutar paginación real
