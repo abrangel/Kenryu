@@ -312,17 +312,21 @@ async def direct_enrichr(gene_list: list, client: httpx.AsyncClient):
         return pd.DataFrame()
 
 # ── PUBMED ────────────────────────────────────────────────────────────────────
-async def get_pubmed_evidence(term: str, start_year: int, client: httpx.AsyncClient):
+async def get_pubmed_evidence(term: str, start_year: int, month: str, client: httpx.AsyncClient):
     # Limpiar el término
     clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)', '', term).strip()
     if not clean or len(clean) < 3: return []
     
-    # Estrategia de búsqueda en cascada agresiva para cloud
+    # Filtro de fecha exacto: YYYY/MM/DD
+    m = month if month else "01"
+    date_filter = f'("{str(start_year)}/{m}/01"[Date - Publication] : "3000"[Date - Publication])'
+    
+    # Búsqueda en cascada con persistencia de fecha
     queries = [
-        f'("{clean}"[Title/Abstract]) AND ("{str(start_year)}"[Date - Publication] : "3000"[Date - Publication]) AND human[Organism]',
-        f'({clean} AND microRNA) AND human[Organism]',
-        f'({clean}) AND human[Organism]',
-        f'{clean}'
+        f'("{clean}"[Title/Abstract]) AND {date_filter} AND human[Organism]',
+        f'({clean} AND microRNA) AND {date_filter} AND human[Organism]',
+        f'({clean}) AND {date_filter} AND human[Organism]',
+        f'{clean} AND {date_filter}'
     ]
     
     for query in queries:
@@ -331,14 +335,13 @@ async def get_pubmed_evidence(term: str, start_year: int, client: httpx.AsyncCli
                 r = await client.get(
                     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
                     params={"db": "pubmed", "term": query, "retmax": 1, "retmode": "json"}, 
-                    timeout=8.0)
+                    timeout=9.0)
                 if r.status_code != 200: continue
-                data = r.json()
-                ids = data.get("esearchresult", {}).get("idlist", [])
+                ids = r.json().get("esearchresult", {}).get("idlist", [])
             
             if ids:
                 pid = ids[0]
-                return [{"title": "Estudio científico validado", "id": pid}]
+                return [{"title": "Evidencia científica identificada", "id": pid}]
         except:
             continue
     return []
@@ -951,12 +954,11 @@ async def analyze(req: AnalysisRequest):
                         pval = row['Adjusted P-value']
                         gs = str(row['Gene_set']).strip().lower()
                         try:
-                            pubmed_task = get_pubmed_evidence(term, req.years, client)
+                            pubmed_task = get_pubmed_evidence(term, req.years, req.month, client)
                             trans_task = translate_to_spanish(term, client)
                             pubmed, trans_term = await asyncio.gather(pubmed_task, trans_task)
                         except:
                             pubmed, trans_term = [], term
-                        
                         source_label = "GO" if "go_biological" in gs else ("KEGG" if "kegg" in gs else ("Reactome" if "reactome" in gs else ("WikiPathways" if "wikipathways" in gs else "Base de datos")))
                         return {
                             "Term": trans_term, "Source": source_label, "Pval": float(pval),
