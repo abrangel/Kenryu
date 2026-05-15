@@ -527,24 +527,6 @@ function initReportWithData(data) {
     <div class="viz-print" style="margin-top:10px; text-align:center;">${ppiImg}</div>`;
   tempContainer.appendChild(ppiSec);
 
-  // 7. CONTEXTO FUNCIONAL (NUEVA SECCIÓN INDEPENDIENTE)
-  if (data.functional_context) {
-    const funcHead = document.createElement('div');
-    funcHead.className = 'report-section force-page-break';
-    funcHead.innerHTML = `<div class="section-heading"><span class="s-num">VI.</span> Contexto Funcional y Rutas Biológicas Globales</div>`;
-    tempContainer.appendChild(funcHead);
-
-    const funcParagraphs = data.functional_context.split('\n\n');
-    funcParagraphs.forEach(p => {
-      const pTag = document.createElement('p');
-      pTag.className = 'editable-block';
-      pTag.contentEditable = 'true';
-      pTag.style.cssText = "width:100%; font-family:'Spectral', serif; line-height:1.75; font-size:13px; text-align:justify; margin-bottom:15px;";
-      pTag.innerHTML = p.replace(/\n/g, '<br>');
-      tempContainer.appendChild(pTag);
-    });
-  }
-
   // Ejecutar paginación real
   setTimeout(() => paginateReport(tempContainer), 100);
 }
