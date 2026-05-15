@@ -433,15 +433,11 @@ function initReportWithData(data) {
     tempContainer.appendChild(pTag);
   });
 
-  // 2.1 CONTEXTO FUNCIONAL (DENTRO DE SECCIÓN I PERO EN NUEVA HOJA)
+  // 2.1 CONTEXTO FUNCIONAL (DENTRO DE SECCIÓN I - SIN TÍTULO REDUNDANTE)
   if (data.functional_context) {
-    const funcHead = document.createElement('div');
-    funcHead.className = 'report-section force-page-break';
-    funcHead.innerHTML = `<div class="section-heading"><span class="s-num">I.1</span> Contexto Funcional y Rutas Biológicas Globales</div>`;
-    tempContainer.appendChild(funcHead);
-
     const funcParagraphs = data.functional_context.split('\n\n');
     funcParagraphs.forEach(p => {
+      if (p.trim() === "" || p.toLowerCase().includes("contexto funcional")) return;
       const pTag = document.createElement('p');
       pTag.className = 'editable-block';
       pTag.contentEditable = 'true';
@@ -451,21 +447,24 @@ function initReportWithData(data) {
     });
   }
 
-  // 2.2 REFERENCIAS (DENTRO DE SECCIÓN I PERO EN NUEVA HOJA)
+  // 2.2 BIBLIOGRAFÍA (SECCIÓN FINAL DE INVESTIGACIÓN)
   if (data.references_text) {
     const refHead = document.createElement('div');
     refHead.className = 'report-section force-page-break';
-    refHead.innerHTML = `<div class="section-heading"><span class="s-num">I.2</span> Referencias Científicas Estructuradas</div>`;
+    refHead.innerHTML = `<div class="section-heading"><span class="s-num">I.1</span> Bibliografía</div>`;
     tempContainer.appendChild(refHead);
 
     const refParagraphs = data.references_text.split('\n\n');
     refParagraphs.forEach(p => {
-      if (p.trim() === "") return;
+      if (p.trim() === "" || p.toLowerCase().startsWith("bibliografía") || p.toLowerCase().startsWith("referencias")) return;
       const pTag = document.createElement('p');
       pTag.className = 'editable-block';
       pTag.contentEditable = 'true';
       pTag.style.cssText = "width:100%; font-family:'Spectral', serif; line-height:1.45; font-size:11.5px; text-align:justify; margin-bottom:12px;";
-      pTag.innerHTML = p.replace(/\n/g, '<br>');
+      
+      // Asegurar que las URLs sean hipervínculos reales
+      const linkedText = p.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:#1a3a6b; text-decoration:underline;">$1</a>');
+      pTag.innerHTML = linkedText.replace(/\n/g, '<br>');
       tempContainer.appendChild(pTag);
     });
   }
