@@ -786,7 +786,7 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
 
     # 3. Contexto Funcional Global
     route_details = []
-    for item in enrichment[:5]:
+    for item in enrichment[:15]:
         term = item.get('Term', 'Ruta biológica')
         source = item.get('Source', 'Base de datos')
         para = (f"La vía de {term} ({source}) destaca por su alta significancia. Las investigaciones asocian esta ruta con la "
@@ -1023,9 +1023,9 @@ async def analyze(req: AnalysisRequest):
                 })
                 ref_id += 1
 
-    # 2. Referencias de Rutas Globales (Si queda espacio hasta 12)
+    # 2. Referencias de Rutas Globales (Si queda espacio hasta 40)
     for item in enrichment_results:
-        if ref_id > 12: break
+        if ref_id > 40: break
         if item.get("Evidence"):
             pmid = item["Evidence"]["id"]
             if any(r["pmid"] == pmid for r in report_references): continue
