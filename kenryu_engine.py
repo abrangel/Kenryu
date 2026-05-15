@@ -34,12 +34,31 @@ BASE_DIR = Path(__file__).resolve().parent
 RAW_DATA_DIR = BASE_DIR
 TARGETSCAN_DB = {}
 pubmed_semaphore = asyncio.Semaphore(3)
-TRANS_CACHE = {}
+PERSISTENT_CACHE = {"trans": {}, "pubmed": {}, "enrichr": {}}
+CACHE_FILE = Path("local_db/analysis_cache.json")
+
+def load_persistent_cache():
+    global PERSISTENT_CACHE
+    if CACHE_FILE.exists():
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                PERSISTENT_CACHE.update(json.load(f))
+            logger.info(f"💾 Caché persistente cargada ({len(PERSISTENT_CACHE['trans'])} traducciones, {len(PERSISTENT_CACHE['pubmed'])} PubMed).")
+        except Exception as e:
+            logger.warning(f"No se pudo cargar la caché: {e}")
+
+def save_persistent_cache():
+    try:
+        CACHE_FILE.parent.mkdir(exist_ok=True)
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(PERSISTENT_CACHE, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.warning(f"No se pudo guardar la caché: {e}")
 
 async def translate_to_spanish(text: str, client: httpx.AsyncClient) -> str:
-    """Traduce texto de inglés a español usando la API MyMemory (Gratuita)."""
+    """Traduce texto usando la API MyMemory con persistencia en disco."""
     if not text or len(text) < 3: return text
-    if text in TRANS_CACHE: return TRANS_CACHE[text]
+    if text in PERSISTENT_CACHE["trans"]: return PERSISTENT_CACHE["trans"][text]
     
     try:
         url = "https://api.mymemory.translated.net/get"
@@ -47,7 +66,8 @@ async def translate_to_spanish(text: str, client: httpx.AsyncClient) -> str:
         r = await client.get(url, params=params, timeout=8.0)
         if r.status_code == 200:
             trans = r.json().get("responseData", {}).get("translatedText", text)
-            TRANS_CACHE[text] = trans
+            PERSISTENT_CACHE["trans"][text] = trans
+            # Guardar periódicamente o al final
             return trans
     except Exception as e:
         logger.warning(f"Error traducción: {e}")
@@ -292,8 +312,15 @@ async def safe_pubmed_request(client: httpx.AsyncClient, url: str, params: dict,
 
 # ── ENRIQUECIMIENTO DIRECTO (BYPASS GSEApy) ──────────────────────────────────
 async def enrich_genes_direct(gene_list: list, client: httpx.AsyncClient):
-    """Llamada directa a la API de Enrichr para máxima estabilidad en cloud."""
+    """Llamada directa a la API de Enrichr con caché persistente."""
     if len(gene_list) < 3: return []
+    
+    # Crear una clave única basada en los genes (ordenados)
+    cache_key = ",".join(sorted(gene_list[:300]))
+    if cache_key in PERSISTENT_CACHE["enrichr"]:
+        logger.info("⚡ Usando resultados de enriquecimiento desde caché.")
+        return PERSISTENT_CACHE["enrichr"][cache_key]
+    
     results = []
     try:
         # 1. Subir la lista de genes
@@ -332,14 +359,20 @@ async def enrich_genes_direct(gene_list: list, client: httpx.AsyncClient):
             except: continue
         
         results.sort(key=lambda x: x["Pval"])
-        return results[:24] # Devolver top balanceado
+        final_results = results[:24]
+        PERSISTENT_CACHE["enrichr"][cache_key] = final_results
+        return final_results
     except Exception as e:
         logger.error(f"❌ Fallo Enrichr Directo: {e}")
         return []
 
 # ── PUBMED EXPERTO ────────────────────────────────────────────────────────────
 async def get_pubmed_for_term(term: str, years: int, client: httpx.AsyncClient):
-    """Query PubMed con términos simplificados y filtros oficiales para máximo recall."""
+    """Query PubMed con caché persistente y filtros oficiales."""
+    cache_key = f"{term}_{years}"
+    if cache_key in PERSISTENT_CACHE["pubmed"]:
+        return PERSISTENT_CACHE["pubmed"][cache_key]
+    
     # Limpiar el término: quitar paréntesis, IDs, texto extra de Enrichr
     clean = re.sub(r'\s*-\s*(Homo sapiens|KEGG|Reactome|WikiPathways).*$', '', term, flags=re.IGNORECASE)
     clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)|R-HSA-\d+', '', clean).strip()
@@ -366,7 +399,9 @@ async def get_pubmed_for_term(term: str, years: int, client: httpx.AsyncClient):
         if data:
             ids = data.get("esearchresult", {}).get("idlist", [])
             if ids:
-                return [{"title": "Evidencia científica identificada", "id": ids[0]}]
+                res = [{"title": "Evidencia científica identificada", "id": ids[0]}]
+                PERSISTENT_CACHE["pubmed"][cache_key] = res
+                return res
     return []
 # ── DETALLES DE GEN ───────────────────────────────────────────────────────────
 SYSTEM_MAP = {
@@ -843,11 +878,12 @@ async def health():
     return {"status": "OK", "version": "1.38",
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0}
-
 @app.on_event("startup")
 async def startup_event():
     global TARGETSCAN_DB
-    TARGETSCAN_DB = load_local_data()
+    load_persistent_cache()
+    if not TARGETSCAN_DB:
+        TARGETSCAN_DB = load_local_data()
     logger.info(f"🚀 KENRYU v1.38 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
 
 @app.post("/api/v1/analyze")
@@ -855,6 +891,9 @@ async def analyze(req: AnalysisRequest):
     global TARGETSCAN_DB
     if not TARGETSCAN_DB:
         TARGETSCAN_DB = load_local_data()
+
+    # ... resto del procesamiento ...
+
 
     mirnas = [m.strip() for m in req.mirnas if m.strip()]
     if not mirnas:
@@ -1033,6 +1072,9 @@ async def analyze(req: AnalysisRequest):
             ref_id += 1
 
     synthesis_obj = build_synthesis(found_names, sorted_common, gene_details, enrichment_results, report_references)
+
+    # Persistir descubrimientos (Traducciones, PubMed, Enriquecimiento)
+    save_persistent_cache()
 
     return {
         "common_genes": sorted_common,
