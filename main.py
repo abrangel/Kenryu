@@ -313,21 +313,24 @@ async def direct_enrichr(gene_list: list, client: httpx.AsyncClient):
 
 # ── PUBMED ────────────────────────────────────────────────────────────────────
 async def get_pubmed_evidence(term: str, start_year: int, month: str, client: httpx.AsyncClient):
-    # 1. Limpieza profunda del término (quitar prefijos de fuentes y códigos)
+    # 1. Limpieza profunda del término
     clean = re.sub(r'^(KEGG|Reactome|WikiPathways|GO|Base de datos):\s*', '', term, flags=re.IGNORECASE)
     clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)', '', clean).strip()
-    if not clean or len(clean) < 3: return []
+    if not clean or len(clean) < 3:
+        logger.warning(f"Término de búsqueda demasiado corto después de limpiar: '{term}' -> '{clean}'")
+        return []
 
     # 2. Parámetros de fecha oficiales de NCBI
     m = month if month else "01"
     mindate = f"{start_year}/{m}/01"
+    # NO establecer maxdate para un rango abierto hacia adelante
 
-    # 3. Estrategia de búsqueda en cascada
+    # 3. Estrategia de búsqueda en cascada (ajustada)
     search_strategies = [
         f'("{clean}"[Title/Abstract]) AND human[Organism]',
         f'({clean} AND microRNA) AND human[Organism]',
         f'({clean}) AND human[Organism]',
-        f'{clean}'
+        f'{clean}'  # Búsqueda más amplia como último recurso
     ]
 
     for query in search_strategies:
@@ -336,21 +339,44 @@ async def get_pubmed_evidence(term: str, start_year: int, month: str, client: ht
                 "db": "pubmed",
                 "term": query,
                 "mindate": mindate,
-                "maxdate": "3000",
                 "datetype": "pdat",
                 "retmax": 1,
                 "retmode": "json"
             }
+
+            logger.info(f"🔍 Búsqueda PubMed - Término original: '{term}' | Estrategia: {query} | Desde: {mindate}")
+
             async with pubmed_semaphore:
-                r = await client.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi", params=params, timeout=10.0)
-                if r.status_code != 200: continue
-                ids = r.json().get("esearchresult", {}).get("idlist", [])
+                r = await client.get(
+                    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+                    params=params,
+                    timeout=10.0
+                )
+
+            if r.status_code != 200:
+                logger.error(f"❌ Error HTTP {r.status_code} en PubMed: {r.text}")
+                continue
+
+            data = r.json()
+            ids = data.get("esearchresult", {}).get("idlist", [])
+            error_msg = data.get("esearchresult", {}).get("ERROR")
+
+            if error_msg:
+                logger.error(f"⚠️ Error de API PubMed: {error_msg}")
+                continue
 
             if ids:
                 pid = ids[0]
+                logger.info(f"✅ Evidencia encontrada: PubMed ID {pid} para estrategia '{query}'")
                 return [{"title": "Evidencia científica identificada", "id": pid}]
-        except:
+            else:
+                logger.info(f"ℹ️ Sin resultados para estrategia: '{query}'")
+
+        except Exception as e:
+            logger.error(f"⚠️ Excepción en búsqueda PubMed para query '{query}': {e}")
             continue
+
+    logger.warning(f"⚠️ Ninguna estrategia de búsqueda dio resultados para el término '{clean}'")
     return []
 # ── DETALLES DE GEN ───────────────────────────────────────────────────────────
 SYSTEM_MAP = {
