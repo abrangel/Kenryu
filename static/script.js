@@ -417,7 +417,7 @@ function initReportWithData(data) {
     </div>`;
   tempContainer.appendChild(cover);
 
-  // 2. SÍNTESIS (CON SALTO FORZADO AL INICIO)
+  // 2. SÍNTESIS ACADÉMICA (CON SALTO FORZADO AL INICIO)
   const synthHead = document.createElement('div');
   synthHead.className = 'report-section force-page-break';
   synthHead.innerHTML = `<div class="section-heading"><span class="s-num">I.</span> Síntesis de investigación académica</div>`;
@@ -432,6 +432,43 @@ function initReportWithData(data) {
     pTag.innerHTML = p.replace(/\n/g, '<br>');
     tempContainer.appendChild(pTag);
   });
+
+  // 2.1 CONTEXTO FUNCIONAL (DENTRO DE SECCIÓN I PERO EN NUEVA HOJA)
+  if (data.functional_context) {
+    const funcHead = document.createElement('div');
+    funcHead.className = 'report-section force-page-break';
+    funcHead.innerHTML = `<div class="section-heading"><span class="s-num">I.1</span> Contexto Funcional y Rutas Biológicas Globales</div>`;
+    tempContainer.appendChild(funcHead);
+
+    const funcParagraphs = data.functional_context.split('\n\n');
+    funcParagraphs.forEach(p => {
+      const pTag = document.createElement('p');
+      pTag.className = 'editable-block';
+      pTag.contentEditable = 'true';
+      pTag.style.cssText = "width:100%; font-family:'Spectral', serif; line-height:1.75; font-size:13px; text-align:justify; margin-bottom:15px;";
+      pTag.innerHTML = p.replace(/\n/g, '<br>');
+      tempContainer.appendChild(pTag);
+    });
+  }
+
+  // 2.2 REFERENCIAS (DENTRO DE SECCIÓN I PERO EN NUEVA HOJA)
+  if (data.references_text) {
+    const refHead = document.createElement('div');
+    refHead.className = 'report-section force-page-break';
+    refHead.innerHTML = `<div class="section-heading"><span class="s-num">I.2</span> Referencias Científicas Estructuradas</div>`;
+    tempContainer.appendChild(refHead);
+
+    const refParagraphs = data.references_text.split('\n\n');
+    refParagraphs.forEach(p => {
+      if (p.trim() === "") return;
+      const pTag = document.createElement('p');
+      pTag.className = 'editable-block';
+      pTag.contentEditable = 'true';
+      pTag.style.cssText = "width:100%; font-family:'Spectral', serif; line-height:1.45; font-size:11.5px; text-align:justify; margin-bottom:12px;";
+      pTag.innerHTML = p.replace(/\n/g, '<br>');
+      tempContainer.appendChild(pTag);
+    });
+  }
 
   // 3. TABLA (SALTO FORZADO)
   const tableSec = document.createElement('div');
