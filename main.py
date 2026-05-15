@@ -775,11 +775,11 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
             para += f" Su regulación por el panel de miRNAs analizado tiene consecuencias directas en la estabilidad tisular [{i+1}]."
         gene_paragraphs.append(para)
 
-    # 3. Referencias Integradas (Volver a incluirlas en el bloque académico)
+    # 3. Referencias Integradas (Volver a incluirlas en el bloque académico con doble salto)
     ref_lines = []
     for ref in references:
         ref_lines.append(f"[{ref['id']}] {ref['title']} PubMed Evidence. {ref['url']}")
-    p_references = "Referencias:\n" + "\n".join(ref_lines) if ref_lines else ""
+    p_references = "Referencias:\n\n" + "\n\n".join(ref_lines) if ref_lines else ""
 
     academic_full = p1 + "\n\n" + "\n\n".join(gene_paragraphs) + "\n\n" + p_references
 
