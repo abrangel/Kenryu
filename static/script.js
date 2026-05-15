@@ -482,7 +482,7 @@ function initReportWithData(data) {
     </div>`;
   tempContainer.appendChild(vizSec);
 
-  // 6. PPI Y REFERENCIAS (SALTO FORZADO PARA SEPARARLOS)
+  // 6. PPI (CON SALTO FORZADO)
   const ppiSec = document.createElement('div');
   ppiSec.className = 'report-section force-page-break';
   const ppiImg = data.ppi_plot ? `<img src="data:image/png;base64,${data.ppi_plot}" style="width:85%; max-height:400px; object-fit:contain; border:1px solid #eee; box-shadow:0 2px 4px rgba(0,0,0,0.05);">` : '<div style="padding:40px; color:#999; border:1px dashed #ccc;">Interactoma no disponible</div>';
@@ -491,19 +491,28 @@ function initReportWithData(data) {
     <div class="viz-print" style="margin-top:10px; text-align:center;">${ppiImg}</div>`;
   tempContainer.appendChild(ppiSec);
 
-  const refSec = document.createElement('div');
-  refSec.className = 'report-section force-page-break';
-  let refList = '';
+  // 7. REFERENCIAS (DESGLOSADAS PARA PAGINACIÓN INTELIGENTE)
+  const refHead = document.createElement('div');
+  refHead.className = 'report-section force-page-break';
+  refHead.innerHTML = `<div class="section-heading">Referencias Bibliográficas</div>`;
+  tempContainer.appendChild(refHead);
+
   if (data.report_references && data.report_references.length) {
     data.report_references.forEach(ref => {
       const url = ref.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${ref.pmid}` : (ref.url||'#');
-      refList += `<div style="margin-bottom:8px; font-size:10.5px; text-align:justify; line-height:1.4;"><span style="font-weight:bold; margin-right:6px;">[${ref.id}]</span> ${ref.title}. <i>${ref.source||'PubMed'}</i>. <a href="${url}" target="_blank" style="color:#1a3a6b; text-decoration:none; word-break:break-all;">${url}</a></div>`;
+      const refBlock = document.createElement('div');
+      refBlock.className = 'editable-block';
+      refBlock.contentEditable = 'true';
+      refBlock.style.cssText = "margin-bottom:12px; font-size:10.5px; text-align:justify; line-height:1.4; font-family:'Spectral', serif;";
+      refBlock.innerHTML = `<span style="font-weight:bold; margin-right:6px;">[${ref.id}]</span> ${ref.title}. <i>${ref.source||'PubMed'}</i>. <a href="${url}" target="_blank" style="color:#1a3a6b; text-decoration:none; word-break:break-all;">${url}</a>`;
+      tempContainer.appendChild(refBlock);
     });
+  } else {
+    const noRef = document.createElement('div');
+    noRef.style.cssText = "padding:20px; color:#999; font-style:italic;";
+    noRef.textContent = 'No se han generado referencias.';
+    tempContainer.appendChild(noRef);
   }
-  refSec.innerHTML = `
-    <div class="section-heading">Referencias Bibliográficas</div>
-    <div id="rep-refs-container" style="font-family:'Spectral', serif; margin-top:20px;">${refList || 'No se han generado referencias.'}</div>`;
-  tempContainer.appendChild(refSec);
 
   // Ejecutar paginación real
   setTimeout(() => paginateReport(tempContainer), 100);
