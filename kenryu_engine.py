@@ -812,6 +812,7 @@ origins = [
     "http://127.0.0.1:3001",
     "https://huggingface.co",
     "https://*.hf.space",
+    "https://abrangel.github.io",
 ]
 
 app.add_middleware(
