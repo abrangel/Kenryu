@@ -120,8 +120,14 @@ function renderDashboard(data) {
             ? (typeof item.Pval === 'number' ? item.Pval.toExponential(2) : item.Pval)
             : '—';
           
-          const pmid = item.Evidence?.id || item.Evidence; // Manejar objeto o ID directo
-          const pLink = pmid ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${pmid}" target="_blank" style="color:var(--gold); font-family:var(--font-mono); font-size:10px;">PMID: ${pmid}</a>` : '—';
+          // MÁXIMA ROBUSTEZ: Detectar ID en objeto, array o string directo
+          let pmid = null;
+          if (item.Evidence) {
+            if (Array.isArray(item.Evidence) && item.Evidence.length > 0) pmid = item.Evidence[0].id || item.Evidence[0];
+            else pmid = item.Evidence.id || item.Evidence;
+          }
+          
+          const pLink = pmid ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${pmid}" target="_blank" style="color:var(--gold); font-family:var(--font-mono); font-size:10px; font-weight:600; text-decoration:none; border-bottom:1px solid var(--gold-dim);">PMID: ${pmid}</a>` : '<span style="color:var(--text-faint); font-size:10px;">Sin evidencia</span>';
           
           html += `<tr><td><span style="font-weight:500;">${item.Term || '—'}</span><br><small style="color:var(--text-dim);">${item.ScientificDesc || ''}</small></td>
             <td><span class="source-tag">${item.Source || '—'}</span></td>
