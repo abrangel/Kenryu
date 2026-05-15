@@ -312,18 +312,16 @@ async def direct_enrichr(gene_list: list, client: httpx.AsyncClient):
         return pd.DataFrame()
 
 # ── PUBMED ────────────────────────────────────────────────────────────────────
-async def get_pubmed_evidence(term: str, years: int, client: httpx.AsyncClient):
+async def get_pubmed_evidence(term: str, start_year: int, client: httpx.AsyncClient):
     # Limpiar el término
     clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)', '', term).strip()
     if not clean or len(clean) < 3: return []
     
-    start_year = datetime.datetime.now().year - years
-    
     # Estrategia de búsqueda en cascada agresiva para cloud
     queries = [
         f'("{clean}"[Title/Abstract]) AND ("{str(start_year)}"[Date - Publication] : "3000"[Date - Publication]) AND human[Organism]',
+        f'({clean} AND microRNA) AND human[Organism]',
         f'({clean}) AND human[Organism]',
-        f'{clean} microRNA',
         f'{clean}'
     ]
     
@@ -340,7 +338,6 @@ async def get_pubmed_evidence(term: str, years: int, client: httpx.AsyncClient):
             
             if ids:
                 pid = ids[0]
-                # En lugar de summary completo, devolvemos el ID directamente para velocidad
                 return [{"title": "Estudio científico validado", "id": pid}]
         except:
             continue

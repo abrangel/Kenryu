@@ -53,25 +53,27 @@ async function analyzePro() {
   const mode = document.getElementById('consensus-mode').value;
   const startYear = document.getElementById('pubmed-years').value;
   const month = document.getElementById('pubmed-month').value;
-  const yearsToToday = new Date().getFullYear() - parseInt(startYear);
-
+  
   if (!mirnas.length) return alert("Ingrese al menos un miRNA.");
 
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analizando...';
-  addLog('Sincronizando con motor bioinformático...', 'ok');
+  addLog(`Sincronizando motor para búsqueda desde ${startYear}...`, 'ok');
 
   try {
     const res = await fetch(`${API_URL}/api/v1/analyze`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({mirnas, years: yearsToToday, month: month, mode: mode})
+      body: JSON.stringify({mirnas, years: parseInt(startYear), month: month, mode: mode})
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     const data = await res.json();
     lastData = data;
     renderDashboard(data);
-    addLog(`✓ Análisis completo — ${data.common_genes.length} biomarcadores encontrados.`, 'ok');
+    
+    const withEvidence = (data.enrichment || []).filter(e => e.Evidence).length;
+    addLog(`✓ Análisis completo — ${data.common_genes.length} biomarcadores. PubMed: ${withEvidence} evidencias encontradas.`, 'ok');
+    
     initReportWithData(data);
   } catch (e) {
     addLog(`✕ ERROR: ${e.message}`, 'err');
