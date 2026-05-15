@@ -270,113 +270,103 @@ async def fetch_mirtarbase(mirna: str) -> set:
         pass
     return set()
 
+# ── UTILIDADES DE RED RESILIENTE ─────────────────────────────────────────────
+async def safe_pubmed_request(client: httpx.AsyncClient, url: str, params: dict, retries: int = 3):
+    """Realiza peticiones a NCBI con reintentos y manejo de error 429."""
+    for attempt in range(retries):
+        try:
+            async with pubmed_semaphore:
+                r = await client.get(url, params=params, timeout=15.0)
+                if r.status_code == 200:
+                    return r.json()
+                elif r.status_code == 429:
+                    wait = (attempt + 1) * 2
+                    logger.warning(f"⚠️ PubMed 429 (Too Many Requests). Reintentando en {wait}s...")
+                    await asyncio.sleep(wait)
+                else:
+                    logger.error(f"❌ PubMed Error {r.status_code}: {r.text[:100]}")
+        except Exception as e:
+            if attempt == retries - 1: logger.error(f"❌ Fallo persistente en PubMed: {e}")
+            await asyncio.sleep(1)
+    return None
+
 # ── ENRIQUECIMIENTO DIRECTO (BYPASS GSEApy) ──────────────────────────────────
-async def direct_enrichr(gene_list: list, client: httpx.AsyncClient):
+async def enrich_genes_direct(gene_list: list, client: httpx.AsyncClient):
     """Llamada directa a la API de Enrichr para máxima estabilidad en cloud."""
-    if len(gene_list) < 3: return pd.DataFrame()
-    
+    if len(gene_list) < 3: return []
+    results = []
     try:
         # 1. Subir la lista de genes
         payload = {"list": (None, "\n".join(gene_list[:300])), "description": (None, "KENRYU Analysis")}
         r_add = await client.post("https://maayanlab.cloud/Enrichr/addList", files=payload, timeout=20.0)
-        if r_add.status_code != 200: return pd.DataFrame()
-        
+        if r_add.status_code != 200: return []
         user_list_id = r_add.json().get("userListId")
-        if not user_list_id: return pd.DataFrame()
+        if not user_list_id: return []
 
-        # 2. Consultar cada base de datos
-        all_dfs = []
-        sources = ["GO_Biological_Process_2023", "Reactome_Pathways_2024", 
-                   "WikiPathways_2019_Human", "KEGG_2021_Human"]
+        # 2. Consultar bases de datos clave
+        sources = {
+            "GO_Biological_Process_2023": "GO",
+            "Reactome_Pathways_2024": "Reactome",
+            "WikiPathways_2019_Human": "WikiPathways",
+            "KEGG_2021_Human": "KEGG"
+        }
         
-        for gs in sources:
+        for gs_full, label in sources.items():
             try:
                 r_enr = await client.get(
                     "https://maayanlab.cloud/Enrichr/enrich",
-                    params={"userListId": user_list_id, "backgroundType": gs},
+                    params={"userListId": user_list_id, "backgroundType": gs_full},
                     timeout=20.0
                 )
                 if r_enr.status_code == 200:
-                    data = r_enr.json().get(gs, [])
-                    # Estructura Enrichr: [Rank, Term, P-val, Z-score, Combined, Genes, AdjP, ...]
-                    if data:
-                        df = pd.DataFrame(data, columns=["Rank", "Term", "Pval", "Zscore", "Combined", "Genes", "Adjusted P-value", "OldP", "OldAdjP"])
-                        df["Gene_set"] = gs
-                        all_dfs.append(df)
-            except:
-                continue
+                    data = r_enr.json().get(gs_full, [])
+                    # Enrichr: [Rank, Term, P-val, Z-score, Combined, Genes, AdjP, ...]
+                    for row in data[:8]:
+                        if row[6] < 0.3: # p-adj < 0.3
+                            results.append({
+                                "Term": row[1],
+                                "Source": label,
+                                "Pval": row[6],
+                                "RawTerm": row[1]
+                            })
+            except: continue
         
-        return pd.concat(all_dfs) if all_dfs else pd.DataFrame()
+        results.sort(key=lambda x: x["Pval"])
+        return results[:24] # Devolver top balanceado
     except Exception as e:
         logger.error(f"❌ Fallo Enrichr Directo: {e}")
-        return pd.DataFrame()
-
-# ── PUBMED ────────────────────────────────────────────────────────────────────
-async def get_pubmed_evidence(term: str, start_year: int, month: str, client: httpx.AsyncClient):
-    # 1. Limpieza profunda del término
-    clean = re.sub(r'^(KEGG|Reactome|WikiPathways|GO|Base de datos):\s*', '', term, flags=re.IGNORECASE)
-    clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)', '', clean).strip()
-    if not clean or len(clean) < 3:
-        logger.warning(f"Término de búsqueda demasiado corto después de limpiar: '{term}' -> '{clean}'")
         return []
 
-    # 2. Parámetros de fecha oficiales de NCBI
-    m = month if month else "01"
-    mindate = f"{start_year}/{m}/01"
-    # NO establecer maxdate para un rango abierto hacia adelante
-
-    # 3. Estrategia de búsqueda en cascada (ajustada)
-    search_strategies = [
-        f'("{clean}"[Title/Abstract]) AND human[Organism]',
-        f'({clean} AND microRNA) AND human[Organism]',
-        f'({clean}) AND human[Organism]',
-        f'{clean}'  # Búsqueda más amplia como último recurso
+# ── PUBMED EXPERTO ────────────────────────────────────────────────────────────
+async def get_pubmed_for_term(term: str, years: int, client: httpx.AsyncClient):
+    """Query PubMed con términos simplificados y filtros oficiales para máximo recall."""
+    # Limpiar el término: quitar paréntesis, IDs, texto extra de Enrichr
+    clean = re.sub(r'\s*-\s*(Homo sapiens|KEGG|Reactome|WikiPathways).*$', '', term, flags=re.IGNORECASE)
+    clean = re.sub(r'hsa\d+|GO:\d+|\(.*?\)|R-HSA-\d+', '', clean).strip()
+    
+    # Tomar solo las palabras clave para evitar queries vacías por exceso de especificidad
+    words = clean.split()[:5]
+    simple_term = " ".join(words)
+    if len(simple_term) < 3: return []
+    
+    current_year = datetime.datetime.now().year
+    start_year = current_year - years
+    
+    url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    
+    # Estrategia de búsqueda en cascada
+    strategies = [
+        f'({simple_term}[Title/Abstract]) AND ("{start_year}"[PDAT] : "3000"[PDAT]) AND human[MH]',
+        f'({simple_term}) AND human[Organism]',
+        f'{simple_term}'
     ]
-
-    for query in search_strategies:
-        try:
-            params = {
-                "db": "pubmed",
-                "term": query,
-                "mindate": mindate,
-                "datetype": "pdat",
-                "retmax": 1,
-                "retmode": "json"
-            }
-
-            logger.info(f"🔍 Búsqueda PubMed - Término original: '{term}' | Estrategia: {query} | Desde: {mindate}")
-
-            async with pubmed_semaphore:
-                r = await client.get(
-                    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-                    params=params,
-                    timeout=10.0
-                )
-
-            if r.status_code != 200:
-                logger.error(f"❌ Error HTTP {r.status_code} en PubMed: {r.text}")
-                continue
-
-            data = r.json()
+    
+    for query in strategies:
+        data = await safe_pubmed_request(client, url, {"db": "pubmed", "term": query, "retmax": 1, "retmode": "json"})
+        if data:
             ids = data.get("esearchresult", {}).get("idlist", [])
-            error_msg = data.get("esearchresult", {}).get("ERROR")
-
-            if error_msg:
-                logger.error(f"⚠️ Error de API PubMed: {error_msg}")
-                continue
-
             if ids:
-                pid = ids[0]
-                logger.info(f"✅ Evidencia encontrada: PubMed ID {pid} para estrategia '{query}'")
-                return [{"title": "Evidencia científica identificada", "id": pid}]
-            else:
-                logger.info(f"ℹ️ Sin resultados para estrategia: '{query}'")
-
-        except Exception as e:
-            logger.error(f"⚠️ Excepción en búsqueda PubMed para query '{query}': {e}")
-            continue
-
-    logger.warning(f"⚠️ Ninguna estrategia de búsqueda dio resultados para el término '{clean}'")
+                return [{"title": "Evidencia científica identificada", "id": ids[0]}]
     return []
 # ── DETALLES DE GEN ───────────────────────────────────────────────────────────
 SYSTEM_MAP = {
@@ -951,59 +941,42 @@ async def analyze(req: AnalysisRequest):
     sorted_common = sorted(list(common))
     logger.info(f"✅ {len(sorted_common)} genes comunes identificados: {sorted_common[:10]}")
 
-    # ── ENRIQUECIMIENTO FUNCIONAL (DIRECTO PARA ESTABILIDAD) ──────────────────
+    # ── ENRIQUECIMIENTO FUNCIONAL (REESCRITO PARA ESTABILIDAD) ─────────────────
     enrichment_results = []
     gene_list_enr = sorted_common[:300]
     
     if len(gene_list_enr) >= 3:
         async with httpx.AsyncClient(timeout=45.0) as client:
             try:
-                logger.info(f"🧪 Iniciando Enriquecimiento Directo para {len(gene_list_enr)} genes...")
-                all_results = await direct_enrichr(gene_list_enr, client)
+                logger.info(f"🧪 Iniciando Enriquecimiento para {len(gene_list_enr)} genes...")
+                enrichr_terms = await enrich_genes_direct(gene_list_enr, client)
                 
-                if all_results.empty:
-                    logger.warning("⚠️ El enriquecimiento no devolvió resultados significativos.")
-                    top = pd.DataFrame()
-                else:
-                    # Filtrar por Adjusted P-value (columna 6 en la respuesta de Enrichr, mapeada en direct_enrichr)
-                    all_results = all_results[all_results['Adjusted P-value'] < 0.25].sort_values('Adjusted P-value')
-                    
-                    top_frames = []
-                    sources_to_balance = [
-                        "GO_Biological_Process_2023", "Reactome_Pathways_2024",
-                        "WikiPathways_2019_Human", "KEGG_2021_Human"
-                    ]
-                    for src in sources_to_balance:
-                        subset = all_results[all_results['Gene_set'] == src].head(8)
-                        if not subset.empty:
-                            top_frames.append(subset)
-                    
-                    top = pd.concat(top_frames) if top_frames else all_results.head(20)
-
-                if not top.empty:
+                if enrichr_terms:
                     # Procesamiento en PARALELO para PubMed y Traducción
-                    async def process_row(row):
-                        term = row['Term']
-                        pval = row['Adjusted P-value']
-                        gs = str(row['Gene_set']).strip().lower()
+                    async def process_row(term_data):
+                        term = term_data['Term']
+                        pval = term_data['Pval']
+                        gs_label = term_data['Source']
                         try:
-                            pubmed_task = get_pubmed_evidence(term, req.years, req.month, client)
+                            # Motor experto con reintentos y 429-handling
+                            pubmed_task = get_pubmed_for_term(term, req.years, client)
                             trans_task = translate_to_spanish(term, client)
                             pubmed, trans_term = await asyncio.gather(pubmed_task, trans_task)
                         except:
                             pubmed, trans_term = [], term
-                        source_label = "GO" if "go_biological" in gs else ("KEGG" if "kegg" in gs else ("Reactome" if "reactome" in gs else ("WikiPathways" if "wikipathways" in gs else "Base de datos")))
+                        
                         return {
-                            "Term": trans_term, "Source": source_label, "Pval": float(pval),
-                            "ScientificDesc": f"Ruta identificada con alta significancia (p={pval:.2e}).",
+                            "Term": trans_term, "Source": gs_label, "Pval": float(pval),
+                            "ScientificDesc": f"Ruta identificada con p-adj={pval:.4f}",
                             "Evidence": pubmed[0] if pubmed else None,
                             "Evidences": [a['id'] for a in pubmed]
                         }
-                    tasks = [process_row(row) for _, row in top.iterrows()]
+                    
+                    tasks = [process_row(t) for t in enrichr_terms]
                     enrichment_results = await asyncio.gather(*tasks)
+                    logger.info(f"✅ Enriquecimiento: {len(enrichment_results)} rutas, {sum(1 for e in enrichment_results if e['Evidence'])} con PubMed")
                 else:
-                    logger.warning("🔬 No se encontraron rutas con Adjusted P < 0.25.")
-
+                    logger.warning("🔬 No se encontraron rutas significativas.")
             except Exception as e:
                 logger.error(f"❌ Error crítico enriquecimiento: {e}")
 
