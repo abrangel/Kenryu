@@ -81,7 +81,7 @@ A diferencia de pipelines tradicionales, KENRYU usa **cascada de búsqueda con f
 ### Generación de informes
 
 - **Editor A4 profesional** — vista previa WYSIWYG con paginación que se puede editar y mejorar el contenido con las
-- propias palabras del investigador.
+propias palabras del investigador.
 - **Bibliografía estilo Vancouver** — `[N] Autores. Título. Revista. Año. PMID: X. URL`.
 - **Citas multi-tipo** — PMID / OMIM / ClinVar / NCT con identificador correcto por fuente.
 - **Exportación PDF** — vía `window.print()` con CSS de impresión optimizado, footer anclado al fondo de cada hoja A4.
