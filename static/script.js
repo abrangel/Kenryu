@@ -1,7 +1,9 @@
-// Detección automática del Backend para Local y Cloud
+// Detección automática del Backend para Local, GitHub Pages y HuggingFace
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? `http://localhost:${window.location.port || 3001}`
-  : '';  // En HuggingFace: rutas relativas (el mismo backend sirve el frontend)
+  : (window.location.hostname.includes('github.io'))
+    ? 'https://kenryu007-bioinformatica.hf.space' // URL directa del backend en Hugging Face
+    : ''; // En HuggingFace: rutas relativas (el mismo servidor sirve el frontend)
 
 let lastData = null;
 let pageCount = 1;
@@ -71,8 +73,7 @@ async function analyzePro() {
     lastData = data;
     renderDashboard(data);
     
-    const withEvidence = (data.enrichment || []).filter(e => e.Evidence).length;
-    addLog(`✓ Análisis completo — ${data.common_genes.length} biomarcadores. PubMed: ${withEvidence} evidencias encontradas.`, 'ok');
+    addLog(`✓ Análisis completo — ${data.common_genes.length} biomarcadores.`, 'ok');
     
     initReportWithData(data);
   } catch (e) {
@@ -313,7 +314,224 @@ function addNewSection() {
 function removeSection(id) { if (confirm('¿Eliminar?')) { document.getElementById(id).remove(); updateOutline(); } }
 function togglePreview() { isPreview = !isPreview; document.body.classList.toggle('preview-mode', isPreview); document.getElementById('preview-btn').textContent = isPreview ? '✏️ Editar' : '👁 Vista previa'; }
 function exportText() { const blob = new Blob([document.getElementById('report-canvas-content').innerText], {type:'text/plain'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='Reporte.txt'; a.click(); }
-function exportMarkdown() { const blob = new Blob(['# Reporte KENRYU\n\n' + document.getElementById('report-canvas-content').innerText], {type:'text/markdown'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='Reporte.md'; a.click(); }
+
+// ── EXPORTACIÓN MARKDOWN PROFESIONAL ──────────────────────────────────────────
+// Genera un ZIP con:
+//   /Reporte.md      ← markdown estructurado (encabezados, tablas, enlaces)
+//   /assets/         ← imágenes PNG extraídas (Venn, Volcano, PPI)
+// Estructura compatible con VSCode, Obsidian, Pandoc, GitHub. Lo que un
+// bioinformático espera de un reporte reproducible.
+
+function _b64ToBlob(b64Data, contentType) {
+  const byteCharacters = atob(b64Data);
+  const byteArrays = [];
+  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+    const slice = byteCharacters.slice(offset, offset + 512);
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
+    byteArrays.push(new Uint8Array(byteNumbers));
+  }
+  return new Blob(byteArrays, {type: contentType});
+}
+
+function _htmlToMarkdown(root, assetCounter) {
+  // Walker recursivo que convierte HTML del reporte a Markdown.
+  // assetCounter es un objeto compartido {n, images: [{name, blob}]} para
+  // poder extraer imágenes y referenciarlas por nombre relativo.
+  if (!root) return '';
+  const out = [];
+
+  const walk = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+    const tag = node.tagName.toLowerCase();
+    const cls = node.className || '';
+
+    // Saltar elementos ocultos, decorativos o de UI
+    if (node.style && (node.style.display === 'none' || node.style.visibility === 'hidden')) return '';
+    if (cls.includes('section-actions') || cls.includes('add-section-btn') ||
+        cls.includes('page-footer') || cls.includes('report-header') ||
+        tag === 'script' || tag === 'style' || tag === 'button') return '';
+
+    // Encabezados del editor: .section-heading = ## (sección II nivel)
+    if (cls.includes('section-heading')) {
+      // Normalizar whitespace: el span .s-num puede tener saltos internos
+      const txt = node.innerText.replace(/\s+/g, ' ').trim();
+      return '\n## ' + txt + '\n\n';
+    }
+
+    // Imágenes: extraer base64 y crear referencia relativa al ZIP
+    if (tag === 'img') {
+      const src = node.src || '';
+      if (src.startsWith('data:image/')) {
+        const match = src.match(/^data:image\/(png|jpe?g|svg\+xml|webp);base64,(.+)$/);
+        if (match) {
+          const ext = match[1] === 'jpeg' ? 'jpg' : (match[1] === 'svg+xml' ? 'svg' : match[1]);
+          assetCounter.n++;
+          // Nombre del asset: prefer alt si existe, sino 'figura-N'
+          const baseName = (node.alt && node.alt.trim()) ? node.alt.trim().replace(/[^a-zA-Z0-9_-]/g, '-') : ('figura-' + assetCounter.n);
+          const filename = baseName + '.' + ext;
+          const contentType = match[1] === 'svg+xml' ? 'image/svg+xml' : 'image/' + match[1];
+          assetCounter.images.push({
+            name: filename,
+            blob: _b64ToBlob(match[2], contentType),
+          });
+          const altText = node.alt || ('Figura ' + assetCounter.n);
+          return '\n![' + altText + '](assets/' + filename + ')\n\n';
+        }
+      } else if (src) {
+        // URL externa: dejar referencia directa
+        return '\n![' + (node.alt || 'imagen') + '](' + src + ')\n\n';
+      }
+      return '';
+    }
+
+    // Tablas: conversión completa a markdown tipo GFM
+    if (tag === 'table') {
+      const rows = Array.from(node.querySelectorAll('tr'));
+      if (rows.length === 0) return '';
+      const md = [];
+      let isFirst = true;
+      for (const row of rows) {
+        const cells = Array.from(row.children).map(c => c.innerText.trim().replace(/\|/g, '\\|').replace(/\n+/g, ' '));
+        if (cells.length === 0) continue;
+        md.push('| ' + cells.join(' | ') + ' |');
+        if (isFirst) {
+          md.push('| ' + cells.map(() => '---').join(' | ') + ' |');
+          isFirst = false;
+        }
+      }
+      return '\n' + md.join('\n') + '\n\n';
+    }
+
+    // Enlaces: [texto](url)
+    if (tag === 'a' && node.href) {
+      const inner = Array.from(node.childNodes).map(walk).join('').trim();
+      return '[' + (inner || node.href) + '](' + node.href + ')';
+    }
+
+    // Bold / italic / inline code
+    if (tag === 'strong' || tag === 'b') return '**' + Array.from(node.childNodes).map(walk).join('') + '**';
+    if (tag === 'em' || tag === 'i') {
+      // i sin clase fa- es itálica real, ignoramos los íconos FontAwesome
+      if (cls.includes('fa') || cls.includes('fab') || cls.includes('fas') || cls.includes('far')) return '';
+      return '*' + Array.from(node.childNodes).map(walk).join('') + '*';
+    }
+    if (tag === 'code') return '`' + node.innerText + '`';
+
+    // Encabezados nativos h1-h6
+    if (/^h[1-6]$/.test(tag)) {
+      const level = parseInt(tag[1]);
+      return '\n' + '#'.repeat(level) + ' ' + node.innerText.trim() + '\n\n';
+    }
+
+    // Listas
+    if (tag === 'ul' || tag === 'ol') {
+      const items = Array.from(node.children).filter(c => c.tagName.toLowerCase() === 'li');
+      const lines = items.map((li, i) => {
+        const prefix = tag === 'ol' ? (i + 1) + '. ' : '- ';
+        const content = Array.from(li.childNodes).map(walk).join('').trim();
+        return prefix + content;
+      });
+      return '\n' + lines.join('\n') + '\n\n';
+    }
+
+    // Saltos de página (separadores)
+    if (cls.includes('a4-page')) {
+      const content = Array.from(node.childNodes).map(walk).join('');
+      return content + '\n\n---\n\n';
+    }
+
+    // Párrafos y divs: contenido + doble salto
+    if (tag === 'p' || tag === 'div') {
+      const content = Array.from(node.childNodes).map(walk).join('');
+      // Si el contenido es solo whitespace, ignorar
+      if (!content.trim()) return '';
+      // Mantener saltos visuales como párrafos
+      const isBlock = (tag === 'p') || (cls.includes('editable-block') || cls.includes('report-section'));
+      return content + (isBlock ? '\n\n' : '');
+    }
+
+    // br → salto de línea explícito
+    if (tag === 'br') return '\n';
+
+    // Span e inline: solo contenido
+    return Array.from(node.childNodes).map(walk).join('');
+  };
+
+  return walk(root);
+}
+
+async function exportMarkdown() {
+  const rc = document.getElementById('report-canvas-content');
+  if (!rc) { alert('No hay reporte para exportar. Ejecute primero un análisis.'); return; }
+  if (typeof JSZip === 'undefined') { alert('Librería de empaquetado no cargada. Recargue la página.'); return; }
+
+  const assetCounter = { n: 0, images: [] };
+  let md = _htmlToMarkdown(rc, assetCounter);
+
+  // Limpieza: colapsar saltos de línea excesivos
+  md = md.replace(/\n{3,}/g, '\n\n').trim();
+
+  // Frontmatter YAML estilo Pandoc/Jupyter para metadatos del reporte
+  const today = new Date().toISOString().split('T')[0];
+  const mirnasInput = document.getElementById('mirna-input');
+  const mirnasList = mirnasInput ? mirnasInput.value.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const frontmatter = [
+    '---',
+    'title: "Reporte Bioinformático KENRYU"',
+    'subtitle: "Convergencia Molecular y Silenciamiento Génico"',
+    'date: "' + today + '"',
+    'generator: "KENRYU Bioinformatics Engine v1.38"',
+    mirnasList.length ? 'mirnas:\n' + mirnasList.map(m => '  - "' + m + '"').join('\n') : '',
+    'lang: es',
+    '---',
+    '',
+  ].filter(Boolean).join('\n');
+
+  const finalMd = frontmatter + '\n' + md + '\n';
+
+  // Si no hay imágenes, descargar .md directo
+  if (assetCounter.images.length === 0) {
+    const blob = new Blob([finalMd], { type: 'text/markdown;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Reporte-KENRYU.md';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    return;
+  }
+
+  // Con imágenes: crear ZIP con estructura /Reporte.md + /assets/
+  const zip = new JSZip();
+  zip.file('Reporte.md', finalMd);
+  const assetsFolder = zip.folder('assets');
+  for (const img of assetCounter.images) {
+    assetsFolder.file(img.name, img.blob);
+  }
+  // README explicativo
+  zip.file('README.md',
+    '# Reporte KENRYU — Paquete de exportación Markdown\n\n' +
+    'Este ZIP contiene:\n\n' +
+    '- **Reporte.md** — Reporte bioinformático completo en formato Markdown estándar (compatible con VSCode, Obsidian, GitHub, Pandoc).\n' +
+    '- **assets/** — Carpeta con las figuras del reporte en formato PNG (' + assetCounter.images.length + ' imagen(es)).\n\n' +
+    '## Uso\n\n' +
+    '1. Para visualizar: abra `Reporte.md` con cualquier editor markdown.\n' +
+    '2. Para convertir a PDF/Word: ejecute `pandoc Reporte.md -o Reporte.pdf` (requiere LaTeX).\n' +
+    '3. Para publicar en GitHub: copie el contenido tal cual; las imágenes se renderizan automáticamente.\n\n' +
+    'Generado por KENRYU Bioinformatics Engine — ' + today + '\n'
+  );
+
+  const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(zipBlob);
+  a.download = 'Reporte-KENRYU.zip';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 function createNewPage() {
   pageCount++;
@@ -343,7 +561,7 @@ function paginateReport(sourceElement) {
   testInner.className = 'page-inner';
   testPage.appendChild(testInner);
 
-  const maxHeight = 880; // Altura útil reducida para evitar solapamiento con el pie de página
+  const maxHeight = 820; // Altura útil reducida para evitar solapamiento con el pie de página
 
   const children = Array.from(sourceElement.children);
   let currentPage = createNewPage();
@@ -546,3 +764,7 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+
+
+
