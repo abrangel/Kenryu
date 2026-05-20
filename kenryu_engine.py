@@ -31,10 +31,14 @@ class AnalysisRequest(BaseModel):
     month: Optional[str] = None
 
 BASE_DIR = Path(__file__).resolve().parent
-RAW_DATA_DIR = BASE_DIR
+# Directorio de datos: contiene targetscan_full.json.zip y los archivos
+# hsa-miR-*.txt de ejemplo. Compatible hacia atrás: si data/ no existe
+# se cae a BASE_DIR (estructura antigua).
+DATA_DIR = BASE_DIR / "data" if (BASE_DIR / "data").exists() else BASE_DIR
+RAW_DATA_DIR = DATA_DIR
 TARGETSCAN_DB = {}
 pubmed_semaphore = asyncio.Semaphore(3)
-PERSISTENT_CACHE = {"trans": {}, "pubmed": {}, "enrichr": {}}
+PERSISTENT_CACHE = {"trans": {}, "pubmed": {}, "enrichr": {}, "gene_research": {}}
 CACHE_FILE = Path("local_db/analysis_cache.json")
 
 def load_persistent_cache():
@@ -42,8 +46,18 @@ def load_persistent_cache():
     if CACHE_FILE.exists():
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
-                PERSISTENT_CACHE.update(json.load(f))
-            logger.info(f"💾 Caché persistente cargada ({len(PERSISTENT_CACHE['trans'])} traducciones, {len(PERSISTENT_CACHE['pubmed'])} PubMed).")
+                data = json.load(f)
+            # Fusionar de forma defensiva — versiones antiguas del cache
+            # no tienen 'gene_research', no debe fallar la carga.
+            for key in ("trans", "pubmed", "enrichr", "gene_research"):
+                if key in data:
+                    PERSISTENT_CACHE[key].update(data[key])
+            logger.info(
+                f"💾 Caché persistente cargada "
+                f"({len(PERSISTENT_CACHE['trans'])} traducciones, "
+                f"{len(PERSISTENT_CACHE['pubmed'])} PubMed, "
+                f"{len(PERSISTENT_CACHE['gene_research'])} genes investigados)."
+            )
         except Exception as e:
             logger.warning(f"No se pudo cargar la caché: {e}")
 
@@ -101,6 +115,7 @@ def load_local_data():
 
     candidates = [
         BASE_DIR / "Predicted_Targets_Info.default_predictions.txt",
+        DATA_DIR / "targetscan_full.json.zip",
         BASE_DIR / "targetscan_full.json.zip",
         RAW_DATA_DIR / "Predicted_Targets_Info.default_predictions.txt",
     ]
@@ -366,6 +381,330 @@ async def enrich_genes_direct(gene_list: list, client: httpx.AsyncClient):
         logger.error(f"❌ Fallo Enrichr Directo: {e}")
         return []
 
+# ── PUBMED: BÚSQUEDA DE METADATOS REALES DE ARTÍCULO ──────────────────────────
+async def fetch_real_article(pmid: str, client: httpx.AsyncClient) -> dict:
+    """Recupera título, autores, año y revista reales desde PubMed esummary.
+    Devuelve {} si el PMID no resuelve o si la API falla."""
+    if not pmid:
+        return {}
+    cache_key = f"esum_{pmid}"
+    if cache_key in PERSISTENT_CACHE.get("pubmed", {}):
+        return PERSISTENT_CACHE["pubmed"][cache_key]
+    try:
+        async with pubmed_semaphore:
+            await asyncio.sleep(0.15)
+            r = await client.get(
+                "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+                params={"db": "pubmed", "id": pmid, "retmode": "json"},
+                timeout=10.0,
+            )
+        if r.status_code != 200:
+            return {}
+        doc = r.json().get("result", {}).get(pmid, {})
+        if not doc or doc.get("error"):
+            return {}
+        authors_list = doc.get("authors", []) or []
+        author_names = [a.get("name") for a in authors_list if a.get("name")]
+        if len(author_names) == 0:
+            authors_str = ""
+        elif len(author_names) == 1:
+            authors_str = author_names[0]
+        elif len(author_names) <= 3:
+            authors_str = ", ".join(author_names)
+        else:
+            authors_str = f"{author_names[0]} et al."
+        pubdate = doc.get("pubdate", "") or doc.get("epubdate", "")
+        year = ""
+        m = re.search(r"\b(19|20)\d{2}\b", pubdate)
+        if m:
+            year = m.group(0)
+        meta = {
+            "title": doc.get("title", "").strip().rstrip("."),
+            "authors": authors_str,
+            "year": year,
+            "journal": doc.get("source", "") or doc.get("fulljournalname", ""),
+        }
+        PERSISTENT_CACHE["pubmed"][cache_key] = meta
+        return meta
+    except Exception as e:
+        logger.warning(f"esummary falló para PMID {pmid}: {e}")
+        return {}
+
+# ── INVESTIGACIÓN MULTI-FUENTE PARA GENES CORE ────────────────────────────────
+# Para cada gen core del Venn, buscamos evidencia REAL y FRESCA en:
+#   - PubMed (artículos del gen + contexto biológico, con filtro de años)
+#   - OMIM (catálogo de enfermedades mendelianas asociadas)
+#   - ClinVar (variantes patogénicas clasificadas)
+#   - ClinicalTrials.gov (ensayos clínicos activos)
+# Resultados se cachean en PERSISTENT_CACHE["gene_research"] indexados por
+# clave compuesta {gene}|{years}, para acelerar análisis futuros.
+
+async def search_pubmed_for_gene(gene: str, term: str, years: int, client: httpx.AsyncClient) -> tuple:
+    """Busca el PMID más relevante para un gen + contexto biológico, respetando
+    el filtro de años. Cascada robusta con reintentos NCBI (429-aware).
+    Devuelve (pmid, year_window_used) o (None, None).
+
+    NOTA CRÍTICA: PubMed indexa SÓLO en inglés. Si `term` viene en español
+    (frecuente en PRESETS), traducimos a una clave en inglés con un mapeo
+    estático. Si no hay mapeo, usamos el gen + 'miRNA' como contexto natural
+    al dominio de la app.
+    """
+    start_year = datetime.datetime.now().year - years
+    url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+
+    # Mapeo ES → EN para los `term` típicos del PRESET. Sólo necesitamos
+    # las keywords científicas — PubMed entiende ese subset perfectamente.
+    ES_TO_EN = {
+        "metabolismo del colesterol": "cholesterol metabolism",
+        "ensamblaje de hdl": "HDL assembly",
+        "srebf y mir33": "SREBF miR-33",
+        "importación de proteínas al núcleo": "nuclear protein import",
+        "efectos mediados por ns1": "NS1 protein effects",
+        "sistema neuronal": "neuronal system",
+        "percepción sensorial del dolor": "sensory pain perception",
+        "respuesta al estrés osmótico": "osmotic stress response",
+        "actividad de factores de transcripción": "transcription factor activity",
+        "complejo asociado a distrofina": "dystrophin-associated complex",
+        "organización del citoesqueleto": "cytoskeleton organization",
+        "señalización mapk/erk": "MAPK ERK signaling",
+        "regulación del complejo arp2/3": "Arp2/3 complex regulation",
+        "señalización wnt/beta-catenina": "Wnt beta-catenin signaling",
+        "evasión inmune pd-l1/pd-1": "PD-L1 PD-1 immune evasion",
+    }
+
+    # Limpiar: quitar IDs entre paréntesis, GO/WP/R-HSA codes
+    clean_term_raw = re.sub(r'\([^)]*\)|GO:\d+|hsa\d+|WP\d+|R-HSA-\d+', '', term).strip()
+
+    # Traducción a inglés (clave del mapping o fallback)
+    en_term = ES_TO_EN.get(clean_term_raw.lower(), "")
+    if not en_term:
+        # Sin mapeo conocido: usar contexto natural del dominio
+        en_term = "microRNA"
+
+    # Cascada: 3 estrategias de búsqueda con reintentos NCBI
+    strategies = [
+        # 1. Estricto: gen + contexto inglés + años + humano
+        (f'"{gene}"[Gene/Protein Name] AND "{en_term}"[Title/Abstract] AND ("{start_year}"[PDAT] : "3000"[PDAT]) AND humans[MeSH Terms]', f"{years}y"),
+        # 2. Ampliado: gen + contexto inglés + humano (sin filtro de años)
+        (f'"{gene}"[Gene/Protein Name] AND "{en_term}"[Title/Abstract] AND humans[MeSH Terms]', "any"),
+        # 3. Mínimo: gen + miRNA + humano (sin contexto específico)
+        (f'"{gene}"[Gene/Protein Name] AND "microRNA"[Title/Abstract] AND humans[MeSH Terms]', "any"),
+        # 4. Último recurso: solo gen + humano (literatura general)
+        (f'"{gene}"[Gene/Protein Name] AND humans[MeSH Terms]', "any"),
+    ]
+
+    for query, window in strategies:
+        data = await safe_pubmed_request(client, url, {
+            "db": "pubmed", "term": query, "retmax": 1,
+            "retmode": "json", "sort": "relevance",
+        }, retries=3)
+        if not data:
+            continue
+        ids = data.get("esearchresult", {}).get("idlist", [])
+        if ids:
+            return ids[0], window
+    return None, None
+
+
+async def fetch_omim_for_gene(gene: str, client: httpx.AsyncClient) -> list:
+    """Busca entradas OMIM (enfermedades hereditarias) asociadas al gen vía
+    NCBI eUtils con reintentos 429-aware. Devuelve lista de
+    [{omim_id, title, url}] (máximo 3 entradas)."""
+    url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    search_data = await safe_pubmed_request(client, url, {
+        "db": "omim", "term": f"{gene}[Gene Name]", "retmax": 3, "retmode": "json",
+    }, retries=3)
+    if not search_data:
+        return []
+    ids = search_data.get("esearchresult", {}).get("idlist", [])
+    if not ids:
+        return []
+
+    # esummary con reintentos
+    s_data = await safe_pubmed_request(
+        client,
+        "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+        {"db": "omim", "id": ",".join(ids), "retmode": "json"},
+        retries=3,
+    )
+    if not s_data:
+        # No pudimos resolver el título — devolver con título vacío
+        # para que el caller pueda decidir si descartar o no.
+        return [{"omim_id": i, "title": "", "url": f"https://www.omim.org/entry/{i}"} for i in ids]
+
+    result = s_data.get("result", {})
+    out = []
+    for oid in ids:
+        doc = result.get(oid, {})
+        title = (doc.get("title", "") or doc.get("alttitles", "") or "").strip()
+        out.append({
+            "omim_id": oid,
+            "title": title,
+            "url": f"https://www.omim.org/entry/{oid}",
+        })
+    return out
+
+
+async def fetch_clinvar_for_gene(gene: str, client: httpx.AsyncClient) -> dict:
+    """Busca variantes patogénicas del gen en ClinVar vía NCBI eUtils con
+    reintentos. Devuelve {count, url}."""
+    url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    data = await safe_pubmed_request(client, url, {
+        "db": "clinvar",
+        "term": f"{gene}[Gene Name] AND (pathogenic[Clinical_Significance] OR likely_pathogenic[Clinical_Significance])",
+        "retmax": 0, "retmode": "json",
+    }, retries=3)
+    if not data:
+        return {"count": 0, "url": ""}
+    try:
+        count = int(data.get("esearchresult", {}).get("count", 0))
+    except (ValueError, TypeError):
+        count = 0
+    return {
+        "count": count,
+        "url": f"https://www.ncbi.nlm.nih.gov/clinvar/?term={gene}%5BGene+Name%5D",
+    }
+
+
+async def fetch_clinicaltrials_for_gene(gene: str, client: httpx.AsyncClient) -> list:
+    """Busca ensayos clínicos relacionados al gen vía ClinicalTrials.gov API v2.
+    Filtra estrictamente por título que mencione el gen para descartar
+    estudios donde el gen aparece sólo como mención tangencial.
+    Devuelve lista de [{nct_id, title, status, url}] (máximo 3 ensayos).
+    """
+    try:
+        url = "https://clinicaltrials.gov/api/v2/studies"
+        # Pedimos más estudios y filtramos client-side por título
+        async with pubmed_semaphore:
+            await asyncio.sleep(0.15)
+            r = await client.get(url, params={
+                "query.term": gene,
+                "filter.overallStatus": "RECRUITING,ACTIVE_NOT_RECRUITING,COMPLETED",
+                "pageSize": 20,
+                "fields": "NCTId,BriefTitle,OverallStatus",
+            }, timeout=12.0)
+        if r.status_code != 200:
+            return []
+        studies = r.json().get("studies", [])
+        out = []
+        gene_upper = gene.upper()
+        for s in studies:
+            ident = s.get("protocolSection", {}).get("identificationModule", {})
+            status_mod = s.get("protocolSection", {}).get("statusModule", {})
+            nct = ident.get("nctId", "")
+            title = ident.get("briefTitle", "").strip()
+            if not nct or not title:
+                continue
+            # FILTRO ESTRICTO: el título DEBE mencionar el gen (case-insensitive,
+            # word-boundary para evitar matches parciales).
+            if not re.search(rf'\b{re.escape(gene_upper)}\b', title.upper()):
+                continue
+            out.append({
+                "nct_id": nct,
+                "title": title,
+                "status": status_mod.get("overallStatus", ""),
+                "url": f"https://clinicaltrials.gov/study/{nct}",
+            })
+            if len(out) >= 3:
+                break
+        return out
+    except Exception as e:
+        logger.warning(f"ClinicalTrials.gov falló para {gene}: {e}")
+        return []
+
+
+async def research_gene_complete(gene: str, preset: dict, years: int, client: httpx.AsyncClient) -> dict:
+    """Orquesta TODA la investigación de un gen core: PubMed (con cascada de años)
+    + OMIM + ClinVar + ClinicalTrials.gov. Cachea el resultado por {gene}|{years}.
+
+    Devuelve dict con:
+      - pubmed: [{pmid, term, source, desc, year_window}]
+      - omim: [{omim_id, title, url}]
+      - clinvar: {count, url}
+      - trials: [{nct_id, title, status, url}]
+      - year_window_used: ventana real usada en pubmed (puede diferir del input)
+    """
+    # Cache key versionado: si subimos la versión, invalida resultados viejos
+    # con queries en español/PMIDs incorrectos. v2 = búsquedas con términos
+    # en inglés + filtro de título en Trials.
+    cache_key = f"v2|{gene}|{years}"
+    if cache_key in PERSISTENT_CACHE["gene_research"]:
+        logger.info(f"  💾 Cache hit: {gene} (años={years})")
+        return PERSISTENT_CACHE["gene_research"][cache_key]
+
+    logger.info(f"  🔬 Investigando {gene} en multi-fuente (años={years})...")
+
+    # 1. PubMed: una búsqueda por cada term del PRESET (contexto biológico real)
+    pubmed_refs = []
+    evidence_list = preset.get("clinical_evidence", [])
+    if evidence_list:
+        # Buscar PMID fresco para CADA evidencia clínica registrada en PRESETS
+        pubmed_tasks = [
+            search_pubmed_for_gene(gene, ev["term"], years, client)
+            for ev in evidence_list
+        ]
+        pubmed_results = await asyncio.gather(*pubmed_tasks, return_exceptions=True)
+        for ev, res in zip(evidence_list, pubmed_results):
+            if isinstance(res, Exception) or not res or not res[0]:
+                continue
+            pmid, window = res
+            pubmed_refs.append({
+                "pmid": pmid,
+                "term": ev["term"],
+                "source": ev["source"],
+                "desc": ev.get("desc", ""),
+                "year_window": window,
+            })
+    else:
+        # Sin clinical_evidence en PRESETS: una búsqueda genérica
+        res = await search_pubmed_for_gene(gene, "function", years, client)
+        if res and res[0]:
+            pmid, window = res
+            pubmed_refs.append({
+                "pmid": pmid,
+                "term": "Función biológica",
+                "source": "PubMed",
+                "desc": "",
+                "year_window": window,
+            })
+
+    # 2-4. OMIM + ClinVar + ClinicalTrials en paralelo
+    omim, clinvar, trials = await asyncio.gather(
+        fetch_omim_for_gene(gene, client),
+        fetch_clinvar_for_gene(gene, client),
+        fetch_clinicaltrials_for_gene(gene, client),
+        return_exceptions=True,
+    )
+    if isinstance(omim, Exception): omim = []
+    if isinstance(clinvar, Exception): clinvar = {"count": 0, "url": ""}
+    if isinstance(trials, Exception): trials = []
+
+    # Ventana real usada: si alguna ref usó "any" (fallback), el campo lo refleja
+    year_windows = [r["year_window"] for r in pubmed_refs]
+    if not year_windows:
+        year_window_used = "none"
+    elif all(w == f"{years}y" for w in year_windows):
+        year_window_used = f"{years}y"
+    elif any(w == "any" for w in year_windows):
+        year_window_used = f"{years}y_ampliado"
+    else:
+        year_window_used = f"{years}y"
+
+    result = {
+        "pubmed": pubmed_refs,
+        "omim": omim,
+        "clinvar": clinvar,
+        "trials": trials,
+        "year_window_used": year_window_used,
+    }
+    PERSISTENT_CACHE["gene_research"][cache_key] = result
+    logger.info(
+        f"  ✅ {gene}: {len(pubmed_refs)} PubMed, {len(omim)} OMIM, "
+        f"{clinvar.get('count', 0)} variantes ClinVar, {len(trials)} ensayos clínicos"
+    )
+    return result
+
+
 # ── PUBMED EXPERTO ────────────────────────────────────────────────────────────
 async def get_pubmed_for_term(term: str, years: int, client: httpx.AsyncClient):
     """Query PubMed con caché persistente y filtros oficiales."""
@@ -399,7 +738,7 @@ async def get_pubmed_for_term(term: str, years: int, client: httpx.AsyncClient):
         if data:
             ids = data.get("esearchresult", {}).get("idlist", [])
             if ids:
-                res = [{"title": "Evidencia científica identificada", "id": ids[0]}]
+                res = [{"title": "", "id": ids[0]}]
                 PERSISTENT_CACHE["pubmed"][cache_key] = res
                 return res
     return []
@@ -608,7 +947,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             await asyncio.sleep(0.2)
             pm = await client.get(
                 "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-                params={"db": "pubmed", "term": f"{gene} AND microRNA AND silencing", "retmax": 1, "retmode": "json"}, timeout=10.0)
+                params={"db": "pubmed", "term": f"{gene}[Gene/Protein Name] AND microRNA[Title/Abstract] AND human[MH]", "retmax": 1, "retmode": "json"}, timeout=10.0)
         ids = pm.json().get('esearchresult', {}).get('idlist', [])
         if ids: info["pmid"] = ids[0]
     except:
@@ -777,8 +1116,16 @@ def create_visuals(gene_sets: list, mirnas: list, common_all: list):
             base64.b64encode(buf2.getvalue()).decode(),
             base64.b64encode(buf3.getvalue()).decode())
 
-# ── SÍNTESIS ACADÉMICA ────────────────────────────────────────────────────────
-def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: list, references: list) -> dict:
+# ── SÍNTESIS ACADÉMICA ───────────────────────────────────────────────────────��────────
+def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: list, references: list, gene_research: dict = None) -> dict:
+    """Construye las 3 secciones narrativas del informe.
+
+    gene_research: dict opcional con datos multi-fuente por gen
+      {gene: {pubmed: [...], omim: [...], clinvar: {count, url}, trials: [...]}}
+    Cuando está disponible, enriquece la narrativa de cada gen core con
+    menciones contextualizadas a OMIM, ClinVar y ClinicalTrials.
+    """
+    gene_research = gene_research or {}
     n = len(common)
     core_str = ", ".join(common[:6]) + ("..." if n > 6 else "")
     
@@ -789,7 +1136,7 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
           f"El análisis multiplataforma ejecutado sobre {len(mirnas)} microARN(s) ({', '.join(mirnas)}) "
           f"identificó estos biomarcadores mediante intersección de TargetScan y miRTarBase.")
 
-    # 2. Detalles por Gen Core (Top 5)
+    # 2. Detalles por Gen Core (Top 5) — enriquecido con evidencia multi-fuente
     gene_paragraphs = []
     for i, g in enumerate(common[:5]):
         d = gene_details.get(g, {})
@@ -797,37 +1144,171 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
         pathology = d.get('pathology', "Nodo regulador identificado.")
         para = (f"En relación al gen {g} ({full_name}), la literatura científica lo describe como {pathology.lower().replace('.', '')}. "
                 f"Diversas investigaciones destacan su papel como un nodo de control esencial.")
-        
+
         evidence_list = d.get('clinical_evidence', [])
         if evidence_list:
             route_lines = []
             for ev in evidence_list:
                 route_lines.append(f"• {ev['source']} {ev['term']}: {ev['desc']} (PMID: {ev['pmid']})")
             para += "\n\nRutas biológicas validadas:\n" + "\n".join(route_lines)
-            if d.get('conclusion'):
-                para += f"\n\nConclusión clínica: {d['conclusion']}"
         else:
-            para += f" Su regulación por el panel de miRNAs analizado tiene consecuencias directas en la estabilidad tisular [{i+1}]."
+            para += f" Su regulación por el panel de miRNAs analizado tiene consecuencias directas en la estabilidad tisular [{i+1}].\n"
+
+        # Evidencia genómica multi-fuente (OMIM / ClinVar / ClinicalTrials)
+        # Se construye un párrafo narrativo continuo, omitiendo silenciosamente
+        # las fuentes sin resultados. Si NINGUNA fuente devolvió datos, no se
+        # añade el bloque.
+        gr = gene_research.get(g, {}) or {}
+        omim_list = gr.get("omim", []) or []
+        clinvar = gr.get("clinvar", {}) or {}
+        trials_list = gr.get("trials", []) or []
+
+        evidence_phrases = []
+
+        # OMIM: enfermedades hereditarias asociadas
+        valid_omim = [o for o in omim_list if o.get("title")]
+        if valid_omim:
+            if len(valid_omim) == 1:
+                o = valid_omim[0]
+                evidence_phrases.append(
+                    f"el catálogo OMIM (#{o['omim_id']}) registra la entrada \"{o['title']}\" "
+                    f"como referencia mendeliana del gen"
+                )
+            else:
+                ids_str = ", ".join(f"#{o['omim_id']}" for o in valid_omim[:3])
+                evidence_phrases.append(
+                    f"OMIM registra {len(valid_omim)} entradas asociadas al gen ({ids_str}), "
+                    f"reforzando su relevancia en enfermedades hereditarias"
+                )
+
+        # ClinVar: variantes patogénicas
+        cv_count = clinvar.get("count", 0)
+        if cv_count > 0:
+            if cv_count == 1:
+                evidence_phrases.append("ClinVar reporta 1 variante patogénica documentada en este locus")
+            elif cv_count < 10:
+                evidence_phrases.append(
+                    f"ClinVar reporta {cv_count} variantes patogénicas/probablemente patogénicas "
+                    f"documentadas en este locus"
+                )
+            else:
+                evidence_phrases.append(
+                    f"ClinVar registra {cv_count} variantes patogénicas/probablemente patogénicas "
+                    f"clasificadas para este gen — un volumen que respalda su impacto clínico"
+                )
+
+        # ClinicalTrials: ensayos activos con el gen como protagonista
+        if trials_list:
+            if len(trials_list) == 1:
+                t = trials_list[0]
+                evidence_phrases.append(
+                    f"actualmente existe 1 ensayo clínico ({t['nct_id']}) centrado en este gen: "
+                    f"\"{t['title']}\""
+                )
+            else:
+                ncts = ", ".join(t['nct_id'] for t in trials_list[:3])
+                evidence_phrases.append(
+                    f"actualmente hay {len(trials_list)} ensayos clínicos en ClinicalTrials.gov "
+                    f"centrados en este gen ({ncts})"
+                )
+
+        # Componer el párrafo narrativo solo si hay al menos una fuente con datos
+        if evidence_phrases:
+            if len(evidence_phrases) == 1:
+                evidence_narrative = f"Como evidencia genómica complementaria, {evidence_phrases[0]}."
+            elif len(evidence_phrases) == 2:
+                evidence_narrative = (
+                    f"Como evidencia genómica complementaria, {evidence_phrases[0]}; "
+                    f"asimismo, {evidence_phrases[1]}."
+                )
+            else:
+                head = "; ".join(evidence_phrases[:-1])
+                evidence_narrative = (
+                    f"Como evidencia genómica complementaria, {head}; "
+                    f"finalmente, {evidence_phrases[-1]}."
+                )
+            para += f"\n\n{evidence_narrative}"
+
+        if d.get('conclusion'):
+            para += f"\n\nConclusión clínica: {d['conclusion']}"
+
         gene_paragraphs.append(para)
 
     academic_text = p1 + "\n\n" + "\n\n".join(gene_paragraphs)
 
-    # 3. Contexto Funcional Global
+    # 3. Contexto Funcional Global — cada ruta menciona su evidencia PubMed
+    # cuando está disponible, integrando la cita al narrativa en lugar de
+    # dejarla huérfana en la bibliografía.
     route_details = []
     for item in enrichment[:15]:
         term = item.get('Term', 'Ruta biológica')
         source = item.get('Source', 'Base de datos')
-        para = (f"La vía de {term} ({source}) destaca por su alta significancia. Las investigaciones asocian esta ruta con la "
-                f"respuesta adaptativa celular, integrando las señales de los genes core para mantener el equilibrio fisiológico.")
+        pval = item.get('Pval', 1.0)
+        evidence = item.get('Evidence')
+
+        # Cualificador de significancia según p-adj
+        if pval < 0.001:
+            significance = "alta significancia estadística"
+        elif pval < 0.01:
+            significance = "significancia robusta"
+        else:
+            significance = "significancia funcional"
+
+        para = (
+            f"La vía de {term} ({source}, p-adj={pval:.4f}) destaca por su {significance}. "
+            f"Las investigaciones asocian esta ruta con la respuesta adaptativa celular, "
+            f"integrando las señales de los genes core para mantener el equilibrio fisiológico."
+        )
+        # Si el enriquecimiento devolvió evidencia PubMed, anclar la cita aquí
+        if evidence and evidence.get("id"):
+            para += f" La evidencia bibliográfica de respaldo está catalogada en PubMed (PMID: {evidence['id']})."
         route_details.append(para)
-    
+
     functional_text = "Contexto Funcional y Rutas Biológicas Globales:\n\n" + "\n\n".join(route_details)
 
     # 4. Referencias (Desglosadas para paginación)
+    # Cita estilo Vancouver adaptada al tipo de fuente (PubMed / OMIM / ClinVar /
+    # ClinicalTrials). El identificador correcto va al final junto con la URL.
     ref_lines = []
     for ref in references:
-        ref_lines.append(f"[{ref['id']}] {ref['title']} PubMed Evidence. {ref['url']}")
-    
+        parts = []
+        authors = ref.get("authors", "")
+        year = ref.get("year", "")
+        journal = ref.get("journal", "")
+        title = ref.get("title", "").rstrip(".")
+        ref_type = ref.get("ref_type", "pubmed")
+        source = ref.get("source", "")  # contiene contexto (gen / ruta)
+
+        if authors:
+            parts.append(f"{authors}.")
+        if title:
+            parts.append(f"{title}.")
+        if journal and year:
+            parts.append(f"{journal}. {year}.")
+        elif journal:
+            parts.append(f"{journal}.")
+        elif year:
+            parts.append(f"{year}.")
+
+        # Identificador específico por tipo de fuente
+        if ref_type == "pubmed" and ref.get("pmid"):
+            parts.append(f"PMID: {ref['pmid']}.")
+        elif ref_type == "omim":
+            parts.append(f"OMIM: {ref.get('source','').replace('OMIM:','').split(' ')[0]}.")
+        elif ref_type == "clinvar":
+            parts.append(f"ClinVar.")
+        elif ref_type == "clinicaltrials":
+            nct = ref.get('source','').replace('NCT:','').split(' ')[0]
+            parts.append(f"NCT: {nct}.")
+
+        # Contexto: por qué esta referencia está aquí (gen core / ruta)
+        if source and ref_type == "pubmed":
+            parts.append(f"[{source}]")
+
+        parts.append(ref["url"])
+        citation = " ".join(parts)
+        ref_lines.append(f"[{ref['id']}] {citation}")
+
     references_text = "Bibliografía:\n\n" + "\n\n".join(ref_lines) if ref_lines else ""
 
     return {
@@ -899,7 +1380,7 @@ async def analyze(req: AnalysisRequest):
     if not mirnas:
         raise HTTPException(400, "Debe ingresar al menos un miRNA.")
 
-    # ── RECOLECCIÓN DE GENES POR miRNA ──────────────────────────────────────
+    # ── RECOLECCIÓN DE GENES POR miRNA ───────────────────────────────────────────
     gene_sets, found_names = [], []
     for m in mirnas:
         local  = get_targets_local(m)
@@ -927,7 +1408,7 @@ async def analyze(req: AnalysisRequest):
     if not gene_sets:
         raise HTTPException(404, "No se encontraron datos para los miRNAs ingresados.")
 
-    # ── INTERSECCIÓN ─────────────────────────────────────────────────────────
+    # ── INTERSECCIÓN ───────────────────────────────────────────────────────────
     # BUG 5 CORREGIDO: el fallback automático a N-1 cuando la intersección
     # estricta era vacía hacía que con 5 miRNAs se devolvieran ~100 genes
     # en lugar de los 5 correctos.
@@ -947,7 +1428,7 @@ async def analyze(req: AnalysisRequest):
         common = {g for g, c in Counter(all_genes).items() if c >= threshold}
         logger.info(f"🎯 Modo N-2 (threshold={threshold}): {len(common)} genes")
 
-    # ── BUG 5 CORREGIDO: eliminado el fallback automático silencioso ─────────
+    # ── BUG 5 CORREGIDO: eliminado el fallback automático silencioso ──────────
     # Si el usuario eligió "strict" y la intersección es vacía, informar
     # correctamente en lugar de cambiar el modo sin avisar.
     if not common and mode == "strict":
@@ -1015,63 +1496,179 @@ async def analyze(req: AnalysisRequest):
     # ── GRÁFICOS ──────────────────────────────────────────────────────────────
     v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, sorted_common)
 
-    # ── DETALLES DE GENES ─────────────────────────────────────────────────────
+    # ── DETALLES DE GENES ──────────────────────────────────────────────────────
     async with httpx.AsyncClient(timeout=20.0) as client:
         # Aumentar a 40 para cubrir toda la tabla del informe
         tasks = [get_gene_details(g, client) for g in sorted_common[:40]]
         details = await asyncio.gather(*tasks)
     gene_details = {g: d for g, d in zip(sorted_common[:40], details)}
 
-    # ── REFERENCIAS ───────────────────────────────────────────────────────────
+    # ── REFERENCIAS — INVESTIGACIÓN MULTI-FUENTE ──────────────────────────────
+    # Para CADA gen core del Venn (sorted_common[:5]):
+    #   - PubMed: búsqueda fresca (gen + contexto biológico de PRESETS + filtro
+    #     de años req.years). Cascada: estricto → ampliado → fallback.
+    #   - OMIM: enfermedades mendelianas asociadas (NCBI eUtils).
+    #   - ClinVar: variantes patogénicas (NCBI eUtils).
+    #   - ClinicalTrials.gov: ensayos clínicos activos (API v2, gratis).
+    # Resultados cacheados en PERSISTENT_CACHE["gene_research"] por {gene}|{years}
+    # para que análisis repetidos sean instantáneos.
+    # Para las rutas globales: PMIDs del enrichment_results (ya filtrados por
+    # req.years en get_pubmed_for_term).
     report_references, ref_id = [], 1
-    
-    # 1. Referencias de Genes Core (Prioridad de Evidencia Estructurada)
-    for g in sorted_common[:5]:
-        d = gene_details.get(g, {})
-        # Si tiene evidencia estructurada, agregar cada PMID único
-        evidence_list = d.get('clinical_evidence', [])
-        if evidence_list:
-            for ev in evidence_list:
-                pmid = ev["pmid"]
-                if any(r["pmid"] == pmid for r in report_references): continue
-                
-                report_references.append({
-                    "id": ref_id,
-                    "title": f"Análisis funcional y relevancia clínica de {g} en la ruta {ev['term']}.",
-                    "pmid": pmid,
-                    "source": ev["source"],
-                    "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}"
-                })
-                ref_id += 1
-        elif d.get("pmid"):
-            pmid = d["pmid"]
-            if not any(r["pmid"] == pmid for r in report_references):
-                report_references.append({
-                    "id": ref_id,
-                    "title": f"Investigación sobre la relevancia patológica de {g}.",
-                    "pmid": pmid,
-                    "source": "PubMed Evidence",
-                    "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}"
-                })
-                ref_id += 1
+    gene_research_data = {}  # {gene: {pubmed: [...], omim: [...], clinvar: {...}, trials: [...]}}
+    pubmed_candidates = []   # [{pmid, source, fallback_title}] — para metadata fetch en batch
+    seen_pmids = set()
 
-    # 2. Referencias de Rutas Globales (Si queda espacio hasta 40)
+    # 1. Investigación multi-fuente PARALELA de los 5 genes core del Venn
+    async with httpx.AsyncClient(timeout=25.0) as client:
+        research_tasks = [
+            research_gene_complete(g, gene_details.get(g, {}), req.years, client)
+            for g in sorted_common[:5]
+        ]
+        research_results = await asyncio.gather(*research_tasks, return_exceptions=True)
+
+    for g, res in zip(sorted_common[:5], research_results):
+        if isinstance(res, Exception):
+            logger.warning(f"⚠️  Investigación falló para {g}: {res}")
+            gene_research_data[g] = {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""}, "trials": [], "year_window_used": "error"}
+            continue
+        gene_research_data[g] = res
+        # Acumular PMIDs frescos como candidatos para el bloque de Bibliografía
+        for ref in res.get("pubmed", []):
+            pmid = ref["pmid"]
+            if pmid in seen_pmids: continue
+            seen_pmids.add(pmid)
+            pubmed_candidates.append({
+                "pmid": pmid,
+                "source": ref["source"],
+                "fallback_title": f"{ref['term']} — evidencia clínica para {g}",
+                "gene": g,
+            })
+
+    # 2. PMIDs de Rutas Globales (Enrichr + PubMed, ya filtrados por req.years
+    #    dentro de get_pubmed_for_term — vienen de enrichment_results).
     for item in enrichment_results:
-        if ref_id > 40: break
+        if len(pubmed_candidates) >= 40: break
         if item.get("Evidence"):
             pmid = item["Evidence"]["id"]
-            if any(r["pmid"] == pmid for r in report_references): continue
-            
-            report_references.append({
-                "id": ref_id,
-                "title": f"Estudio sobre la implicación funcional de la ruta {item['Term']}.",
+            if pmid in seen_pmids: continue
+            seen_pmids.add(pmid)
+            pubmed_candidates.append({
                 "pmid": pmid,
                 "source": item["Source"],
-                "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}"
+                "fallback_title": f"Ruta funcional: {item['Term']}",
+                "gene": None,
             })
+
+    logger.info(f"📚 PMIDs frescos: {len(pubmed_candidates)} candidatos (genes core + rutas, filtro={req.years}y).")
+
+    # 3. Batch fetch de metadatos PubMed reales (título, autores, año, revista)
+    resolved_count = 0
+    fallback_count = 0
+    if pubmed_candidates:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            meta_tasks = [fetch_real_article(c["pmid"], client) for c in pubmed_candidates]
+            metas = await asyncio.gather(*meta_tasks, return_exceptions=True)
+        for c, meta in zip(pubmed_candidates, metas):
+            if isinstance(meta, Exception) or not meta or not meta.get("title"):
+                # Fallback: esummary falló por rate-limit; conservamos PMID real.
+                report_references.append({
+                    "id": ref_id,
+                    "title": c["fallback_title"],
+                    "authors": "",
+                    "year": "",
+                    "journal": "",
+                    "pmid": c["pmid"],
+                    "source": c["source"],
+                    "url": f"https://pubmed.ncbi.nlm.nih.gov/{c['pmid']}",
+                    "metadata_resolved": False,
+                    "ref_type": "pubmed",
+                })
+                fallback_count += 1
+            else:
+                report_references.append({
+                    "id": ref_id,
+                    "title": meta["title"],
+                    "authors": meta.get("authors", ""),
+                    "year": meta.get("year", ""),
+                    "journal": meta.get("journal", ""),
+                    "pmid": c["pmid"],
+                    "source": c["source"],
+                    "url": f"https://pubmed.ncbi.nlm.nih.gov/{c['pmid']}",
+                    "metadata_resolved": True,
+                    "ref_type": "pubmed",
+                })
+                resolved_count += 1
             ref_id += 1
 
-    synthesis_obj = build_synthesis(found_names, sorted_common, gene_details, enrichment_results, report_references)
+    # 4. Añadir OMIM, ClinVar, ClinicalTrials como referencias separadas
+    seen_omim = set()
+    seen_nct = set()
+    seen_clinvar_gene = set()
+    extras_count = 0
+    for g, res in gene_research_data.items():
+        # OMIM
+        for o in res.get("omim", []):
+            if o["omim_id"] in seen_omim or not o.get("title"): continue
+            seen_omim.add(o["omim_id"])
+            report_references.append({
+                "id": ref_id,
+                "title": o["title"],
+                "authors": "",
+                "year": "",
+                "journal": "OMIM — Online Mendelian Inheritance in Man",
+                "pmid": "",
+                "source": f"OMIM:{o['omim_id']} ({g})",
+                "url": o["url"],
+                "metadata_resolved": True,
+                "ref_type": "omim",
+            })
+            ref_id += 1
+            extras_count += 1
+        # ClinVar: una entrada por gen (resumen del conteo)
+        cv = res.get("clinvar", {})
+        if cv.get("count", 0) > 0 and g not in seen_clinvar_gene:
+            seen_clinvar_gene.add(g)
+            report_references.append({
+                "id": ref_id,
+                "title": f"Variantes patogénicas reportadas en {g}: {cv['count']} entradas en ClinVar",
+                "authors": "",
+                "year": "",
+                "journal": "ClinVar — NCBI",
+                "pmid": "",
+                "source": f"ClinVar ({g})",
+                "url": cv["url"],
+                "metadata_resolved": True,
+                "ref_type": "clinvar",
+            })
+            ref_id += 1
+            extras_count += 1
+        # ClinicalTrials.gov
+        for t in res.get("trials", []):
+            if t["nct_id"] in seen_nct or not t.get("title"): continue
+            seen_nct.add(t["nct_id"])
+            report_references.append({
+                "id": ref_id,
+                "title": t["title"],
+                "authors": "",
+                "year": "",
+                "journal": f"ClinicalTrials.gov ({t.get('status', '')})",
+                "pmid": "",
+                "source": f"NCT:{t['nct_id']} ({g})",
+                "url": t["url"],
+                "metadata_resolved": True,
+                "ref_type": "clinicaltrials",
+            })
+            ref_id += 1
+            extras_count += 1
+
+    logger.info(
+        f"📚 Referencias finales: {len(report_references)} totales — "
+        f"PubMed: {resolved_count} resueltas + {fallback_count} fallback, "
+        f"Extras (OMIM/ClinVar/Trials): {extras_count}."
+    )
+
+    synthesis_obj = build_synthesis(found_names, sorted_common, gene_details, enrichment_results, report_references, gene_research_data)
 
     # Persistir descubrimientos (Traducciones, PubMed, Enriquecimiento)
     save_persistent_cache()
@@ -1087,9 +1684,35 @@ async def analyze(req: AnalysisRequest):
         "venn_plot": v_p,
         "volcano_plot": volc_p,
         "ppi_plot": ppi_p,
-        "report_references": report_references
+        "report_references": report_references,
+        "gene_research": gene_research_data
     }
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

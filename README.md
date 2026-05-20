@@ -80,8 +80,7 @@ A diferencia de pipelines tradicionales, KENRYU usa **cascada de búsqueda con f
 
 ### Generación de informes
 
-- **Editor A4 profesional** — vista previa WYSIWYG con paginación que se puede editar y mejorar el contenido con las
-propias palabras del investigador.
+- **Editor A4 profesional** — vista previa WYSIWYG con paginación inteligente por medición de altura.
 - **Bibliografía estilo Vancouver** — `[N] Autores. Título. Revista. Año. PMID: X. URL`.
 - **Citas multi-tipo** — PMID / OMIM / ClinVar / NCT con identificador correcto por fuente.
 - **Exportación PDF** — vía `window.print()` con CSS de impresión optimizado, footer anclado al fondo de cada hoja A4.
@@ -153,7 +152,7 @@ docs/
                                                     └──────────┘
                                  │
                                  ▼
-                    ┌─────────────────────────────────┐
+                    ┌────────────��────────────────────┐
                     │  Cache persistente              │
                     │  local_db/analysis_cache.json   │
                     └─────────────────────────────────┘
@@ -368,24 +367,31 @@ Para análisis rápido sin estructura. Vuelca el `innerText` del editor.
 
 ```
 Kenryu/
-├── kenryu_engine.py              # Motor FastAPI + lógica bioinformática (~1600 líneas)
+├── README.md                     # Este archivo
+├── Dockerfile                    # Configuración para Hugging Face Spaces / Docker
 ├── requirements.txt              # Dependencias Python
-├── Dockerfile                    # Configuración de despliegue
-├── targetscan_full.json.zip      # Base TargetScan v8.0 indexada
-├── hsa-miR-XXX-Yp.txt            # Bases pre-procesadas por miRNA (ejemplos)
-├── index.html                    # Interfaz principal del editor
-├── script.js                     # Lógica del frontend (paginación, exportación)
-├── style.css                     # Diseño visual (dark mode + acentos gold/teal)
-├── static/
-│   ├── index.html                # Copia servida por FastAPI
-│   ├── script.js                 # Copia servida por FastAPI
-│   └── style.css                 # Copia servida por FastAPI
-├── local_db/
-│   └── analysis_cache.json       # Cache persistente (creado en runtime)
-└── README.md                     # Este archivo
+├── .gitattributes                # Configuración Git LFS para archivos binarios
+├── .gitignore                    # Archivos ignorados por Git
+│
+├── kenryu_engine.py              # Motor FastAPI + lógica bioinformática (~1700 líneas)
+│
+├── static/                       # Frontend servido por FastAPI
+│   ├── index.html                # Interfaz principal del editor A4
+│   ├── script.js                 # Lógica del frontend (paginación, exportación PDF/MD)
+│   └── style.css                 # Diseño visual (dark mode + acentos gold/teal)
+│
+├── data/                         # Bases de datos y datasets
+│   ├── targetscan_full.json.zip  # Base TargetScan v8.0 indexada (Git LFS, ~8 MB)
+│   └── hsa-miR-*.txt             # Archivos de ejemplo pre-procesados por miRNA
+│
+├── releases/                     # Backups y releases oficiales
+│   └── KENRYU_OFFICIAL_RELEASE_BACKUP.zip  # Snapshot estable (Git LFS, ~8 MB)
+│
+└── local_db/                     # Cache persistente (creado en runtime, no en repo)
+    └── analysis_cache.json       # Traducciones, búsquedas PubMed, gene_research
 ```
 
-> **Nota:** El backend sirve los archivos del frontend desde `static/`. Mantener `static/*` sincronizado con la raíz del repo si se editan ambos. La copia en la raíz existe por compatibilidad con GitHub Pages.
+> **Nota técnica:** El backend sirve los archivos del frontend exclusivamente desde `static/`. Los archivos de datos en `data/` se cargan al inicio mediante `load_local_data()` en `kenryu_engine.py`. El directorio `local_db/` se crea automáticamente al primer arranque y persiste el cache entre sesiones.
 
 ---
 
@@ -482,4 +488,5 @@ KENRYU integra datos de fuentes públicas (NCBI, Enrichr, OMIM, ClinVar, Clinica
 *Hecho con rigor científico para la comunidad de investigación genómica.*
 
 </div>
+
 
