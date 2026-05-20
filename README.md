@@ -47,7 +47,7 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
 2. **Identifica** la intersección Venn dinámica de los genes core regulados por el panel ingresado.
 3. **Enriquece** funcionalmente las dianas (KEGG · Reactome · WikiPathways · GO).
 4. **Investiga** cada gen core en cuatro fuentes en paralelo: PubMed, OMIM, ClinVar y ClinicalTrials.gov.
-5. **Genera** un informe académico editable con bibliografía estilo Vancouver, exportable a PDF y Markdown.
+5. **Genera** un informe académico editable con bibliografía estilo Vancouver, exportable a PDF y Markdown, inclusive puedes descargar todo el texto en extension de bloc de notas (txt).
 
 A diferencia de pipelines tradicionales, KENRYU usa **cascada de búsqueda con fallback** (estricto → ampliado → mínimo) y **traducción de términos al inglés** para superar limitaciones de PubMed con queries en español. Todo el flujo está optimizado para **Hugging Face Spaces**, incluyendo manejo robusto de rate-limits de NCBI eUtils.
 
