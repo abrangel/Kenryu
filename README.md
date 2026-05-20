@@ -1,3 +1,13 @@
+---
+title: KENRYU Bioinformatics
+emoji: 🧬
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # KENRYU — Motor Bioinformático de microARNs
 
 <div align="center">
