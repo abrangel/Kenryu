@@ -100,7 +100,20 @@ docs/
     ├── report-page.png
     └── narrative-evidence.png
 ```
-<img width="1366" height="720" alt="image" src="https://github.com/user-attachments/assets/56528a06-33b4-49a5-a60a-0272e52daaf7" />
+<img width="1364" height="679" alt="image" src="https://github.com/user-attachments/assets/28c4df8b-8f05-4913-8205-9430c7327af6" />
+
+Graficos de Kenryu
+<img width="1364" height="676" alt="image" src="https://github.com/user-attachments/assets/68353d73-c970-4af9-a467-d0984efba1e0" />
+
+Genes con información rapida en las barras laterales
+<img width="1365" height="680" alt="image" src="https://github.com/user-attachments/assets/903f93c8-50c6-486d-8cc2-92130dea8d16" />
+
+Resultados de la investigacion 
+<img width="1364" height="679" alt="image" src="https://github.com/user-attachments/assets/b4306c1d-029d-442f-be2b-3b0cf9f2e054" />
+
+Ejemplo de una parte del informe narrativo, es mas extenso.
+<img width="1357" height="641" alt="image" src="https://github.com/user-attachments/assets/dfad6fd3-54df-4811-9243-fc516f4a5168" />
+
 
 ---
 
