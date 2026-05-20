@@ -1,13 +1,3 @@
----
-title: KENRYU Bioinformatics
-emoji: 🧬
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # KENRYU — Motor Bioinformático de microARNs
 
 <div align="center">
@@ -21,7 +11,7 @@ pinned: false
 
 **Plataforma de análisis bioinformático para la identificación de dianas convergentes de microARNs e integración de evidencia clínica multi-fuente.**
 
-[Demo en vivo](https://huggingface.co/spaces/Kenryu007/Bioinformatica) · [Reportar bug](https://github.com/abrangel/Kenryu/issues) · [Solicitar feature](https://github.com/abrangel/Kenryu/issues)
+[Demo en vivo](https://abrangel.github.io/Kenryu/) · [Reportar bug](https://github.com/abrangel/Kenryu/issues) · [Solicitar feature](https://github.com/abrangel/Kenryu/issues)
 
 </div>
 
@@ -57,7 +47,7 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
 2. **Identifica** la intersección Venn dinámica de los genes core regulados por el panel ingresado.
 3. **Enriquece** funcionalmente las dianas (KEGG · Reactome · WikiPathways · GO).
 4. **Investiga** cada gen core en cuatro fuentes en paralelo: PubMed, OMIM, ClinVar y ClinicalTrials.gov.
-5. **Genera** un informe académico paginado con bibliografía estilo Vancouver, exportable a PDF y Markdown.
+5. **Genera** un informe académico editable con bibliografía estilo Vancouver, exportable a PDF y Markdown.
 
 A diferencia de pipelines tradicionales, KENRYU usa **cascada de búsqueda con fallback** (estricto → ampliado → mínimo) y **traducción de términos al inglés** para superar limitaciones de PubMed con queries en español. Todo el flujo está optimizado para **Hugging Face Spaces**, incluyendo manejo robusto de rate-limits de NCBI eUtils.
 
