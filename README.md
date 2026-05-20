@@ -90,7 +90,7 @@ A diferencia de pipelines tradicionales, KENRYU usa **cascada de búsqueda con f
 
 ## Capturas
 
-> **Sugerencia:** captura screenshots del editor, del Venn y del informe exportado y agrégalos en `docs/screenshots/` para mostrar el resultado real.
+> **Demo:** Ejemplos del resultado real.
 
 ```
 docs/
@@ -100,6 +100,7 @@ docs/
     ├── report-page.png
     └── narrative-evidence.png
 ```
+<img width="1366" height="720" alt="image" src="https://github.com/user-attachments/assets/56528a06-33b4-49a5-a60a-0272e52daaf7" />
 
 ---
 
