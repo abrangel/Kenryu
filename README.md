@@ -40,7 +40,7 @@
 </div>
 <p align="center">
 [Demo en vivo](https://abrangel.github.io/Kenryu/) · [Reportar bug](https://github.com/abrangel/Kenryu/issues) · [Solicitar feature](https://github.com/abrangel/Kenryu/issues)
-</p>
+
 </div>
 
 ---
