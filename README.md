@@ -69,8 +69,16 @@
 </p>
 
 <p align="center">
-  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20564689.svg)](https://doi.org/10.5281/zenodo.20564689) &nbsp;&nbsp; [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13109/badge)](https://www.bestpractices.dev/projects/13109)
+  <a href="https://doi.org/10.5281/zenodo.20564689" target="_blank">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20564689.svg" alt="DOI" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://www.bestpractices.dev/projects/13109" target="_blank">
+    <img src="https://www.bestpractices.dev/projects/13109/badge" alt="OpenSSF Best Practices" />
+  </a>
 </p>
+
+---
 
 ---
 
