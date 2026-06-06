@@ -70,7 +70,7 @@
 
 <p align="center">
   <a href="https://doi.org/10.5281/zenodo.20564689" target="_blank">
-    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20564689.svg" alt="DOI" />
+    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20564689-blue" alt="DOI" />
   </a>
   &nbsp;&nbsp;
   <a href="https://www.bestpractices.dev/projects/13109" target="_blank">
