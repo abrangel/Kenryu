@@ -98,32 +98,69 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
 
 ---
 
-## ⚡ Flujo de Análisis
+### ⚡ Flujo de Análisis
 
-```
-  ENTRADA              RECOLECCIÓN          INTERSECCIÓN         ENRIQUECIMIENTO
-┌──────────┐         ┌────────────┐         ┌──────────────┐    ┌──────────────┐
-│ N miRNAs │──────▶  │TargetScan  │ ──────▶ │  Venn Core   │──▶ │ KEGG / GO /  │
-│ hsa-miR- │         │ v8.0 local │         │  Gene Set    │    │ Reactome /   │
-│  XX-Yp   │         ├────────────┤  modos: │              │    │ WikiPathways │
-└──────────┘         │ miRTarBase │  Estric. │  N-1 · N-2   │    └──────┬───────┘
-                     │ (remoto)   │  N-1     └──────────────┘           │
-                     └────────────┘  N-2                                ▼
-                                                               ┌──────────────────┐
-  INFORME             INVESTIGACIÓN (×4 paralelo por gen)      │  PMID PubMed     │
-┌──────────┐         ┌────────────────────────────────┐        │  por ruta        │
-│ PDF/MD/  │◀──────  │ PubMed · OMIM · ClinVar ·      │        └──────────────────┘
-│   TXT    │         │ ClinicalTrials.gov              │
-└──────────┘         └────────────────────────────────┘
-```
+*Haz clic en cada fase para explorar la lógica bioinformática subyacente.*
 
-### Modos de Consenso
+<br/>
 
-| Modo | Descripción | Caso de Uso |
-|------|-------------|-------------|
-| **Estricto** | Genes regulados por TODOS los miRNAs del panel | Dianas core de alta confianza |
-| **N-1** | Genes regulados por al menos N-1 miRNAs | Redes regulatorias robustas |
-| **N-2** | Genes regulados por al menos N-2 miRNAs | Exploración de rutas más amplia |
+| 📥 01. ENTRADA | 📊 02. RECOPILACIÓN | 🎯 03. NÚCLEO VENN |
+| :---: | :---: | :---: |
+| Selección de miARN | Obtención de múltiples fuentes | Convergencia genómica |
+
+<details>
+<summary><b>🧬 PASO 01 — Entrada y parámetros (Haz clic para desplegar)</b></summary>
+
+> **El inicio:** El usuario introduce N miARN con nomenclatura estándar.
+- **Filtrado dinámico:** Definición del rango temporal para la evidencia en PubMed.
+- **Validación:** Limpieza automática de nombres para compatibilidad entre bases de datos.
+</details>
+
+<details>
+<summary><b>🔍 PASO 02 — Recopilación multifuente (Haz clic para desplegar)</b></summary>
+
+> **El motor:** Consultas en paralelo a bases de datos de alta fiabilidad.
+- **TargetScan 8.0:** Predicciones termodinámicas de unión (Base de datos local).
+- **miRTarBase:** Validación experimental de referencia (*gold-standard*) vía Harmonizome (API remota).
+</details>
+
+<details>
+<summary><b>💎 PASO 03 — Convergencia genómica (Haz clic para desplegar)</b></summary>
+
+> **La lógica:** Intersección matemática de redes regulatorias.
+- **Modo estricto:** Solo genes comunes a TODOS los miARN.
+- **N-1 / N-2:** Consenso robusto para hallazgos más amplios.
+</details>
+
+<br/>
+
+| 🧬 04. ENRIQUECIMIENTO | 📡 05. INVESTIGACIÓN | 📄 06. INFORME |
+| :---: | :---: | :---: |
+| Análisis de rutas | Evidencia multifuente | Resultado profesional |
+
+<details>
+<summary><b>📊 PASO 04 — Enriquecimiento funcional (Haz clic para desplegar)</b></summary>
+
+> **El contexto:** Identificación del impacto biológico.
+- **Bases de datos:** KEGG, Reactome, WikiPathways y GO.
+- **Evidencia:** Referencia cruzada automatizada con PubMed para cada ruta significativa encontrada.
+</details>
+
+<details>
+<summary><b>📚 PASO 05 — Investigación con múltiples fuentes (Haz clic para desplegar)</b></summary>
+
+> **La evidencia:** Consolidación de datos científicos del mundo real.
+- Consultas en tiempo real a **ClinVar** (variantes) y **OMIM** (trastornos).
+- Integración con **ClinicalTrials.gov** para obtener información relevante de investigaciones en humanos.
+</details>
+
+<details>
+<summary><b>✨ PASO 06 — Elaboración de informes científicos (Haz clic para desplegar)</b></summary>
+
+> **El resultado:** Informes académicos de nivel profesional.
+- **Estilo Vancouver:** Citas generadas automáticamente para todas las fuentes integradas.
+- **Multiformato:** Exportación a PDF, ZIP en Markdown (con recursos) o TXT sin formato.
+</details>
 
 ---
 
