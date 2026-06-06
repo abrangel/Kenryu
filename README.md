@@ -52,7 +52,14 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
 A diferencia de pipelines tradicionales, KENRYU usa **cascada de búsqueda con fallback** (estricto → ampliado → mínimo) y **traducción de términos al inglés** para superar limitaciones de PubMed con queries en español. Todo el flujo está optimizado para **Hugging Face Spaces**, incluyendo manejo robusto de rate-limits de NCBI eUtils.
 
 ---
+### ⚠️ Descargo de responsabilidad médica y nota de seguridad
 
+KENRYU está diseñado para la educación clínica y el apoyo a la toma de decisiones. No sustituye el criterio médico profesional, la evaluación individualizada del paciente, las guías clínicas locales ni la revisión por parte de un profesional de la salud cualificado. La evidencia presentada por el sistema proviene de bases de datos públicas (NCBI, miRTarBase, TargetScan, STRING-DB) y debe ser verificada rigurosamente por el clínico antes de cualquier intervención terapéutica o de investigación.
+
+*   **Estado normativo:** KENRYU es exclusivamente para **uso en investigación (RUO)**. No está destinado a procedimientos diagnósticos ni terapéuticos.
+*   **Privacidad de datos:** La plataforma funciona como una herramienta de apoyo a la toma de decisiones y no almacena ni procesa información de identificación personal (PII) ni información de salud protegida (PHI).
+*   **Nota sobre la infraestructura:** Implementado y alojado en Hugging Face Spaces.
+  
 ## Características principales
 
 ### Análisis bioinformático
