@@ -1,15 +1,43 @@
-# KENRYU — Motor Bioinformático de microARNs
-
 <div align="center">
 
-[![Hugging Face Spaces](https://img.shields.io/badge/🤗_Hugging_Face-Spaces-FFD21E?style=flat-square)](https://huggingface.co/spaces/Kenryu007/Bioinformatica)
-[![GitHub Pages](https://img.shields.io/badge/GitHub-Pages-181717?style=flat-square&logo=github)](https://abrangel.github.io/Kenryu)
-[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![License](https://img.shields.io/badge/License-Academic-blue?style=flat-square)](#licencia)
-[![Status](https://img.shields.io/badge/Status-Production-green?style=flat-square)](https://huggingface.co/spaces/Kenryu007/Bioinformatica)
+<p align="center">
+  <a href="README.md">🇪🇸 Leer en Español</a> | 🇬🇧 <b>Read in English</b>
+</p>
 
-**Plataforma de análisis bioinformático para la identificación de dianas convergentes de microARNs e integración de evidencia clínica multi-fuente.**
+<img src="https://capsule-render.vercel.app/api?type=waving&height=200&color=0:1a1d24,50:c8a96e,100:1a1d24&text=KENRYU&fontColor=ffffff&fontSize=80&fontAlignY=40&desc=Advanced%20miRNA%20Bioinformatics%20Engine&descAlignY=68&descSize=18&animation=fadeIn" alt="Kenryu banner" width="100%"/>
+
+<p align="center">
+  <strong>High-precision bioinformatics platform for microRNA research and biomarker discovery</strong><br/>
+  <em>Genomic Convergence · PubMed Evidence · Functional Enrichment · Automated Scientific Reporting</em>
+</p>
+
+<p align="center">
+  <a href="https://huggingface.co/spaces/Kenryu007/Bioinformatica"><img src="https://img.shields.io/badge/Demo-Hugging%20Face%20Space-c8a96e?style=for-the-badge&logo=huggingface&logoColor=white" alt="Demo"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/FastAPI-0.109-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"/></a>
+  <a href="https://www.targetscan.org"><img src="https://img.shields.io/badge/Data-TargetScan%208.0-4fc3a1?style=for-the-badge&logo=googlesheets&logoColor=white" alt="TargetScan"/></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/miRNA%20families-285-c8a96e?style=flat-square&labelColor=1a1d24" alt="285 families"/>
+  <img src="https://img.shields.io/badge/genomic%20targets-18k+-4fc3a1?style=flat-square&labelColor=1a1d24" alt="18k+ targets"/>
+  <img src="https://img.shields.io/badge/validation-miRTarBase-6eaadc?style=flat-square&labelColor=1a1d24" alt="miRTarBase"/>
+  <img src="https://img.shields.io/badge/evidence-PubMed%20Integrated-f5a623?style=flat-square&labelColor=1a1d24" alt="PubMed Integrated"/>
+  <img src="https://img.shields.io/badge/analysis-Functional%20Enrichment-c8a96e?style=flat-square&labelColor=1a1d24" alt="Functional Enrichment"/>
+  <img src="https://img.shields.io/badge/DOI-Ready-005b9f?style=flat-square&labelColor=1a1d24" alt="DOI Ready"/>
+</p>
+
+<p align="center">
+  <a href="#-overview"><b>Overview</b></a> ·
+  <a href="#-scientific-rigor"><b>Scientific Rigor</b></a> ·
+  <a href="#%EF%B8%8F-engine-architecture"><b>Architecture</b></a> ·
+  <a href="#-local-installation"><b>Installation</b></a> ·
+  <a href="#-api-documentation"><b>API</b></a> ·
+  <a href="#-datasets"><b>Databases</b></a> ·
+  <a href="#-citation--doi"><b>Citation & DOI</b></a>
+</p>
+
+</div>
 
 [Demo en vivo](https://abrangel.github.io/Kenryu/) · [Reportar bug](https://github.com/abrangel/Kenryu/issues) · [Solicitar feature](https://github.com/abrangel/Kenryu/issues)
 
