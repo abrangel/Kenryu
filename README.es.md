@@ -68,10 +68,15 @@
   <a href="#-roadmap"><b>Roadmap</b></a>
 </p>
 
-</div>
-
-<br/>
-<img width="191" height="20" alt="image" src="https://github.com/user-attachments/assets/97b882b5-49ff-4a78-841e-d24e74667055" />
+<p align="center">
+  <a href="https://doi.org/10.5281/zenodo.20564689" target="_blank">
+    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20564689-blue" alt="DOI" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://www.bestpractices.dev/projects/13109" target="_blank">
+    <img src="https://www.bestpractices.dev/projects/13109/badge" alt="OpenSSF Best Practices" />
+  </a>
+</p>
 
 ---
 
