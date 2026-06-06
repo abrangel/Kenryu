@@ -1,8 +1,8 @@
 <div align="center">
 
 <p align="center">
-   2   <a href="README.es.md">🇪🇸   Leer en Español</a> | 🇬🇧   <b>Read in English</b>
-   3 </p>
+     <a href="README.es.md">🇪🇸   Leer en Español</a> | 🇬🇧   <b>Read in English</b>
+    </p>
 
 <img src="https://capsule-render.vercel.app/api?type=waving&height=200&color=0:1a1d24,50:c8a96e,100:1a1d24&text=KENRYU&fontColor=ffffff&fontSize=80&fontAlignY=40&desc=Advanced%20miRNA%20Bioinformatics%20Engine&descAlignY=68&descSize=18&animation=fadeIn" alt="Kenryu banner" width="100%"/>
 
