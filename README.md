@@ -76,7 +76,15 @@
   <a href="https://www.bestpractices.dev/projects/13109" target="_blank">
     <img src="https://www.bestpractices.dev/projects/13109/badge" alt="OpenSSF Best Practices" />
   </a>
+  &nbsp;&nbsp;
+  <a href="https://huggingface.co/spaces/Kenryu007/Bioinformatica" target="_blank">
+    <img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-yellow" alt="Hugging Face Spaces" />
+  </a>
+  &nbsp;&nbsp;
+  <img src="https://img.shields.io/github/repo-size/abrangel/Kenryu" alt="Repository Size" />
 </p>
+
+---
 
 ---
 
