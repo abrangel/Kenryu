@@ -217,7 +217,7 @@ MicroRNAs (miRNAs) are post-transcriptional regulators that control the expressi
 <div align="center">
 
 <img width="1364" alt="Kenryu main interface with analysis results" src="https://github.com/user-attachments/assets/28c4df8b-8f05-4913-8205-9430c7327af6"/>
-<sub><b>Main interface</b> — Volcano plot, Venn diagram and STRING-DB interactome generated live</sub>
+<sub><b>Main interface</b> — Volcano plot, Venn diagram, and STRING-DB interactome generated live. (Note: The clinical interface displays analytical metrics and parameter presets in Spanish for localized environments).</sub>
 
 <br/><br/>
 
@@ -237,7 +237,7 @@ MicroRNAs (miRNAs) are post-transcriptional regulators that control the expressi
 <br/><br/>
 
 <img width="1357" alt="Narrative academic report" src="https://github.com/user-attachments/assets/dfad6fd3-54df-4811-9243-fc516f4a5168"/>
-<sub><b>Narrative report</b> — Academic synthesis with Vancouver bibliography (excerpt)</sub>
+<sub><b>Narrative report</b> — Academic synthesis with Vancouver bibliography. The automated export functions render structured clinical narratives, cross-referenced literature insights, and citation indices.</sub>
 
 </div>
 
