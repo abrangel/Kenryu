@@ -45,26 +45,6 @@
 
 ---
 
-## Índice
-
-- [Sobre el proyecto](#sobre-el-proyecto)
-- [Características principales](#características-principales)
-- [Capturas](#capturas)
-- [Stack tecnológico](#stack-tecnológico)
-- [Arquitectura](#arquitectura)
-- [Flujo de análisis](#flujo-de-análisis)
-- [APIs y bases de datos integradas](#apis-y-bases-de-datos-integradas)
-- [Instalación](#instalación)
-- [Uso](#uso)
-- [Exportación de resultados](#exportación-de-resultados)
-- [Estructura del repositorio](#estructura-del-repositorio)
-- [Roadmap](#roadmap)
-- [Contribuir](#contribuir)
-- [Licencia](#licencia)
-- [Autor](#autor)
-
----
-
 ## Sobre el proyecto
 
 Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la expresión de redes génicas complejas mediante silenciamiento dirigido. Identificar qué genes son regulados **simultáneamente por múltiples miRNAs** es fundamental para descubrir nodos críticos en patologías como cáncer, enfermedades cardiovasculares, neurodegeneración y desórdenes metabólicos.
