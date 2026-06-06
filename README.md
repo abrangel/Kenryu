@@ -79,7 +79,7 @@ KENRYU is designed for clinical education and decision support. It is not a subs
 - **Balanced Functional Enrichment** — fairness algorithm between KEGG, Reactome, WikiPathways, and GO.
 - **Volcano plot, Venn diagram, and STRING-DB interactome** generated on-the-fly.
 
-### Multi-source Research (New in v1.38)
+### Multi-source Research
 
 | Source | Contribution |
 |---|---|
