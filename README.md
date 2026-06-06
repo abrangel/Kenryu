@@ -80,8 +80,6 @@
 
 ---
 
----
-
 ## ⚠️ Medical Disclaimer
 
 > **KENRYU is for Research Use Only (RUO).** It is not a substitute for professional medical judgment, individualized patient evaluation, local clinical guidelines, or review by a qualified healthcare professional. Evidence comes from public databases (NCBI, miRTarBase, TargetScan, STRING-DB) and must be rigorously verified before any therapeutic or research intervention. This platform does not store or process PII or PHI.
