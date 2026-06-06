@@ -39,7 +39,10 @@
 
 </div>
 <p align="center">
-[Demo en vivo](https://abrangel.github.io/Kenryu/) · [Reportar bug](https://github.com/abrangel/Kenryu/issues) · [Solicitar feature](https://github.com/abrangel/Kenryu/issues)
+    <a href="https://abrangel.github.io/Kenryu/"><img src="https://img.shields.io/badge/Live%20Demo-🚀-c8a96e?style=for-the-badge&labelColor=1a1d24" alt="Live Demo"/></a>
+    <a href="https://github.com/abrangel/Kenryu/issues"><img src="https://img.shields.io/badge/Report%20Bug-🐛-e05c5c?style=for-the-badge&labelColor=1a1d24" alt="Report Bug"/></a>
+    <a href="https://github.com/abrangel/Kenryu/issues"><img src="https://img.shields.io/badge/Request%20Feature-💡-4fc3a1?style=for-the-badge&labelColor=1a1d24" alt="Request Feature"/></a>
+  </p>
 
 </div>
 
