@@ -1,282 +1,305 @@
 <div align="center">
 
 <p align="center">
-      <a href="README.md">🇬🇧   English</a> | 🇪🇸   <b>Español</b>
-   </p>
-
-<img src="https://capsule-render.vercel.app/api?type=waving&height=200&color=0:1a1d24,50:c8a96e,100:1a1d24&text=KENRYU&fontColor=ffffff&fontSize=80&fontAlignY=40&desc=Advanced%20miRNA%20Bioinformatics%20Engine&descAlignY=68&descSize=18&animation=fadeIn" alt="Kenryu banner" width="100%"/>
-
-<p align="center">
-  <strong>High-precision bioinformatics platform for microRNA research and biomarker discovery</strong><br/>
-  <em>Genomic Convergence · PubMed Evidence · Functional Enrichment · Automated Scientific Reporting</em>
+  🇪🇸 <b>Leer en Español</b> &nbsp;|&nbsp; <a href="README.md">🇬🇧 Read in English</a>
 </p>
 
-<p align="center">
-  <a href="https://huggingface.co/spaces/Kenryu007/Bioinformatica"><img src="https://img.shields.io/badge/Demo-Hugging%20Face%20Space-c8a96e?style=for-the-badge&logo=huggingface&logoColor=white" alt="Demo"/></a>
-  <a href="#"><img src="https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/></a>
-  <a href="#"><img src="https://img.shields.io/badge/FastAPI-0.109-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"/></a>
-  <a href="https://www.targetscan.org"><img src="https://img.shields.io/badge/Data-TargetScan%208.0-4fc3a1?style=for-the-badge&logo=googlesheets&logoColor=white" alt="TargetScan"/></a>
-</p>
+<img src="https://capsule-render.vercel.app/api?type=waving&height=220&color=0:0d0f14,40:1a1423,70:c8a96e,100:0d0f14&text=KENRYU&fontColor=ffffff&fontSize=90&fontAlignY=42&desc=Advanced%20miRNA%20Bioinformatics%20Engine&descAlignY=65&descSize=20&animation=fadeIn&stroke=c8a96e&strokeWidth=1" width="100%" alt="KENRYU"/>
+
+<br/>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/miRNA%20families-285-c8a96e?style=flat-square&labelColor=1a1d24" alt="285 families"/>
-  <img src="https://img.shields.io/badge/genomic%20targets-18k+-4fc3a1?style=flat-square&labelColor=1a1d24" alt="18k+ targets"/>
-  <img src="https://img.shields.io/badge/validation-miRTarBase-6eaadc?style=flat-square&labelColor=1a1d24" alt="miRTarBase"/>
-  <img src="https://img.shields.io/badge/evidence-PubMed%20Integrated-f5a623?style=flat-square&labelColor=1a1d24" alt="PubMed Integrated"/>
-  <img src="https://img.shields.io/badge/analysis-Functional%20Enrichment-c8a96e?style=flat-square&labelColor=1a1d24" alt="Functional Enrichment"/>
-  <img src="https://img.shields.io/badge/DOI-Ready-005b9f?style=flat-square&labelColor=1a1d24" alt="DOI Ready"/>
+  <b>Plataforma de alta precisión para investigación de microRNA y descubrimiento de biomarcadores</b><br/>
+  <sub>Convergencia Genómica &nbsp;·&nbsp; Evidencia PubMed &nbsp;·&nbsp; Enriquecimiento Funcional &nbsp;·&nbsp; Reportes Científicos Automatizados</sub>
 </p>
 
+<br/>
+
+<!-- ACCIONES PRINCIPALES -->
 <p align="center">
-  <a href="#-overview"><b>Overview</b></a> ·
-  <a href="#-scientific-rigor"><b>Scientific Rigor</b></a> ·
-  <a href="#%EF%B8%8F-engine-architecture"><b>Architecture</b></a> ·
-  <a href="#-local-installation"><b>Installation</b></a> ·
-  <a href="#-api-documentation"><b>API</b></a> ·
-  <a href="#-datasets"><b>Databases</b></a> ·
-  <a href="#-citation--doi"><b>Citation & DOI</b></a>
+  <a href="https://huggingface.co/spaces/Kenryu007/Bioinformatica">
+    <img src="https://img.shields.io/badge/%F0%9F%A4%97%20Demo%20en%20Vivo-Hugging%20Face%20Space-c8a96e?style=for-the-badge&labelColor=1a1d24" alt="Demo en Vivo"/>
+  </a>
+  &nbsp;
+  <a href="https://abrangel.github.io/Kenryu/">
+    <img src="https://img.shields.io/badge/%F0%9F%8C%90%20Sitio%20Web-GitHub%20Pages-4fc3a1?style=for-the-badge&labelColor=1a1d24" alt="Sitio Web"/>
+  </a>
+  &nbsp;
+  <a href="https://github.com/abrangel/Kenryu/issues">
+    <img src="https://img.shields.io/badge/%F0%9F%90%9B%20Reportar-Bug-e05c5c?style=for-the-badge&labelColor=1a1d24" alt="Reportar Bug"/>
+  </a>
+  &nbsp;
+  <a href="https://github.com/abrangel/Kenryu/issues">
+    <img src="https://img.shields.io/badge/%F0%9F%92%A1%20Solicitar-Feature-6eaadc?style=for-the-badge&labelColor=1a1d24" alt="Solicitar Feature"/>
+  </a>
+</p>
+
+<br/>
+
+<!-- BADGES TECNOLÓGICOS -->
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/FastAPI-0.109-009688?style=flat-square&logo=fastapi&logoColor=white&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/Docker-listo-2496ED?style=flat-square&logo=docker&logoColor=white&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/HF%20Spaces-desplegado-FFD21E?style=flat-square&logo=huggingface&logoColor=black&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/Licencia-Acad%C3%A9mica%20RUO-c8a96e?style=flat-square&labelColor=1a1d24"/>
+</p>
+
+<!-- ESTADÍSTICAS -->
+<p align="center">
+  <img src="https://img.shields.io/badge/familias%20miRNA-285-c8a96e?style=flat-square&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/dianas%20gen%C3%B3micas-18k%2B-4fc3a1?style=flat-square&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/validaci%C3%B3n-miRTarBase-6eaadc?style=flat-square&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/evidencia-PubMed%20Integrado-f5a623?style=flat-square&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/enriquecimiento-KEGG%20%C2%B7%20GO%20%C2%B7%20Reactome-c8a96e?style=flat-square&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/estado-Solo%20RUO-e05c5c?style=flat-square&labelColor=1a1d24"/>
+</p>
+
+<br/>
+
+<!-- NAVEGACIÓN -->
+<p align="center">
+  <a href="#-sobre-el-proyecto"><b>Overview</b></a> &nbsp;·&nbsp;
+  <a href="#-flujo-de-análisis"><b>Flujo</b></a> &nbsp;·&nbsp;
+  <a href="#-características-principales"><b>Características</b></a> &nbsp;·&nbsp;
+  <a href="#️-stack-tecnológico"><b>Stack</b></a> &nbsp;·&nbsp;
+  <a href="#️-apis-y-bases-de-datos-integradas"><b>Bases de Datos</b></a> &nbsp;·&nbsp;
+  <a href="#-instalación"><b>Instalación</b></a> &nbsp;·&nbsp;
+  <a href="#-roadmap"><b>Roadmap</b></a>
 </p>
 
 </div>
-<p align="center">
-    <a href="https://abrangel.github.io/Kenryu/"><img src="https://img.shields.io/badge/Live%20Demo-🚀-c8a96e?style=for-the-badge&labelColor=1a1d24" alt="Live Demo"/></a>
-    <a href="https://github.com/abrangel/Kenryu/issues"><img src="https://img.shields.io/badge/Report%20Bug-🐛-e05c5c?style=for-the-badge&labelColor=1a1d24" alt="Report Bug"/></a>
-    <a href="https://github.com/abrangel/Kenryu/issues"><img src="https://img.shields.io/badge/Request%20Feature-💡-4fc3a1?style=for-the-badge&labelColor=1a1d24" alt="Request Feature"/></a>
-  </p>
 
-</div>
+<br/>
 
 ---
 
-## Sobre el proyecto
+## ⚠️ Descargo de Responsabilidad Médica
 
-Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la expresión de redes génicas complejas mediante silenciamiento dirigido. Identificar qué genes son regulados **simultáneamente por múltiples miRNAs** es fundamental para descubrir nodos críticos en patologías como cáncer, enfermedades cardiovasculares, neurodegeneración y desórdenes metabólicos.
-
-**KENRYU** automatiza este flujo:
-
-1. **Integra** predicciones termodinámicas (TargetScan) con validación experimental (miRTarBase).
-2. **Identifica** la intersección Venn dinámica de los genes core regulados por el panel ingresado.
-3. **Enriquece** funcionalmente las dianas (KEGG · Reactome · WikiPathways · GO).
-4. **Investiga** cada gen core en cuatro fuentes en paralelo: PubMed, OMIM, ClinVar y ClinicalTrials.gov.
-5. **Genera** un informe académico editable con bibliografía estilo Vancouver, exportable a PDF y Markdown, inclusive puedes descargar todo el texto en extension de bloc de notas (txt).
-
-A diferencia de pipelines tradicionales, KENRYU usa **cascada de búsqueda con fallback** (estricto → ampliado → mínimo) y **traducción de términos al inglés** para superar limitaciones de PubMed con queries en español. Todo el flujo está optimizado para **Hugging Face Spaces**, incluyendo manejo robusto de rate-limits de NCBI eUtils.
+> **KENRYU es exclusivamente para Uso en Investigación (RUO).** No sustituye el criterio médico profesional, la evaluación individualizada del paciente, las guías clínicas locales ni la revisión por un profesional de la salud cualificado. La evidencia proviene de bases de datos públicas (NCBI, miRTarBase, TargetScan, STRING-DB) y debe ser verificada rigurosamente antes de cualquier intervención terapéutica o de investigación. Esta plataforma no almacena ni procesa PII ni PHI.
 
 ---
-### ⚠️ Descargo de responsabilidad médica y nota de seguridad
 
-KENRYU está diseñado para la educación clínica y el apoyo a la toma de decisiones. No sustituye el criterio médico profesional, la evaluación individualizada del paciente, las guías clínicas locales ni la revisión por parte de un profesional de la salud cualificado. La evidencia presentada por el sistema proviene de bases de datos públicas (NCBI, miRTarBase, TargetScan, STRING-DB) y debe ser verificada rigurosamente por el clínico antes de cualquier intervención terapéutica o de investigación.
+## 🔬 Sobre el Proyecto
 
-*   **Estado normativo:** KENRYU es exclusivamente para **uso en investigación (RUO)**. No está destinado a procedimientos diagnósticos ni terapéuticos.
-*   **Privacidad de datos:** La plataforma funciona como una herramienta de apoyo a la toma de decisiones y no almacena ni procesa información de identificación personal (PII) ni información de salud protegida (PHI).
-*   **Nota sobre la infraestructura:** Implementado y alojado en Hugging Face Spaces.
-  
-## Características principales
+Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la expresión de redes génicas complejas mediante silenciamiento dirigido. Identificar qué genes son **regulados simultáneamente por múltiples miRNAs** es fundamental para descubrir nodos críticos en patologías como cáncer, enfermedades cardiovasculares, neurodegeneración y desórdenes metabólicos.
 
-### Análisis bioinformático
+**KENRYU** automatiza el flujo completo de descubrimiento en una sola plataforma:
 
-- **Convergencia dinámica** — intersección Venn de N miRNAs (sin límite hardcoded en el número de genes core).
-- **Tres modos de consenso** — Estricto, N-1, N-2 para detectar redes regulatorias robustas.
-- **Enriquecimiento funcional balanceado** — algoritmo de equidad entre KEGG, Reactome, WikiPathways y GO.
-- **Volcano plot, diagrama de Venn e interactoma STRING-DB** generados al vuelo.
+| Paso | Acción | Fuentes |
+|:----:|--------|---------|
+| **1** | 🔗 **Integra** predicciones termodinámicas + validación experimental | TargetScan · miRTarBase |
+| **2** | 🎯 **Identifica** la intersección Venn dinámica de genes core regulados | DB local + Harmonizome |
+| **3** | 🧬 **Enriquece** las dianas funcionalmente con algoritmo de balanceo | KEGG · Reactome · WikiPathways · GO |
+| **4** | 📡 **Investiga** cada gen core en 4 fuentes en paralelo | PubMed · OMIM · ClinVar · ClinicalTrials |
+| **5** | 📄 **Genera** informe académico editable con bibliografía Vancouver | PDF · Markdown ZIP · TXT |
 
-### Investigación multi-fuente
+> A diferencia de pipelines tradicionales, KENRYU usa una **cascada de búsqueda con fallback** (estricto → ampliado → mínimo) y **traducción de términos al inglés en tiempo real** para superar las limitaciones de PubMed con consultas en español. Todo el flujo está optimizado para **Hugging Face Spaces**, con manejo robusto de rate-limits de NCBI eUtils.
+
+---
+
+## ⚡ Flujo de Análisis
+
+```
+  ENTRADA              RECOLECCIÓN          INTERSECCIÓN         ENRIQUECIMIENTO
+┌──────────┐         ┌────────────┐         ┌──────────────┐    ┌──────────────┐
+│ N miRNAs │──────▶  │TargetScan  │ ──────▶ │  Venn Core   │──▶ │ KEGG / GO /  │
+│ hsa-miR- │         │ v8.0 local │         │  Gene Set    │    │ Reactome /   │
+│  XX-Yp   │         ├────────────┤  modos: │              │    │ WikiPathways │
+└──────────┘         │ miRTarBase │  Estric. │  N-1 · N-2   │    └──────┬───────┘
+                     │ (remoto)   │  N-1     └──────────────┘           │
+                     └────────────┘  N-2                                ▼
+                                                               ┌──────────────────┐
+  INFORME             INVESTIGACIÓN (×4 paralelo por gen)      │  PMID PubMed     │
+┌──────────┐         ┌────────────────────────────────┐        │  por ruta        │
+│ PDF/MD/  │◀──────  │ PubMed · OMIM · ClinVar ·      │        └──────────────────┘
+│   TXT    │         │ ClinicalTrials.gov              │
+└──────────┘         └────────────────────────────────┘
+```
+
+### Modos de Consenso
+
+| Modo | Descripción | Caso de Uso |
+|------|-------------|-------------|
+| **Estricto** | Genes regulados por TODOS los miRNAs del panel | Dianas core de alta confianza |
+| **N-1** | Genes regulados por al menos N-1 miRNAs | Redes regulatorias robustas |
+| **N-2** | Genes regulados por al menos N-2 miRNAs | Exploración de rutas más amplia |
+
+---
+
+## 🧩 Características Principales
+
+### 🔬 Análisis Bioinformático
+
+- **Convergencia dinámica** — Intersección Venn de N miRNAs, sin límite hardcoded en el número de genes core
+- **Enriquecimiento funcional balanceado** — algoritmo de equidad entre KEGG, Reactome, WikiPathways y GO Biological Process
+- **Volcano plot · Diagrama Venn · Interactoma STRING-DB** — generados al vuelo por cada análisis
+
+### 📡 Investigación Multi-fuente
 
 | Fuente | Qué aporta |
-|---|---|
-| **PubMed** | Artículos científicos relevantes por gen + contexto biológico, filtrados por año |
+|--------|-----------|
+| **PubMed** | Artículos científicos por gen + contexto biológico, filtrados por año con cascada de fallback |
 | **OMIM** | Catálogo Mendelian Inheritance in Man — enfermedades hereditarias asociadas |
-| **ClinVar** | Conteo de variantes patogénicas/probablemente patogénicas reportadas |
-| **ClinicalTrials.gov** | Ensayos clínicos activos donde el gen es protagonista (filtrado por título) |
+| **ClinVar** | Conteo de variantes patogénicas / probablemente patogénicas reportadas |
+| **ClinicalTrials.gov** | Ensayos clínicos activos donde el símbolo del gen aparece en el título |
 
-### Robustez y rendimiento
+### ⚡ Robustez y Rendimiento
 
-- **Reintentos 429-aware** — manejo automático de rate-limits de NCBI eUtils.
-- **Cache persistente** — `local_db/analysis_cache.json` almacena traducciones, búsquedas PubMed y resultados de enriquecimiento entre sesiones.
-- **Mapeo ES→EN** — traduce automáticamente términos biológicos del PRESET al inglés para queries efectivas en PubMed.
-- **Cascada de filtros** — si la búsqueda estricta no devuelve resultados, amplía progresivamente la ventana de años.
+- **Reintentos 429-aware** — manejo automático de rate-limits de NCBI eUtils con backoff exponencial
+- **Cache persistente** — `local_db/analysis_cache.json` almacena traducciones, resultados PubMed y enriquecimiento entre sesiones
+- **Mapeo ES→EN** — traduce automáticamente términos biológicos de presets en español para queries PubMed efectivas
+- **Cascada de filtros** — estricto → ventana de años ampliada → mínimo, con fallback progresivo
 
-### Generación de informes
+### 📄 Generación de Informes
 
-- **Editor A4 profesional** — vista previa WYSIWYG con paginación inteligente por medición de altura.
-- **Bibliografía estilo Vancouver** — `[N] Autores. Título. Revista. Año. PMID: X. URL`.
-- **Citas multi-tipo** — PMID / OMIM / ClinVar / NCT con identificador correcto por fuente.
-- **Exportación PDF** — vía `window.print()` con CSS de impresión optimizado, footer anclado al fondo de cada hoja A4.
-- **Exportación Markdown profesional** — ZIP con `Reporte.md` + carpeta `/assets/` (imágenes PNG separadas) + `README.md` explicativo. Compatible con VSCode, Obsidian, Pandoc y GitHub.
-
----
-
-## Capturas
-
-> **Demo:** Ejemplos del resultado real.
-
-```
-docs/
-└── screenshots/
-    ├── editor.png
-    ├── venn-plot.png
-    ├── report-page.png
-    └── narrative-evidence.png
-```
-<img width="1364" height="679" alt="image" src="https://github.com/user-attachments/assets/28c4df8b-8f05-4913-8205-9430c7327af6" />
-
-Graficos de Kenryu
-<img width="1364" height="676" alt="image" src="https://github.com/user-attachments/assets/68353d73-c970-4af9-a467-d0984efba1e0" />
-
-Genes con información rapida en las barras laterales
-<img width="1365" height="680" alt="image" src="https://github.com/user-attachments/assets/903f93c8-50c6-486d-8cc2-92130dea8d16" />
-
-Resultados de la investigacion 
-<img width="1364" height="679" alt="image" src="https://github.com/user-attachments/assets/b4306c1d-029d-442f-be2b-3b0cf9f2e054" />
-
-Ejemplo de una parte del informe narrativo, es mas extenso.
-<img width="1357" height="641" alt="image" src="https://github.com/user-attachments/assets/dfad6fd3-54df-4811-9243-fc516f4a5168" />
-
+- **Editor A4 profesional** — vista previa WYSIWYG con paginación inteligente por medición de altura
+- **Bibliografía estilo Vancouver** — `[N] Autores. Título. Revista. Año. PMID: X. URL`
+- **Citas multi-tipo** — PMID / OMIM / ClinVar / NCT con identificador correcto por fuente
+- **Exportación PDF** — vía `window.print()` con CSS `@media print` optimizado y footer anclado en cada hoja A4
+- **Exportación Markdown ZIP** — `Reporte.md` + carpeta `/assets/` con PNGs separados + `README.md` — compatible con Pandoc / Obsidian / VSCode
 
 ---
 
-## Stack tecnológico
+## 📸 Capturas de Pantalla
 
-**Backend:**
-- Python 3.11
-- FastAPI + Uvicorn
-- httpx (HTTP async)
-- Matplotlib + Seaborn + matplotlib-venn (visualización)
-- Pandas + NumPy (manipulación de datos)
+<div align="center">
 
-**Frontend:**
-- HTML5 + CSS3 (sin framework, diseño dark mode con acentos gold/teal)
-- JavaScript ES2020+ (vanilla)
-- JSZip 3.10 (empaquetado de exportación Markdown)
-- html2pdf.js 0.10 (cargado pero no usado — exporta vía `window.print()`)
-- FontAwesome 6 (iconografía)
+<img width="1364" alt="Interfaz principal de Kenryu con resultados de análisis" src="https://github.com/user-attachments/assets/28c4df8b-8f05-4913-8205-9430c7327af6"/>
+<sub><b>Interfaz principal</b> — Volcano plot, diagrama Venn e interactoma STRING-DB generados en tiempo real</sub>
 
-**Despliegue:**
-- Docker (Python slim)
-- Hugging Face Spaces (CPU)
-- GitHub Pages (presentación)
+<br/><br/>
+
+<img width="1364" alt="Gráficos y visualizaciones del análisis" src="https://github.com/user-attachments/assets/68353d73-c970-4af9-a467-d0984efba1e0"/>
+<sub><b>Gráficos bioinformáticos</b> — Visualización del enriquecimiento funcional</sub>
+
+<br/><br/>
+
+<img width="1365" alt="Información de genes en barras laterales" src="https://github.com/user-attachments/assets/903f93c8-50c6-486d-8cc2-92130dea8d16"/>
+<sub><b>Barras laterales de genes</b> — Acceso rápido a datos OMIM, ClinVar y ensayos clínicos</sub>
+
+<br/><br/>
+
+<img width="1364" alt="Resultados de la investigación multi-fuente" src="https://github.com/user-attachments/assets/b4306c1d-029d-442f-be2b-3b0cf9f2e054"/>
+<sub><b>Resultados de investigación</b> — PubMed · OMIM · ClinVar · ClinicalTrials consolidados</sub>
+
+<br/><br/>
+
+<img width="1357" alt="Informe narrativo académico" src="https://github.com/user-attachments/assets/dfad6fd3-54df-4811-9243-fc516f4a5168"/>
+<sub><b>Informe narrativo</b> — Síntesis académica con bibliografía Vancouver (fragmento)</sub>
+
+</div>
 
 ---
 
-## Arquitectura
+## 🏗️ Arquitectura
 
 ```
                     ┌─────────────────────────────────┐
-                    │   Frontend (HTML/JS/CSS)        │
-                    │  - Editor A4 paginado           │
-                    │  - Exportación PDF y MD-ZIP     │
+                    │   Frontend (HTML / JS / CSS)    │
+                    │  · Editor A4 WYSIWYG paginado   │
+                    │  · PDF · Markdown ZIP · TXT     │
                     └────────────┬────────────────────┘
-                                 │ POST /api/v1/analyze
+                                 │  POST /api/v1/analyze
                                  ▼
                     ┌─────────────────────────────────┐
-                    │  FastAPI Backend (kenryu_engine)│
-                    │  - Intersección Venn            │
-                    │  - Enriquecimiento funcional    │
-                    │  - Investigación multi-fuente   │
+                    │  FastAPI Backend — kenryu_engine│
+                    │  · Motor de Intersección Venn   │
+                    │  · Enriquecimiento Funcional    │
+                    │  · Investigación Multi-fuente   │
                     └────────────┬────────────────────┘
                                  │
-        ┌───────────┬────────────┼────────────┬────────────┐
-        ▼           ▼            ▼            ▼            ▼
-   ┌─────────┐ ┌─────────┐ ┌──────────┐ ┌─────────┐ ┌──────────┐
-   │TargetSc.│ │miRTarBs.│ │ Enrichr  │ │ PubMed  │ │ OMIM /   │
-   │ (local) │ │ (remoto)│ │  (KEGG…) │ │(eUtils) │ │ClinVar / │
-   └─────────┘ └─────────┘ └──────────┘ └─────────┘ │ CTrials  │
-                                                    └──────────┘
+       ┌──────────┬──────────────┼───────────────┬──────────────────┐
+       ▼          ▼              ▼               ▼                  ▼
+ ┌──────────┐ ┌──────────┐ ┌─────────┐ ┌─────────────┐ ┌────────────────┐
+ │TargetScan│ │miRTarBase│ │ Enrichr │ │NCBI PubMed  │ │ OMIM · ClinVar │
+ │ v8 local │ │(Harmoniz)│ │KEGG/GO… │ │  eUtils     │ │  ClinicalTrials│
+ └──────────┘ └──────────┘ └─────────┘ └─────────────┘ └────────────────┘
                                  │
                                  ▼
-                    ┌────────────��────────────────────┐
-                    │  Cache persistente              │
+                    ┌─────────────────────────────────┐
+                    │  Cache Persistente              │
                     │  local_db/analysis_cache.json   │
                     └─────────────────────────────────┘
 ```
 
 ---
 
-## Flujo de análisis
+## 🛠️ Stack Tecnológico
 
-### 1. Entrada de miRNAs
+<table>
+<tr>
+<td valign="top" width="33%">
 
-El usuario ingresa N miRNAs (formato `hsa-miR-XX-Yp`), selecciona año de corte y modo de consenso (Estricto / N-1 / N-2).
+**Backend**
 
-### 2. Recolección de dianas
+![Python](https://img.shields.io/badge/Python%203.11-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![httpx](https://img.shields.io/badge/httpx%20async-1a1d24?style=flat-square)
+![Matplotlib](https://img.shields.io/badge/Matplotlib-11557c?style=flat-square)
+![Pandas](https://img.shields.io/badge/Pandas%20+%20NumPy-150458?style=flat-square&logo=pandas&logoColor=white)
 
-Por cada miRNA, KENRYU:
-- Consulta **TargetScanHuman v8.0** local para predicciones termodinámicas validadas.
-- Consulta **miRTarBase** (vía Harmonizome) para interacciones experimentales (CLIP-seq, Luciferasa, Western Blot).
+</td>
+<td valign="top" width="33%">
 
-### 3. Intersección Venn
+**Frontend**
 
-Aplica el algoritmo de consenso seleccionado:
+![HTML5](https://img.shields.io/badge/HTML5%20+%20CSS3-E34F26?style=flat-square&logo=html5&logoColor=white)
+![JavaScript](https://img.shields.io/badge/Vanilla%20JS%20ES2020+-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![JSZip](https://img.shields.io/badge/JSZip%203.10-1a1d24?style=flat-square)
+![FontAwesome](https://img.shields.io/badge/FontAwesome%206-528DD7?style=flat-square&logo=fontawesome&logoColor=white)
 
-- **Estricto:** genes regulados por TODOS los miRNAs del panel.
-- **N-1:** genes regulados por N-1 o más miRNAs.
-- **N-2:** genes regulados por N-2 o más miRNAs.
+</td>
+<td valign="top" width="33%">
 
-### 4. Enriquecimiento funcional
+**Despliegue**
 
-Para los genes core obtenidos:
-- Consulta Enrichr con balanceo entre KEGG, Reactome, WikiPathways y GO Biological Process.
-- Para cada ruta significativa, busca un PMID de respaldo en PubMed (con filtro de años).
+![Docker](https://img.shields.io/badge/Docker%20slim-2496ED?style=flat-square&logo=docker&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/Hugging%20Face%20Spaces-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
+![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-24292e?style=flat-square&logo=github&logoColor=white)
 
-### 5. Investigación multi-fuente por gen core
-
-Cada gen del Venn dispara cuatro búsquedas paralelas:
-
-| Búsqueda | API | Estrategia |
-|---|---|---|
-| PubMed | NCBI eUtils esearch + esummary | Cascada: gen + contexto EN + año → ampliado → mínimo |
-| OMIM | NCBI eUtils (db=omim) | Búsqueda directa por símbolo de gen |
-| ClinVar | NCBI eUtils (db=clinvar) | Filtro: `pathogenic[Clinical_Significance]` |
-| ClinicalTrials.gov | API v2 | Filtro estricto: título DEBE contener el símbolo del gen |
-
-Todos los resultados se cachean en `PERSISTENT_CACHE["gene_research"]` con clave `v2|{gene}|{years}`.
-
-### 6. Generación del informe
-
-`build_synthesis()` construye 3 secciones narrativas:
-
-- **I. Síntesis académica** — descripción de cada gen core + rutas validadas + evidencia genómica complementaria (narrativa integrada con OMIM/ClinVar/Trials) + conclusión clínica.
-- **2.1 Contexto funcional global** — cada ruta enriquecida con su p-adj real y PMID de respaldo.
-- **I.1 Bibliografía** — cita estilo Vancouver adaptada al tipo de fuente.
+</td>
+</tr>
+</table>
 
 ---
 
-## APIs y bases de datos integradas
+## 🗄️ APIs y Bases de Datos Integradas
 
 | Fuente | Función | Tipo |
-|---|---|---|
-| **TargetScanHuman v8.0** | Predicción termodinámica de sitios de unión | Local (zip) |
-| **miRTarBase** (vía Harmonizome) | Validación experimental de interacciones | API remota |
-| **Enrichr** | Enriquecimiento funcional (KEGG/Reactome/WikiPathways/GO) | API remota |
-| **NCBI PubMed eUtils** | Artículos científicos por gen + contexto | API remota (con reintentos) |
-| **NCBI OMIM** | Enfermedades hereditarias asociadas | API remota |
-| **NCBI ClinVar** | Variantes patogénicas reportadas | API remota |
-| **ClinicalTrials.gov v2** | Ensayos clínicos activos | API remota |
-| **MyGene.info** | Anotación clínica de genes | API remota |
-| **MyMemory API** | Traducción ES↔EN en tiempo real | API remota |
-| **STRING-DB** | Generación del interactoma proteico | API remota |
+|--------|----------|------|
+| 🧬 **TargetScanHuman v8.0** | Predicción termodinámica de sitios de unión | `Local (zip)` |
+| 🔬 **miRTarBase** vía Harmonizome | Validación experimental de interacciones (CLIP-seq, Luciferasa, WB) | `API remota` |
+| 📊 **Enrichr** | Enriquecimiento funcional — KEGG / Reactome / WikiPathways / GO | `API remota` |
+| 📚 **NCBI PubMed eUtils** | Artículos científicos por gen + contexto con cascada y reintentos | `API remota` |
+| 🏥 **NCBI OMIM** | Enfermedades hereditarias asociadas por símbolo de gen | `API remota` |
+| 🧪 **NCBI ClinVar** | Variantes patogénicas / probablemente patogénicas reportadas | `API remota` |
+| 💊 **ClinicalTrials.gov v2** | Ensayos clínicos activos filtrados por símbolo del gen en título | `API remota` |
+| 🔗 **STRING-DB** | Generación del interactoma proteico | `API remota` |
+| 🌐 **MyGene.info** | Anotación clínica de genes | `API remota` |
+| 🔤 **MyMemory API** | Traducción ES↔EN de términos biológicos en tiempo real | `API remota` |
 
 ---
 
-## Instalación
+## 📦 Instalación
 
 ### Requisitos
 
 - Python 3.11+
 - pip
-- (Opcional) Docker para despliegue en contenedor
+- Docker *(opcional — para despliegue en contenedor)*
 
-### Instalación local
+### Instalación Local
 
 ```bash
-# 1. Clonar repositorio
+# 1. Clonar el repositorio
 git clone https://github.com/abrangel/Kenryu.git
 cd Kenryu
 
 # 2. Crear entorno virtual (recomendado)
 python3.11 -m venv venv
-source venv/bin/activate   # Linux/macOS
-# venv\Scripts\activate    # Windows
+source venv/bin/activate      # Linux / macOS
+# venv\Scripts\activate       # Windows
 
 # 3. Instalar dependencias
 pip install -r requirements.txt
@@ -284,8 +307,7 @@ pip install -r requirements.txt
 # 4. Iniciar el servidor
 uvicorn kenryu_engine:app --host 0.0.0.0 --port 7860 --reload
 
-# 5. Abrir en navegador
-# http://localhost:7860
+# 5. Abrir en navegador → http://localhost:7860
 ```
 
 ### Despliegue con Docker
@@ -295,23 +317,23 @@ docker build -t kenryu .
 docker run -p 7860:7860 -v $(pwd)/local_db:/app/local_db kenryu
 ```
 
-El volumen `local_db` persiste el cache entre reinicios del contenedor.
+> El volumen `local_db` persiste el cache de análisis entre reinicios del contenedor.
 
 ### Despliegue en Hugging Face Spaces
 
-El repo está listo para HF Spaces — el Dockerfile expone el puerto 7860 y monta `local_db` para cache persistente. Solo se necesita conectar el Space al repo de GitHub.
+El repo está listo para HF Spaces — el Dockerfile expone el puerto `7860` y monta `local_db` para cache persistente. Solo es necesario conectar el Space a este repositorio de GitHub.
 
 ---
 
-## Uso
+## 🚀 Uso
 
-### Vía interfaz web
+### Vía Interfaz Web
 
-1. Abrir [el Space en producción](https://huggingface.co/spaces/Kenryu007/Bioinformatica) o `http://localhost:7860`.
-2. Ingresar miRNAs separados por comas: `hsa-miR-33a-5p, hsa-miR-144-3p, hsa-miR-758-3p`.
-3. Seleccionar año de corte (filtro de antigüedad de evidencia PubMed).
-4. Seleccionar modo de consenso.
-5. Click en **Ejecutar**.
+1. Abrir el [Space en producción](https://huggingface.co/spaces/Kenryu007/Bioinformatica) o `http://localhost:7860`
+2. Ingresar miRNAs separados por comas: `hsa-miR-33a-5p, hsa-miR-144-3p, hsa-miR-758-3p`
+3. Seleccionar año de corte *(filtro de antigüedad de evidencia PubMed)*
+4. Seleccionar modo de consenso *(Estricto / N-1 / N-2)*
+5. Click en **Ejecutar**
 
 ### Vía API REST
 
@@ -325,184 +347,118 @@ curl -X POST "http://localhost:7860/api/v1/analyze" \
   }'
 ```
 
-**Respuesta:**
+<details>
+<summary><b>📋 Ejemplo de Respuesta JSON</b></summary>
 
 ```json
 {
-  "common_genes": ["ABCA1", "KPNA3", "SCN1A", "..."],
-  "gene_details": { "ABCA1": { "system": "...", "pathology": "...", ... } },
+  "common_genes": ["ABCA1", "KPNA3", "SCN1A"],
   "gene_research": {
     "ABCA1": {
       "pubmed": [{"pmid": "...", "term": "...", "year_window": "10y"}],
-      "omim": [{"omim_id": "600046", "title": "..."}],
+      "omim":   [{"omim_id": "600046", "title": "..."}],
       "clinvar": {"count": 201, "url": "..."},
-      "trials": [{"nct_id": "NCT01456650", "title": "..."}]
+      "trials":  [{"nct_id": "NCT01456650", "title": "..."}]
     }
   },
-  "enrichment": [...],
+  "enrichment": ["..."],
   "scientific_synthesis": "...",
-  "functional_context": "...",
-  "references_text": "...",
-  "report_references": [...],
-  "venn_plot": "data:image/png;base64,...",
+  "venn_plot":    "data:image/png;base64,...",
   "volcano_plot": "data:image/png;base64,...",
-  "ppi_plot": "data:image/png;base64,..."
+  "ppi_plot":     "data:image/png;base64,..."
 }
 ```
 
----
-
-## Exportación de resultados
-
-KENRYU exporta el informe en tres formatos desde el editor:
-
-### PDF
-
-Usa `window.print()` del navegador → "Guardar como PDF". El CSS `@media print` configura:
-- Hoja A4 fija (210 × 297 mm)
-- Footer "KENRYU Bioinformatics Engine" anclado al fondo de cada página
-- Paginación inteligente por medición de altura para evitar solapamientos
-
-### Markdown profesional (.zip)
-
-Genera un paquete ZIP estándar para bioinformáticos:
-
-```
-Reporte-KENRYU.zip
-├── Reporte.md              # Markdown completo (Pandoc-compatible)
-│   ├── Frontmatter YAML
-│   ├── 6 encabezados ##
-│   ├── 2 tablas GFM
-│   ├── 40+ enlaces [texto](url)
-│   ├── Referencias a imágenes ![alt](assets/...)
-│   └── Narrativa completa con OMIM/ClinVar/Trials
-├── assets/
-│   ├── figura-1.png        # Diagrama de Venn
-│   ├── figura-2.png        # Volcano plot
-│   └── figura-3.png        # Interactoma STRING-DB
-└── README.md               # Instrucciones de uso
-```
-
-**Casos de uso:**
-- Editar en VSCode/Obsidian/JupyterLab sin re-renderizar gráficos
-- Versionar en Git/GitHub (texto + imágenes binarias separadas)
-- Convertir a otros formatos: `pandoc Reporte.md -o Reporte.pdf`
-- Publicar directamente en GitHub Pages (renderizado automático)
-
-### TXT (texto plano)
-
-Para análisis rápido sin estructura. Vuelca el `innerText` del editor.
+</details>
 
 ---
 
-## Estructura del repositorio
+## 📁 Estructura del Repositorio
 
 ```
 Kenryu/
-├── README.md                     # Este archivo
-├── Dockerfile                    # Configuración para Hugging Face Spaces / Docker
-├── requirements.txt              # Dependencias Python
-├── .gitattributes                # Configuración Git LFS para archivos binarios
-├── .gitignore                    # Archivos ignorados por Git
+├── kenryu_engine.py              # Backend FastAPI + lógica bioinformática (~1700 líneas)
+├── Dockerfile                    # Configuración HF Spaces / Docker
+├── requirements.txt
 │
-├── kenryu_engine.py              # Motor FastAPI + lógica bioinformática (~1700 líneas)
-│
-├── static/                       # Frontend servido por FastAPI
+├── static/
 │   ├── index.html                # Interfaz principal del editor A4
-│   ├── script.js                 # Lógica del frontend (paginación, exportación PDF/MD)
-│   └── style.css                 # Diseño visual (dark mode + acentos gold/teal)
+│   ├── script.js                 # Lógica frontend (paginación, exportación PDF/MD)
+│   └── style.css                 # Dark mode · acentos gold/teal
 │
-├── data/                         # Bases de datos y datasets
+├── data/
 │   ├── targetscan_full.json.zip  # Base TargetScan v8.0 indexada (Git LFS, ~8 MB)
 │   └── hsa-miR-*.txt             # Archivos de ejemplo pre-procesados por miRNA
 │
-├── releases/                     # Backups y releases oficiales
-│   └── KENRYU_OFFICIAL_RELEASE_BACKUP.zip  # Snapshot estable (Git LFS, ~8 MB)
-│
-└── local_db/                     # Cache persistente (creado en runtime, no en repo)
-    └── analysis_cache.json       # Traducciones, búsquedas PubMed, gene_research
+└── local_db/                     # Cache runtime (creado automáticamente, no en repo)
+    └── analysis_cache.json
 ```
-
-> **Nota técnica:** El backend sirve los archivos del frontend exclusivamente desde `static/`. Los archivos de datos en `data/` se cargan al inicio mediante `load_local_data()` en `kenryu_engine.py`. El directorio `local_db/` se crea automáticamente al primer arranque y persiste el cache entre sesiones.
 
 ---
 
-## Roadmap
+## 🗺️ Roadmap
 
-### Implementado
+### ✅ Implementado
 
-- [x] Convergencia Venn dinámica (modos Estricto / N-1 / N-2)
-- [x] Enriquecimiento funcional balanceado (KEGG / Reactome / WikiPathways / GO)
-- [x] Visualización: Venn, Volcano, Interactoma STRING-DB
-- [x] Bibliografía estilo Vancouver
-- [x] Investigación multi-fuente (PubMed + OMIM + ClinVar + ClinicalTrials)
-- [x] Cache persistente versionado
-- [x] Reintentos 429-aware en NCBI eUtils
+- [x] Convergencia Venn dinámica — modos Estricto / N-1 / N-2
+- [x] Enriquecimiento funcional balanceado — KEGG · Reactome · WikiPathways · GO
+- [x] Visualizaciones — Venn · Volcano · Interactoma STRING-DB
+- [x] Bibliografía estilo Vancouver con tipos de cita multi-fuente
+- [x] Investigación multi-fuente — PubMed · OMIM · ClinVar · ClinicalTrials
+- [x] Cache persistente versionado entre sesiones
+- [x] Reintentos 429-aware con backoff exponencial para NCBI eUtils
 - [x] Mapeo ES→EN para queries PubMed efectivas
-- [x] Exportación Markdown profesional con ZIP + assets
-- [x] Footer A4 anclado correctamente al fondo en PDF
+- [x] Exportación Markdown ZIP profesional con assets de imagen separados
+- [x] Footer A4 anclado correctamente al fondo en todas las páginas PDF
 - [x] Narrativa de evidencia genómica integrada al cuerpo del informe
 
-### Planificado
+### 🔜 Planificado
 
 - [ ] Soporte para isómeros de miRNA (isomiRs)
 - [ ] Integración con DisGeNET para asociación gen-enfermedad
-- [ ] Exportación a JSON estructurado (intercambio con otras herramientas)
+- [ ] Exportación a JSON estructurado para interoperabilidad con otras herramientas
 - [ ] Comparación side-by-side de paneles de miRNAs
 - [ ] Heatmap de expresión cruzada (genes × miRNAs)
-- [ ] Modo "Batch" para procesar múltiples paneles desde CSV
+- [ ] Modo Batch — procesar múltiples paneles desde CSV
 - [ ] Integración con TargetScan v9.0 cuando esté disponible
 
 ---
 
-## Contribuir
+## 🤝 Contribuir
 
 Las contribuciones son bienvenidas. Para reportar bugs, sugerir features o enviar pull requests:
 
 1. **Fork** el repositorio
 2. Crea una rama: `git checkout -b feat/nombre-feature`
-3. Commit con mensajes descriptivos
+3. Commit con mensajes descriptivos siguiendo las convenciones indicadas abajo
 4. Push: `git push origin feat/nombre-feature`
-5. Abre un Pull Request
+5. Abre un **Pull Request**
 
-### Convenciones de commit
+**Convenciones de commit:** `feat:` · `fix:` · `docs:` · `refactor:` · `chore:`
 
-- `feat:` nueva funcionalidad
-- `fix:` corrección de bug
-- `docs:` cambios en documentación
-- `refactor:` refactorización sin cambio funcional
-- `chore:` cambios en infraestructura/build
-
-### Reportar bugs
-
-Por favor incluye:
-- Pasos para reproducir
-- Resultado esperado vs resultado obtenido
-- Logs del navegador (consola) si es un error de frontend
-- Logs del Hugging Face Space si es un error de backend
+Al reportar bugs incluir: pasos para reproducir, resultado esperado vs obtenido, logs de consola del navegador (errores frontend) y logs del HF Space (errores backend).
 
 ---
 
-## Licencia
+## 📜 Licencia
 
-Este proyecto se distribuye bajo una **licencia académica de uso libre para investigación y educación**. Para uso comercial, contactar al autor.
+Este proyecto se distribuye bajo una **Licencia Académica de Uso Libre para Investigación y Educación**. Para uso comercial, contactar al autor.
 
 KENRYU integra datos de fuentes públicas (NCBI, Enrichr, OMIM, ClinVar, ClinicalTrials.gov, STRING-DB) sujetos a sus respectivas políticas de uso. El usuario es responsable de cumplir con los términos de servicio de cada base de datos.
 
 ---
 
-## Autor
+## 👤 Autor
 
-**Cesar Manzo**
+**Cesar Manzo** — Bioinformática Clínica · Análisis Genómico · Medicina Traslacional
 
-- Bioinformática Clínica · Análisis Genómico · Medicina Traslacional
-- Plataforma: [Kenryu en Hugging Face](https://huggingface.co/spaces/Kenryu007/Bioinformatica)
-- Presentación: [Kenryu en GitHub Pages](https://abrangel.github.io/Kenryu)
-- Otros proyectos: [@abrangel](https://github.com/abrangel)
+[![Hugging Face](https://img.shields.io/badge/🤗%20Kenryu-Hugging%20Face-c8a96e?style=flat-square&labelColor=1a1d24)](https://huggingface.co/spaces/Kenryu007/Bioinformatica)
+[![GitHub Pages](https://img.shields.io/badge/🌐%20kenryu-GitHub%20Pages-4fc3a1?style=flat-square&labelColor=1a1d24)](https://abrangel.github.io/Kenryu)
+[![GitHub](https://img.shields.io/badge/@abrangel-GitHub-6eaadc?style=flat-square&logo=github&labelColor=1a1d24)](https://github.com/abrangel)
 
 ---
 
-## Reconocimientos
+## 🙏 Reconocimientos
 
 - **TargetScanHuman** — Lewis Lab, Whitehead Institute
 - **miRTarBase** — Chou *et al.*, Nucleic Acids Research
@@ -515,10 +471,9 @@ KENRYU integra datos de fuentes públicas (NCBI, Enrichr, OMIM, ClinVar, Clinica
 
 <div align="center">
 
-**KENRYU Bioinformatics Engine** · 2026
+<img src="https://capsule-render.vercel.app/api?type=waving&height=100&color=0:0d0f14,50:c8a96e,100:0d0f14&section=footer" width="100%"/>
 
-*Hecho con rigor científico para la comunidad de investigación genómica.*
+<sub><b>KENRYU Bioinformatics Engine</b> · 2026<br/>
+Hecho con rigor científico para la comunidad de investigación genómica.</sub>
 
 </div>
-
-
