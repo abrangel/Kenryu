@@ -68,19 +68,10 @@
   <a href="#-roadmap"><b>Roadmap</b></a>
 </p>
 
-</div>
-
-<br/>
 <p align="center">
-  <a href="https://doi.org/10.5281/zenodo.20564689">
-    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20564689.svg" alt="DOI"/>
-  </a>
-  &nbsp;
-  <a href="https://www.bestpractices.dev/projects/13109">
-    <img src="https://www.bestpractices.dev/projects/13109/badge" alt="OpenSSF Best Practices"/>
-  </a>
-<a href=[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13109/badge)](https://www.bestpractices.dev/projects/13109) </a>
+  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20564689.svg)](https://doi.org/10.5281/zenodo.20564689) &nbsp;&nbsp; [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13109/badge)](https://www.bestpractices.dev/projects/13109)
 </p>
+
 ---
 
 ## ⚠️ Medical Disclaimer
