@@ -80,7 +80,7 @@ KENRYU está diseñado para la educación clínica y el apoyo a la toma de decis
 - **Enriquecimiento funcional balanceado** — algoritmo de equidad entre KEGG, Reactome, WikiPathways y GO.
 - **Volcano plot, diagrama de Venn e interactoma STRING-DB** generados al vuelo.
 
-### Investigación multi-fuente (nuevo en v1.38)
+### Investigación multi-fuente
 
 | Fuente | Qué aporta |
 |---|---|
