@@ -98,24 +98,71 @@ MicroRNAs (miRNAs) are post-transcriptional regulators that control the expressi
 
 ---
 
-## ⚡ Analysis Flow
+### ⚡ Analysis Flow
 
-```
-  INPUT                COLLECTION            INTERSECTION         ENRICHMENT
-┌──────────┐         ┌────────────┐         ┌──────────────┐    ┌──────────────┐
-│ N miRNAs │──────▶  │TargetScan  │ ──────▶ │  Venn Core   │──▶ │ KEGG/GO/     │
-│hsa-miR-  │         │ v8.0 local │         │  Gene Set    │    │ Reactome/    │
-│  XX-Yp   │         ├────────────┤  modes: │              │    │ WikiPathways │
-└──────────┘         │ miRTarBase │  Strict  │  N-1 · N-2   │    └──────┬───────┘
-                     │ (remote)   │  N-1     └──────────────┘           │
-                     └────────────┘  N-2                                ▼
-                                                               ┌──────────────────┐
-  REPORT              RESEARCH (×4 parallel per gene)          │  PubMed PMID     │
-┌──────────┐         ┌────────────────────────────────┐        │  per pathway     │
-│ PDF/MD/  │◀──────  │ PubMed · OMIM · ClinVar ·      │        └──────────────────┘
-│   TXT    │         │ ClinicalTrials.gov              │
-└──────────┘         └────────────────────────────────┘
-```
+*Click on each phase to explore the underlying bioinformatics logic.*
+
+<br/>
+
+| 📥 01. INPUT | 📊 02. COLLECTION | 🎯 03. VENN CORE |
+| :---: | :---: | :---: |
+| miRNA selection | Multi-source retrieval | Genomic convergence |
+
+<details>
+<summary><b>🧬 STEP 01 — Input & Parameters (Click to expand)</b></summary>
+
+> **The Start:** User enters N miRNAs in standard nomenclature.
+- **Dynamic Filtering:** Define the year window for PubMed evidence.
+- **Validation:** Automatic name cleaning for cross-database compatibility.
+</details>
+
+<details>
+<summary><b>🔍 STEP 02 — Multi-Source Collection (Click to expand)</b></summary>
+
+> **The Engine:** Parallel querying of high-fidelity databases.
+- **TargetScan 8.0:** Thermodynamic binding predictions (Local Database).
+- **miRTarBase:** Gold-standard experimental validation via Harmonizome (Remote API).
+</details>
+
+<details>
+<summary><b>💎 STEP 03 — Genomic Convergence (Click to expand)</b></summary>
+
+> **The Logic:** Mathematical intersection of regulatory networks.
+- **Strict Mode:** Only genes common to ALL miRNAs.
+- **N-1 / N-2:** Robust consensus for broader discoveries.
+</details>
+
+<br/>
+
+| 🧬 04. ENRICHMENT | 📡 05. RESEARCH | 📄 06. REPORT |
+| :---: | :---: | :---: |
+| Pathway analysis | Multi-source evidence | Professional output |
+
+<details>
+<summary><b>📊 STEP 04 — Functional Enrichment (Click to expand)</b></summary>
+
+> **The Context:** Identifying biological impact.
+- **Databases:** KEGG, Reactome, WikiPathways, and GO.
+- **Evidence:** Automated PubMed cross-referencing for every significant pathway found.
+</details>
+
+<details>
+<summary><b>📚 STEP 05 — Multi-Source Research (Click to expand)</b></summary>
+
+> **The Evidence:** Consolidating real-world scientific data.
+- Live queries to **ClinVar** (variants) and **OMIM** (disorders).
+- **ClinicalTrials.gov** integration for human-centric research insights.
+</details>
+
+<details>
+<summary><b>✨ STEP 06 — Scientific Reporting (Click to expand)</b></summary>
+
+> **The Result:** Professional-grade academic reports.
+- **Vancouver Style:** Auto-generated citations for all integrated sources.
+- **Multi-Format:** Export to PDF, Markdown ZIP with assets, or raw TXT.
+</details>
+
+---
 
 ### Consensus Modes
 
