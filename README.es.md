@@ -422,6 +422,25 @@ curl -X POST "http://localhost:7860/api/v1/analyze" \
 
 ---
 
+## ✅ Validación en Vivo
+
+KENRYU ha sido validado en vivo contra el Space desplegado (`POST /api/v1/analyze`, `years: 10`, `mode: strict`) con tres paneles independientes de microARNs. Cada ejecución se realizó de extremo a extremo a través de la API pública y reprodujo el núcleo convergente esperado.
+
+| Panel | microARNs | Núcleo Strict | Resultado |
+|-------|-----------|---------------|-----------|
+| **Panel lipídico** (tesis de máster UNIR, 29-03-2026) | hsa-miR-33a-5p, hsa-miR-144-3p, hsa-miR-758-3p, hsa-miR-106b-5p, hsa-miR-33b-5p | **5 genes**: ABCA1, KPNA3, SCN1A, SNTB2, TSC22D2 | Rutas lipídicas significativas (q < 0,05); ABCA1 — OMIM 600046, >200 variantes patogénicas en ClinVar, ensayo NCT01456650 |
+| **Panel de ejemplo** (prueba en vivo, 11-11-2026) | hsa-miR-375, hsa-miR-29a-3p, hsa-miR-21-5p | **6 genes**: GMFB, KLF12, NFIA, PDE3A, SKI, SOX6 | Reproduce exactamente el informe de ejemplo incluido en este repositorio |
+| **Panel de cáncer** (prueba en vivo, 11-11-2026) | hsa-miR-21-5p, hsa-miR-155-5p, hsa-let-7a-5p | **18 genes**: AAK1, ACVR2A, AGO4, BNC2, BRWD3, CHD7, DCUN1D3, FOXP1, IL6R, KPNA4, MEIS1, PURB, RDX, RPS6KA3, SESN3, UBN2, WNK3, XKR4 | 24 términos de enriquecimiento (8 Reactome · 8 GO · 8 WikiPathways); 3 significativos con p-adj < 0,05: Biología del desarrollo (Reactome, 0,0176), Recycling Pathway of L1 (0,0424), Signaling by TGFBR3 (0,0424) |
+
+> **Reproduce el panel de cáncer tú mismo:**
+> ```bash
+> curl -X POST "https://kenryu007-bioinformatica.hf.space/api/v1/analyze" \
+>   -H "Content-Type: application/json" \
+>   -d '{"mirnas": ["hsa-miR-21-5p", "hsa-miR-155-5p", "hsa-let-7a-5p"], "years": 10, "mode": "strict"}'
+> ```
+
+---
+
 ## 📁 Estructura del Repositorio
 
 ```

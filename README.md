@@ -434,6 +434,25 @@ curl -X POST "http://localhost:7860/api/v1/analyze" \
 
 ---
 
+## ✅ Live Validation
+
+KENRYU has been validated live against the deployed Space (`POST /api/v1/analyze`, `years: 10`, `mode: strict`) with three independent miRNA panels. Each run was executed end-to-end through the public API and reproduced the expected convergent core.
+
+| Panel | miRNAs | Strict core | Result |
+|-------|--------|-------------|--------|
+| **Lipid panel** (UNIR master's thesis, 2026-03-29) | hsa-miR-33a-5p, hsa-miR-144-3p, hsa-miR-758-3p, hsa-miR-106b-5p, hsa-miR-33b-5p | **5 genes**: ABCA1, KPNA3, SCN1A, SNTB2, TSC22D2 | Lipid pathways significant (q < 0.05); ABCA1 — OMIM 600046, >200 pathogenic ClinVar variants, trial NCT01456650 |
+| **Example panel** (live test, 2026-11-11) | hsa-miR-375, hsa-miR-29a-3p, hsa-miR-21-5p | **6 genes**: GMFB, KLF12, NFIA, PDE3A, SKI, SOX6 | Reproduces exactly the example report shipped with this repository |
+| **Cancer panel** (live test, 2026-11-11) | hsa-miR-21-5p, hsa-miR-155-5p, hsa-let-7a-5p | **18 genes**: AAK1, ACVR2A, AGO4, BNC2, BRWD3, CHD7, DCUN1D3, FOXP1, IL6R, KPNA4, MEIS1, PURB, RDX, RPS6KA3, SESN3, UBN2, WNK3, XKR4 | 24 enrichment terms (8 Reactome · 8 GO · 8 WikiPathways); 3 significant with p-adj < 0.05: Developmental Biology (Reactome, 0.0176), Recycling Pathway of L1 (0.0424), Signaling by TGFBR3 (0.0424) |
+
+> **Reproduce the cancer panel yourself:**
+> ```bash
+> curl -X POST "https://kenryu007-bioinformatica.hf.space/api/v1/analyze" \
+>   -H "Content-Type: application/json" \
+>   -d '{"mirnas": ["hsa-miR-21-5p", "hsa-miR-155-5p", "hsa-let-7a-5p"], "years": 10, "mode": "strict"}'
+> ```
+
+---
+
 ## 📁 Repository Structure
 
 ```
