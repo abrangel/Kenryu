@@ -666,20 +666,26 @@ async def fetch_pubmed_count(gene: str, client: httpx.AsyncClient) -> int:
         return 0
 
 
-async def fetch_string_network(genes: list, client: httpx.AsyncClient) -> list:
+async def fetch_string_network(genes: list, client: httpx.AsyncClient,
+                               add_nodes: int = 0) -> list:
     """Interacciones reales entre `genes` vía STRING-DB (API pública, sin clave).
     Devuelve [(genA, genB, score 0-1)] con confianza >= 0,4
     (required_score=400, especie humana 9606). Solo aristas entre los genes
     pedidos; si STRING no devuelve ninguna, la lista queda vacía y el
-    gráfico PPI no se dibuja (no se inventan aristas)."""
+    gráfico PPI no se dibuja (no se inventan aristas).
+    Con add_nodes=N, STRING añade N proteínas vecinas de primera corona
+    (las que más interactúan con los genes pedidos): las aristas hacia
+    ellas también son reales y el dibujo las marca como vecinas."""
     genes = [g for g in dict.fromkeys((genes or [])) if g]
     if len(genes) < 2:
         return []
     try:
-        r = await client.get("https://string-db.org/api/json/network", params={
-            "identifiers": "%0d".join(genes),
-            "species": 9606, "required_score": 400,
-        }, timeout=20.0)
+        params = {"identifiers": "%0d".join(genes),
+                  "species": 9606, "required_score": 400}
+        if add_nodes:
+            params["add_nodes"] = add_nodes
+        r = await client.get("https://string-db.org/api/json/network",
+                             params=params, timeout=20.0)
         if r.status_code != 200:
             return []
         wanted = {g.upper() for g in genes}
@@ -687,12 +693,18 @@ async def fetch_string_network(genes: list, client: httpx.AsyncClient) -> list:
         for row in r.json():
             a = (row.get("preferredName_A") or "").upper()
             b = (row.get("preferredName_B") or "").upper()
-            if a in wanted and b in wanted and a != b:
-                try:
-                    score = float(row.get("score", 0))
-                except (TypeError, ValueError):
+            if a == b:
+                continue
+            if add_nodes:
+                if a not in wanted and b not in wanted:
                     continue
-                out.append((a, b, score))
+            elif a not in wanted or b not in wanted:
+                continue
+            try:
+                score = float(row.get("score", 0))
+            except (TypeError, ValueError):
+                continue
+            out.append((a, b, score))
         seen, dedup = set(), []
         for a, b, s in out:
             key = tuple(sorted((a, b)))
@@ -703,6 +715,61 @@ async def fetch_string_network(genes: list, client: httpx.AsyncClient) -> list:
         return dedup
     except Exception:
         return []
+
+
+def parse_uniprot_entry(entry: dict, gene: str) -> dict | None:
+    """Extrae la relevancia de una proteína de una entrada UniProtKB
+    (revisada). Puro: recibe el dict tal como lo devuelve la API.
+    Devuelve {uniprot_id, protein_name, function, locations, diseases, url}."""
+    if not entry:
+        return None
+    name = (entry.get("proteinDescription", {}).get("recommendedName", {})
+            .get("fullName", {}).get("value", gene))
+    function, locations, diseases = "", [], []
+    for c in entry.get("comments", []):
+        t = c.get("commentType")
+        if t == "FUNCTION":
+            function = " ".join(x.get("value", "") for x in c.get("texts", []))
+        elif t == "SUBCELLULAR LOCATION":
+            for loc in c.get("subcellularLocations", []):
+                v = (loc.get("location") or {}).get("value", "")
+                if v:
+                    locations.append(v)
+        elif t == "DISEASE":
+            d = c.get("disease") or {}
+            label = d.get("diseaseId") or d.get("acronym") or ""
+            desc = d.get("description", "")
+            if label:
+                diseases.append(f"{label}: {desc}" if desc else label)
+    acc = entry.get("primaryAccession", "")
+    return {
+        "uniprot_id": acc,
+        "protein_name": name,
+        "function": function[:600],
+        "locations": locations[:3],
+        "diseases": diseases[:3],
+        "url": f"https://rest.uniprot.org/uniprotkb/{acc}" if acc else "",
+    }
+
+
+async def fetch_uniprot_for_gene(gene: str, client: httpx.AsyncClient) -> dict | None:
+    """Relevancia de la proteína del gen vía UniProt (API pública, sin clave).
+    Devuelve el dict de parse_uniprot_entry o None si UniProt no tiene
+    entrada revisada para el gen (o si la red falla)."""
+    try:
+        r = await client.get("https://rest.uniprot.org/uniprotkb/search", params={
+            "query": f"gene_exact:{gene} AND organism_id:9606 AND reviewed:true",
+            "fields": "accession,protein_name,cc_function,cc_subcellular_location,cc_disease",
+            "format": "json", "size": 1,
+        }, timeout=15.0)
+        if r.status_code != 200:
+            return None
+        results = r.json().get("results", [])
+        if not results:
+            return None
+        return parse_uniprot_entry(results[0], gene)
+    except Exception:
+        return None
 
 
 async def fetch_clinicaltrials_for_gene(gene: str, client: httpx.AsyncClient) -> list:
@@ -924,7 +991,8 @@ SYSTEM_MAP = {
 async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     info = {"full_name": gene, "system": "Multisistémico",
             "pathology": "Nodo regulador crítico identificado en convergencia de miRNAs.",
-            "associated_routes": [], "pmid": None, "confidence": {"score": 85}}
+            "associated_routes": [], "pmid": None, "confidence": {"score": 85},
+            "protein": None}
     
     # Descripciones de ÉLITE con EVIDENCIA ESTRUCTURADA
     PRESETS = {
@@ -1044,6 +1112,9 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             "pmid": p["clinical_evidence"][0]["pmid"] if p["clinical_evidence"] else None,
             "confidence": {"score": 95}
         })
+        # Relevancia de la proteína (UniProt): qué hace, dónde trabaja,
+        # con qué enfermedad se asocia.
+        info["protein"] = await fetch_uniprot_for_gene(gene, client)
         return info
 
     try:
@@ -1120,10 +1191,11 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
         if ids: info["pmid"] = ids[0]
     except:
         pass
+    info["protein"] = await fetch_uniprot_for_gene(gene, client)
     return info
 
 # ── GRÁFICOS ──────────────────────────────────────────────────────────────────
-app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.40")
+app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.41")
 
 # Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
 origins = [
@@ -1162,7 +1234,7 @@ async def serve_style():
 
 @app.get("/health")
 async def health():
-    return {"status": "OK", "version": "1.40",
+    return {"status": "OK", "version": "1.41",
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": load_local_versions()}
@@ -1304,7 +1376,7 @@ async def startup_event():
         TARGETSCAN_DB = load_local_data()
     load_mirtarbase_local()
     load_gmt_libraries()
-    logger.info(f"🚀 KENRYU v1.40 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+    logger.info(f"🚀 KENRYU v1.41 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
 
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):
@@ -1482,7 +1554,10 @@ async def analyze(req: AnalysisRequest):
 
             pairs = await asyncio.gather(*[_count(g) for g in top_genes])
             pubmed_counts = dict(pairs)
-            ppi_edges = await fetch_string_network(sorted_common[:12], _viz_client)
+            # Primera corona: 5 proteínas vecinas que más interactúan con
+            # los genes core (la red que la tesis describía como dos módulos).
+            ppi_edges = await fetch_string_network(
+                sorted_common[:12], _viz_client, add_nodes=5)
 
     # ── GRÁFICOS ──────────────────────────────────────────────────────────────
     v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, sorted_common,

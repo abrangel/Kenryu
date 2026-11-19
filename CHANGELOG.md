@@ -2,6 +2,29 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.41] — 2026-11-18
+
+### Added
+- Protein relevance (UniProt, public API, no key): every core gene now
+  carries its protein — name, UniProt accession, what it does, where it
+  works in the cell, associated disease — in a new dashboard card
+  ("Relevancia de las proteínas") and in the gene side-panel. Examples:
+  ABCA1 → O95477, Tangier disease; SCN1A → P35498, GEFS+; KPNA3 → O00505,
+  Spastic paraplegia 88. Offline, the card honestly says there is no data.
+- One-click examples on the input panel: Lípidos (tesis), Cáncer,
+  Control — they fill the input and run the analysis immediately.
+- PPI now includes the first shell of STRING neighbours (add_nodes=5):
+  the thesis two-module picture reappears (dystrophin module SNTA1/SNTB1/
+  SNTB2/UTRN/DTNB around ABCA1–SCN1A, and TSC22D2–FAM117B). Neighbour
+  proteins are drawn grey; core genes blue.
+
+### Fixed
+- The reverse lookup moved BELOW the results grid so it no longer
+  clutters the front of the page.
+- PPI crash on an isolated core gene: KPNA3 has no STRING edges even with
+  neighbours, and the size lookup raised KeyError (caught by the live run
+  before publishing; regression test added).
+
 ## [1.40] — 2026-11-18
 
 ### Added

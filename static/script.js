@@ -139,6 +139,26 @@ function renderDashboard(data) {
       }
     }
 
+    // Relevancia de las proteínas (UniProt): qué hace cada proteína,
+    // dónde trabaja y con qué enfermedad se asocia.
+    const prEl = document.getElementById('proteins-container');
+    if (prEl) {
+      const gd = data.gene_details || {};
+      const rows = (data.common_genes || []).map(g => {
+        const d = gd[g] || {};
+        const p = d.protein;
+        if (!p) return `<tr><td><b>${g}</b></td><td colspan="3" style="color:var(--text-faint); font-size:11px;">Sin datos de UniProt (sin internet o sin entrada revisada).</td></tr>`;
+        const func = (p.function || '—').slice(0, 220);
+        const dis = (p.diseases || []).join('; ') || '—';
+        const loc = (p.locations || []).join(', ') || '—';
+        const link = p.url ? `<br><a href="${p.url}" target="_blank" style="color:var(--gold); font-size:10px;">UniProt ${p.uniprot_id}</a>` : '';
+        return `<tr><td><b>${g}</b><br><span style="color:var(--text-dim); font-size:11px;">${p.protein_name || ''}</span>${link}</td><td style="font-size:11px;">${func}</td><td style="font-size:11px;">${loc}</td><td style="font-size:11px;">${dis}</td></tr>`;
+      }).join('');
+      prEl.innerHTML = rows
+        ? `<table class="sci-table"><thead><tr><th>Gen / Proteína</th><th>Qué hace</th><th>Dónde trabaja</th><th>Enfermedad asociada</th></tr></thead><tbody>${rows}</tbody></table>`
+        : '<div style="color:var(--text-faint); padding:20px; text-align:center;">Sin genes núcleo.</div>';
+    }
+
     const enEl = document.getElementById('enrich-container');
     if (enEl) {
       if (data.enrichment && data.enrichment.length) {
@@ -184,6 +204,19 @@ function panelFamily(m) {
 function currentPanelFamilies() {
   const input = document.getElementById('mirna-input').value || '';
   return input.split(',').map(panelFamily).filter(Boolean);
+}
+
+const EXAMPLES = {
+  lipidos: 'hsa-miR-33a-5p, hsa-miR-144-3p, hsa-miR-758-3p, hsa-miR-106b-5p, hsa-miR-33b-5p',
+  cancer: 'hsa-miR-21-5p, hsa-miR-155-5p, hsa-let-7a-5p',
+  control: 'hsa-miR-375, hsa-miR-29a-3p, hsa-miR-21-5p'
+};
+
+function loadExample(key) {
+  const panel = EXAMPLES[key];
+  if (!panel) return;
+  document.getElementById('mirna-input').value = panel;
+  analyzePro();
 }
 
 async function reverseLookup() {
@@ -243,6 +276,13 @@ async function openGenePanel(gene) {
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Relevancia Patológica Detallada</small>
       <div style="font-family:'Spectral', serif; font-size:13.5px; text-align:justify; color:var(--text); line-height:1.7;">${d.pathology}</div>
     </div>
+    ${d.protein ? `<div style="margin-bottom:20px; padding:15px; background:rgba(79,195,161,0.05); border-radius:8px; border-left:4px solid var(--teal);">
+      <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Proteína (UniProt)</small>
+      <div style="font-size:13.5px; font-weight:600; color:var(--text);">${d.protein.protein_name} <a href="${d.protein.url}" target="_blank" style="color:var(--gold); font-size:11px; font-family:var(--font-mono);">${d.protein.uniprot_id}</a></div>
+      <div style="font-size:12px; color:var(--text-dim); line-height:1.6; margin-top:6px;">${d.protein.function || 'Sin descripción en UniProt.'}</div>
+      ${d.protein.locations && d.protein.locations.length ? `<div style="font-size:11px; color:var(--text-dim); margin-top:6px;">Dónde: ${d.protein.locations.join(', ')}</div>` : ''}
+      ${d.protein.diseases && d.protein.diseases.length ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Enfermedad: ${d.protein.diseases.join('; ')}</div>` : ''}
+    </div>` : ''}
     <div style="margin-bottom:10px;">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase;">Rutas Metabólicas de Consenso</small>
       <div style="font-size:11.5px; color:var(--text-dim); line-height:1.7; margin-top:8px; font-style:italic;">

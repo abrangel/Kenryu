@@ -192,15 +192,20 @@ def create_visuals(gene_sets: list, mirnas: list, common_all: list,
     if ppi_edges is not None and common_all:
         # Todos los genes core son nodos (los aislados también se ven:
         # que STRING no registre interacción entre dos genes a >= 0,4
-        # también es información). Las aristas son solo las reales.
-        nodes = list(dict.fromkeys(common_all))[:12]
-        degree = {g: 0 for g in nodes}
+        # también es información). Las aristas son solo las reales, y los
+        # nodos grises son proteínas vecinas de primera corona (las que
+        # más interactúan con los genes core según STRING).
+        core_nodes = list(dict.fromkeys(common_all))[:12]
+        degree = {}
         for a, b, _s in ppi_edges:
-            if a in degree:
-                degree[a] += 1
-            if b in degree:
-                degree[b] += 1
-        nodes = sorted(nodes, key=lambda g: (-degree[g], g))
+            for g in (a, b):
+                degree[g] = degree.get(g, 0) + 1
+        neighbor_nodes = sorted(
+            {g for a, b, _s in ppi_edges for g in (a, b)
+             if g not in core_nodes},
+            key=lambda g: (-degree[g], g))
+        nodes = (sorted(core_nodes, key=lambda g: (-degree.get(g, 0), g))
+                 + neighbor_nodes)[:16]
         edges = [(a, b, s) for a, b, s in ppi_edges
                  if a in nodes and b in nodes]
         fig3, ax3 = plt.subplots(figsize=(9, 9), facecolor='white')
@@ -218,14 +223,18 @@ def create_visuals(gene_sets: list, mirnas: list, common_all: list,
                      linewidth=0.6 + 2.4 * s, zorder=1, alpha=0.75)
         for gene in nodes:
             gx, gy = pos[gene]
-            ax3.scatter([gx], [gy], s=220 + 90 * degree[gene], c='#4e9af1',
+            color = '#4e9af1' if gene in core_nodes else '#9aa5b1'
+            ax3.scatter([gx], [gy], s=220 + 90 * degree.get(gene, 0), c=color,
                         zorder=5, edgecolors='white', linewidth=1.8)
             ax3.text(gx, gy + 0.06, gene, ha='center', va='center',
                      fontsize=9, fontweight='bold', color='#1a1a2e', zorder=7,
                      bbox=dict(boxstyle='round,pad=0.2', facecolor='white',
                                edgecolor='none', alpha=0.8))
+        n_neighbors = len([g for g in nodes if g not in core_nodes])
         ax3.set_title(f"Interactoma PPI — STRING-DB (confianza ≥ 0,4), "
-                      f"{len(edges)} interacciones",
+                      f"{len(edges)} interacciones"
+                      + (f" — {n_neighbors} proteínas vecinas (grises)"
+                         if n_neighbors else ""),
                       color='#1a1a2e', fontsize=13, pad=14, fontweight='bold')
         ax3.set_xlim(0.05, 0.95); ax3.set_ylim(0.05, 0.95)
         buf3 = io.BytesIO()

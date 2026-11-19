@@ -144,3 +144,20 @@ def test_reverse_lookup_ui_and_explanations():
     assert "Cada punto es un gen real" in html
     assert "Cada fila es un gen" in html
     assert "STRING-DB" in html
+
+
+def test_reverse_panel_below_results_and_examples_and_proteins():
+    """Reverse lookup must NOT clutter the front: it sits BELOW the results
+    grid. The dashboard also offers one-click examples and a Proteins card."""
+    import re
+    html = (Path(__file__).resolve().parent.parent / "static" / "index.html").read_text()
+    js = (Path(__file__).resolve().parent.parent / "static" / "script.js").read_text()
+    assert html.index('id="results-grid"') < html.index('id="reverse-panel"')
+    assert "loadExample('lipidos')" in html
+    assert "loadExample('cancer')" in html
+    assert "loadExample('control')" in html
+    assert "hsa-miR-21-5p, hsa-miR-155-5p, hsa-let-7a-5p" in js
+    assert 'id="proteins-container"' in html
+    assert "Relevancia de las proteínas" in html
+    assert "d.protein" in js
+    assert "UniProt" in js

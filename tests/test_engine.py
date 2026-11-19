@@ -189,6 +189,88 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.40"
+    assert body["version"] == "1.41"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
+
+
+# ── Protein relevance (UniProt) + STRING neighbours ──────────────────────────
+
+def test_parse_uniprot_entry():
+    entry = {
+        "primaryAccession": "O95477",
+        "proteinDescription": {"recommendedName": {"fullName": {"value": "Phospholipid-transporting ATPase ABCA1"}}},
+        "comments": [
+            {"commentType": "FUNCTION", "texts": [{"value": "Catalyzes the translocation of phospholipids."}]},
+            {"commentType": "SUBCELLULAR LOCATION", "subcellularLocations": [{"location": {"value": "Cell membrane"}}]},
+            {"commentType": "DISEASE", "disease": {"diseaseId": "Tangier disease", "description": "Deficiency causes Tangier."}},
+        ],
+    }
+    p = ke.parse_uniprot_entry(entry, "ABCA1")
+    assert p["uniprot_id"] == "O95477"
+    assert p["protein_name"] == "Phospholipid-transporting ATPase ABCA1"
+    assert "translocation" in p["function"]
+    assert p["locations"] == ["Cell membrane"]
+    assert p["diseases"][0].startswith("Tangier disease")
+    assert p["url"] == "https://rest.uniprot.org/uniprotkb/O95477"
+    assert ke.parse_uniprot_entry({}, "X") is None
+
+
+def test_fetch_string_network_add_nodes_keeps_neighbours():
+    import asyncio
+    import httpx
+
+    def _mock(request):
+        assert "add_nodes=5" in str(request.url)
+        return httpx.Response(200, json=[
+            {"preferredName_A": "ABCA1", "preferredName_B": "SNTB2", "score": 0.836},
+            {"preferredName_A": "SNTA1", "preferredName_B": "ABCA1", "score": 0.568},
+            {"preferredName_A": "ZZZ", "preferredName_B": "YYY", "score": 0.9},
+        ])
+
+    async def _run():
+        transport = httpx.MockTransport(_mock)
+        async with httpx.AsyncClient(transport=transport) as client:
+            return await ke.fetch_string_network(["ABCA1", "SNTB2"], client, add_nodes=5)
+
+    edges = asyncio.run(_run())
+    assert ("ABCA1", "SNTB2", 0.836) in edges
+    assert ("ABCA1", "SNTA1", 0.568) in edges  # neighbour kept
+    assert all("ZZZ" not in e and "YYY" not in e for e in edges)  # unrelated dropped
+
+
+def test_fetch_uniprot_for_gene_mocked():
+    import asyncio
+    import httpx
+
+    def _mock(request):
+        assert "ABCA1" in str(request.url)
+        return httpx.Response(200, json={"results": [{
+            "primaryAccession": "O95477",
+            "proteinDescription": {"recommendedName": {"fullName": {"value": "Phospholipid-transporting ATPase ABCA1"}}},
+            "comments": [{"commentType": "FUNCTION", "texts": [{"value": "Moves phospholipids."}]}],
+        }]})
+
+    async def _run():
+        transport = httpx.MockTransport(_mock)
+        async with httpx.AsyncClient(transport=transport) as client:
+            return await ke.fetch_uniprot_for_gene("ABCA1", client)
+
+    p = asyncio.run(_run())
+    assert p["uniprot_id"] == "O95477"
+    assert "Moves phospholipids" in p["function"]
+
+
+def test_ppi_isolated_core_gene_and_neighbour():
+    """Regression: a core gene with NO STRING edges (KPNA3 in the thesis
+    panel) must not crash the PPI — it is drawn as an isolated node, and
+    neighbour proteins (first shell) are drawn grey."""
+    import base64
+    sets = [{"ABCA1", "KPNA3"}, {"ABCA1", "SCN1A"}, {"ABCA1", "SNTB2"}]
+    counts = {"ABCA1": 1200, "KPNA3": 45, "SCN1A": 900, "SNTB2": 30}
+    edges = [("ABCA1", "SNTB2", 0.836), ("ABCA1", "SNTA1", 0.568)]
+    venn, volcano, ppi = ke.create_visuals(
+        sets, PANEL[:3], ["ABCA1", "KPNA3", "SCN1A", "SNTB2"],
+        pubmed_counts=counts, ppi_edges=edges)
+    for img in (venn, volcano, ppi):
+        assert base64.b64decode(img)[:8] == b"\x89PNG\r\n\x1a\n"
