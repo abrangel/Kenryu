@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.48"
+    assert body["version"] == "1.49"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -956,3 +956,46 @@ def test_analyze_validation_report_has_evidence_levels():
     assert genes["TSC22D2"]["evidence_level"] == "weak"
     assert genes["KPNA3"]["evidence_level"] == "none"
     assert genes["SCN1A"]["evidence_level"] == "none"
+
+
+# ── v1.49 — fondo del enriquecimiento: universo predicho ───────────────────
+# Método: prueba escrita primero; falló con el fondo de la unión de GMTs
+# (el panel de control devolvía 1 término offline, artefacto del fondo
+# equivocado: las dianas del panel ya están enriquecidas en esa ruta,
+# así que el fondo correcto la descuenta).
+
+
+def test_analyze_offline_enrichment_uses_predicted_universe():
+    """v1.49: el enriquecimiento local usa como fondo la unión de las
+    dianas predichas del panel, no la unión de cada GMT. El panel de
+    control lo demuestra: con la unión de GMTs daba 1 término offline;
+    con el universo predicho da 0, y la respuesta coincide con el
+    cálculo directo con ese fondo."""
+    from fastapi.testclient import TestClient
+    from kenryu_core import local_enrichment
+
+    mirnas = ["hsa-miR-375", "hsa-miR-29a-3p", "hsa-miR-21-5p"]
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": mirnas, "years": 10, "mode": "strict", "offline": True})
+    assert r.status_code == 200
+    body = r.json()
+    api_terms = body["enrichment"]
+    ke.load_local_data()
+    ke.load_gmt_libraries()
+    predicted = set()
+    for m in mirnas:
+        predicted |= ke.get_targets_local(m)
+    assert len(predicted) > 1000  # universo predicho real, no vacío
+    direct_p = local_enrichment(
+        body["common_genes"], ke.GMT_LIBRARIES, background=predicted)
+    direct_u = local_enrichment(body["common_genes"], ke.GMT_LIBRARIES)
+    # La API usa el universo predicho, no la unión de GMTs.
+    assert [(t["Term"], t["Source"]) for t in api_terms] == [
+        (t["Term"], t["Source"]) for t in direct_p]
+    for a, d in zip(api_terms, direct_p):
+        assert a["Pval"] == pytest.approx(d["Pval"])
+    # Y el fondo cambia el resultado de verdad: el término GO que daba
+    # la unión de GMTs era un artefacto del fondo equivocado.
+    assert len(direct_u) == 1 and direct_u[0]["Source"] == "GO"
+    assert direct_p != direct_u

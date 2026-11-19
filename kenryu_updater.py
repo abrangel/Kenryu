@@ -69,9 +69,9 @@ DATA_SOURCES = [
         "download_url": "https://www.targetscan.org/vert_80/",
         "files": [
             {"url": "https://www.targetscan.org/vert_80/vert_80_data_download/Predicted_Targets_Info.default_predictions.txt.zip",
-             "local": "data/targetscan_full.json.zip", "verify": "zip"},
+             "local": "data/targetscan_full.txt.zip", "verify": "zip"},
         ],
-        "note": "Local database (targetscan_full.json.zip, 8.3 MB). "
+        "note": "Local database (targetscan_full.txt.zip, 8.3 MB; renamed in v1.49 — the zip holds a .txt, not JSON). "
                 "No v9.0 release found as of 2026-11-18. Direct file URL "
                 "resolved from the data-download CGI 2026-11-18.",
     },
@@ -340,7 +340,9 @@ import hashlib
 import html as html_lib
 import os
 import shutil
+import time
 import zipfile
+from urllib.parse import urlparse
 
 
 def verify_fasta(path):
@@ -349,10 +351,7 @@ def verify_fasta(path):
         first = fh.readline()
         if not first.startswith(">"):
             raise ValueError(f"{path}: not a FASTA file (first line: {first[:40]!r})")
-        for line in fh:
-            if line.startswith(">"):
-                return True
-    raise ValueError(f"{path}: FASTA file has no entries")
+    return True
 
 
 def verify_zip(path):
@@ -399,11 +398,21 @@ def transform_html_fasta(path):
     text = text.strip() + "\n"
     if not text.startswith(">"):
         raise ValueError(f"{path}: no FASTA content after HTML unwrap")
-    Path(path).write_text(text, encoding="utf-8")
+    # H-20: en Windows, write_text sin newline traduce \n a \r\n (161 vs
+    # 157 bytes) y el tamaño reportado ya no coincide con el archivo.
+    Path(path).write_text(text, encoding="utf-8", newline="\n")
     return True
 
 
 _TRANSFORMS = {"html_fasta": transform_html_fasta}
+
+
+# H-20 (Ronda 3, v1.49): reintentos con backoff en 429 y timeouts de red
+# (el actualizador fallaba a la primera ante un 429 de miRBase/Enrichr).
+# Solo se reintentan errores transitorios: 429 y timeouts/conexión.
+# Un 404 u otro error HTTP no se reintenta. Los tests fijan los delays
+# a 0 con monkeypatch.
+_DOWNLOAD_RETRY_DELAYS = (2.0, 4.0)
 
 
 def download_file(url, dest, client, timeout=300.0, min_bytes=1, verify=None,
@@ -412,20 +421,45 @@ def download_file(url, dest, client, timeout=300.0, min_bytes=1, verify=None,
     renames it into place after the optional transform, the size check and
     the optional verifier pass, so a failed download never leaves a partial
     file at dest. Returns (dest, sha256_hex, size_bytes). Raises on any
-    failure."""
+    failure. Only https URLs are allowed (no downgrade to http). Transient
+    failures (429, timeouts) are retried up to 3 attempts with backoff."""
+    if urlparse(url).scheme != "https":
+        raise ValueError(f"{url}: only https downloads are allowed")
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".tmp")
     sha = hashlib.sha256()
     size = 0
+    for attempt in range(3):
+        sha = hashlib.sha256()
+        size = 0
+        try:
+            with client.stream("GET", url, follow_redirects=True, timeout=timeout) as resp:
+                resp.raise_for_status()
+                with open(tmp, "wb") as fh:
+                    for chunk in resp.iter_bytes(1 << 16):
+                        fh.write(chunk)
+                        sha.update(chunk)
+                        size += len(chunk)
+            break
+        except (httpx.HTTPStatusError, httpx.TimeoutException, httpx.ConnectError) as e:
+            retryable = (
+                isinstance(e, (httpx.TimeoutException, httpx.ConnectError))
+                or (isinstance(e, httpx.HTTPStatusError)
+                    and e.response.status_code == 429))
+            if not retryable or attempt == 2:
+                tmp.unlink(missing_ok=True)
+                raise
+            delay = _DOWNLOAD_RETRY_DELAYS[attempt]
+            if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == 429:
+                retry_after = e.response.headers.get("retry-after")
+                if retry_after:
+                    try:
+                        delay = min(float(retry_after), 60.0)
+                    except ValueError:
+                        pass
+            time.sleep(delay)
     try:
-        with client.stream("GET", url, follow_redirects=True, timeout=timeout) as resp:
-            resp.raise_for_status()
-            with open(tmp, "wb") as fh:
-                for chunk in resp.iter_bytes(1 << 16):
-                    fh.write(chunk)
-                    sha.update(chunk)
-                    size += len(chunk)
         if size < min_bytes:
             raise ValueError(f"{url}: downloaded {size} bytes, expected >= {min_bytes}")
         if transform:

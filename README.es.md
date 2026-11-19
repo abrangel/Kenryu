@@ -48,7 +48,7 @@
 <!-- ESTADÍSTICAS -->
 <p align="center">
   <img src="https://img.shields.io/badge/familias%20miRNA-285-c8a96e?style=flat-square&labelColor=1a1d24"/>
-  <img src="https://img.shields.io/badge/dianas%20gen%C3%B3micas-18k%2B-4fc3a1?style=flat-square&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/dianas%20gen%C3%B3micas-13%2C035-4fc3a1?style=flat-square&labelColor=1a1d24"/>
   <img src="https://img.shields.io/badge/validaci%C3%B3n-miRTarBase-6eaadc?style=flat-square&labelColor=1a1d24"/>
   <img src="https://img.shields.io/badge/evidencia-PubMed%20Integrado-f5a623?style=flat-square&labelColor=1a1d24"/>
   <img src="https://img.shields.io/badge/enriquecimiento-KEGG%20%C2%B7%20GO%20%C2%B7%20Reactome-c8a96e?style=flat-square&labelColor=1a1d24"/>
@@ -133,7 +133,7 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
 
 > **El motor:** Consultas en paralelo a bases de datos de alta fiabilidad.
 - **TargetScan 8.0:** Predicciones termodinámicas de unión (Base de datos local).
-- **miRTarBase:** Validación experimental de referencia (*gold-standard*) vía Harmonizome (API remota).
+- **miRTarBase 9.0:** Validación experimental de referencia (*gold-standard*) desde el índice local oficial (nivel de evidencia fuerte/débil + PMID por interacción); el GMT de Harmonizome queda solo como respaldo.
 </details>
 
 <details>
@@ -318,7 +318,7 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
 | Fuente | Función | Tipo |
 |--------|----------|------|
 | 🧬 **TargetScanHuman v8.0** | Predicción termodinámica de sitios de unión | `Local (zip)` |
-| 🔬 **miRTarBase** (snapshot GMT local, Harmonizome) | Validación experimental de interacciones (CLIP-seq, Luciferasa, WB) | `GMT local + API en vivo` |
+| 🔬 **miRTarBase 9.0** (índice local oficial) | Validación experimental con nivel de evidencia (fuerte/débil) + PMID por interacción | `Índice local + GMT como respaldo` |
 | 📊 **Enrichr** | Enriquecimiento funcional — KEGG / Reactome / WikiPathways / GO | `GMT locales + API en vivo` |
 | 📚 **NCBI PubMed eUtils** | Artículos científicos por gen + contexto con cascada y reintentos | `API remota` |
 | 🏥 **NCBI OMIM** | Enfermedades hereditarias asociadas por símbolo de gen | `API remota` |
@@ -399,6 +399,8 @@ curl -X POST "http://localhost:7860/api/v1/analyze" \
 <details>
 <summary><b>📋 Ejemplo de Respuesta JSON</b></summary>
 
+Los campos de gráficos (`venn_plot`, `volcano_plot`, `ppi_plot`) llevan **base64 PNG crudo** — hay que decodificarlo antes de usarlo; la API no añade el prefijo `data:image/png`.
+
 ```json
 {
   "common_genes": ["ABCA1", "KPNA3", "SCN1A"],
@@ -412,9 +414,9 @@ curl -X POST "http://localhost:7860/api/v1/analyze" \
   },
   "enrichment": ["..."],
   "scientific_synthesis": "...",
-  "venn_plot":    "data:image/png;base64,...",
-  "volcano_plot": "data:image/png;base64,...",
-  "ppi_plot":     "data:image/png;base64,..."
+  "venn_plot":    "iVBORw0KGgoAAAANSUhEUgAA...",
+  "volcano_plot": "iVBORw0KGgoAAAANSUhEUgAA...",
+  "ppi_plot":     "iVBORw0KGgoAAAANSUhEUgAA..."
 }
 ```
 
@@ -444,7 +446,7 @@ KENRYU ha sido validado en vivo contra el Space desplegado (`POST /api/v1/analyz
 ## ⚠️ Limitaciones conocidas
 
 - **miRTarBase es ahora el índice oficial 9.0, no el snapshot de Harmonizome.** El motor carga `local_db/mirtarbase_official.json.gz` (396.758 pares miRNA–gen con nivel de evidencia fuerte/débil, PMID y experimento por interacción), construido desde el `hsa_MTI.xlsx` oficial con `build_mirtarbase_official.py`. El snapshot antiguo queda solo como respaldo cuando el índice oficial no existe. Cada gen del dossier lleva su nivel de evidencia (fuerte / débil / solo predicho) con sus PMIDs. El índice es un dato de ejecución, no se sube al repo: para reproducirlo, descarga `hsa_MTI.xlsx` desde la página oficial de miRTarBase y ejecuta el constructor (ver `DATA_LICENSES.md`).
-- **El fondo de enriquecimiento es la unión de cada biblioteca GMT**, no un universo de referencia curado; las comparaciones entre bibliotecas deben tratarse con cuidado (corrección planeada).
+- **Fondo de enriquecimiento (ruta local): desde v1.49, el universo predicho** — la unión de las dianas predichas del panel, la población que el análisis probó de verdad. La ruta viva de Enrichr usa el fondo propio de Enrichr (su API no admite un fondo personalizado).
 - **KEGG no se redistribuye en este repositorio** (licencia: Kanehisa Labs prohíbe reempaquetar KEGG sin acuerdo — ver `DATA_LICENSES.md`). Desde v1.48 el actualizador descarga la biblioteca KEGG_2021_Human de Enrichr bajo demanda, solo para uso local, así que el enriquecimiento con KEGG funciona también offline una vez descargado; el archivo nunca se sube al repo. El enriquecimiento con KEGG también está disponible en vivo vía Enrichr.
 - **Sin mapeo de alias HGNC.** Los símbolos génicos se comparan tal como están guardados: TargetScan (~2021), las bibliotecas GMT (2019–2024) y las APIs vivas pueden escribir el mismo gen de forma distinta, y un alias no coincidirá. La búsqueda inversa no distingue mayúsculas desde v1.47, pero un alias antiguo (p. ej. un gen renombrado) sigue necesitando el símbolo actual. Los archivos FASTA locales de miRBase (`local_db/mirbase_*.fa`, 14 MB) los descarga el actualizador pero no se usan para validar nombres; quedan en el repositorio como datos gestionados por el actualizador.
 
@@ -467,7 +469,7 @@ Kenryu/
 │   └── style.css                 # Dark mode · acentos gold/teal
 │
 ├── data/
-│   ├── targetscan_full.json.zip  # Base TargetScan v8.0 indexada (~8 MB, en el repo)
+│   ├── targetscan_full.txt.zip   # Base TargetScan v8.0 indexada (~8 MB, en el repo)
 │   └── hsa-miR-*.txt             # Archivos de ejemplo pre-procesados por miRNA
 │
 └── local_db/                     # Datos locales (GMT de miRTarBase + enriquecimiento,
@@ -507,8 +509,8 @@ Kenryu/
 
 ### 🔜 Planificado
 
-- [ ] miRTarBase oficial (evidencia fuerte/débil + PMID por interacción) en lugar del snapshot de Harmonizome
-- [ ] Corrección del fondo de enriquecimiento — universo de referencia adecuado; "significativo" solo con p ajustada < 0,05
+- [x] miRTarBase oficial (evidencia fuerte/débil + PMID por interacción) en lugar del snapshot de Harmonizome (v1.48)
+- [x] Corrección del fondo de enriquecimiento — universo predicho como población de referencia; "significativo" solo con p ajustada < 0,05 (v1.49)
 - [ ] Capa clínica de Open Targets + dossier de evidencia de cuatro niveles
 - [ ] Predicciones independientes con miRDB
 - [ ] Contexto tisular con GTEx

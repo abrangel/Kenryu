@@ -146,7 +146,7 @@ function renderDashboard(data) {
         const s = v.summary || {};
         const badge = document.getElementById('validation-badge');
         if (badge) badge.textContent = `${s.high || 0} alta · ${s.medium || 0} media · ${s.low || 0} baja` + (s.n_not_evaluated ? ` · ${s.n_not_evaluated} sin evaluar` : '');
-        let html = `<table class="sci-table"><thead><tr><th>Gen</th><th>Puntaje</th><th>Nivel</th><th>Evidencia miRTarBase</th><th>Capas de evidencia</th><th>Qué falta</th></tr></thead><tbody>`;
+        let html = `<table class="sci-table"><thead><tr><th>Gen</th><th>Puntaje</th><th>Nivel</th><th>Evidencia miRTarBase</th><th>Dossier (4 niveles)</th><th>Capas de evidencia</th><th>Qué falta</th></tr></thead><tbody>`;
         for (const [gene, gv] of Object.entries(v.genes)) {
           const levelColor = gv.level === 'alta' ? 'var(--teal)' : gv.level === 'media' ? 'var(--gold)' : gv.level === 'not_evaluated' ? 'var(--text-dim)' : 'var(--red)';
           const levelLabel = gv.level === 'not_evaluated' ? 'no evaluado' : gv.level;
@@ -156,7 +156,19 @@ function renderDashboard(data) {
           const evLabel = {strong: 'fuerte', weak: 'débil', legacy: 'validado', none: 'solo predicho'}[gv.evidence_level] || '—';
           const evPmids = (gv.mirtarbase_pmids || []).filter(p => Number.isInteger(p)).map(p => `<a href="https://pubmed.ncbi.nlm.nih.gov/${p}/" target="_blank" rel="noopener">${p}</a>`).join(', ');
           const evCell = `${escapeHtml(evLabel)}${evPmids ? `<br><span style="font-family:var(--font-mono); font-size:10px;">${evPmids}</span>` : ''}`;
-          html += `<tr><td><b>${escapeHtml(gene)}</b></td><td><span style="font-family:var(--font-mono);">${scoreText}</span></td><td><span style="color:${levelColor}; font-weight:600;">${escapeHtml(levelLabel)}</span></td><td style="font-size:11px;">${evCell}</td><td style="font-size:11px;">${(gv.layers || []).map(escapeHtml).join('<br>') || '—'}</td><td style="font-size:11px; color:var(--text-dim);">${(gv.missing || []).map(escapeHtml).join('<br>') || '—'}</td></tr>`;
+          // Ronda 3 (v1.49): dossier de 4 niveles + enfermedades asociadas
+          // (Open Targets, o DisGeNET cuando está configurado).
+          const tiers = gv.evidence_tiers || {};
+          const tierOrder = ['prediction', 'experimental', 'disease', 'clinical_literature'];
+          const tierNames = {prediction: 'Predicción', experimental: 'Experimental', disease: 'Enfermedad', clinical_literature: 'Literatura'};
+          const tierMarks = tierOrder.map(k => {
+            const t = tiers[k];
+            const mark = t && t.present ? '●' : '○';
+            return `<span title="${escapeHtml(t ? t.summary : '')}">${mark} ${tierNames[k]}</span>`;
+          }).join('<br>');
+          const disNames = (gv.diseases || []).map(dd => `${dd.name} (${dd.score})`).join('; ');
+          const dossierCell = `<b>${gv.tiers_present ?? '—'}/4</b><br><span style="font-size:10px;">${tierMarks}</span>${disNames ? `<br><span style="font-size:10px; color:var(--text-dim);">${escapeHtml(disNames)}</span>` : ''}`;
+          html += `<tr><td><b>${escapeHtml(gene)}</b></td><td><span style="font-family:var(--font-mono);">${scoreText}</span></td><td><span style="color:${levelColor}; font-weight:600;">${escapeHtml(levelLabel)}</span></td><td style="font-size:11px;">${evCell}</td><td style="font-size:11px;">${dossierCell}</td><td style="font-size:11px;">${(gv.layers || []).map(escapeHtml).join('<br>') || '—'}</td><td style="font-size:11px; color:var(--text-dim);">${(gv.missing || []).map(escapeHtml).join('<br>') || '—'}</td></tr>`;
         }
         html += '</tbody></table>';
         const ds = v.data_sources || {};
@@ -307,6 +319,17 @@ async function openGenePanel(gene) {
   // H-18 (v1.47): sin puntaje no hay barra — "Sin evaluar", nunca un 85 fijo.
   const vScore = lastData?.validation?.genes?.[gene]?.score;
   const score = (vScore !== undefined && vScore !== null) ? vScore : null;
+  // Dossier de 4 niveles (v1.49): predicción, experimental, enfermedad,
+  // literatura/datos clínicos + enfermedades asociadas (Open Targets).
+  const gv = lastData?.validation?.genes?.[gene] || {};
+  const tiers = gv.evidence_tiers || {};
+  const tierOrder = [['prediction', 'Predicción'], ['experimental', 'Experimental'], ['disease', 'Enfermedad'], ['clinical_literature', 'Literatura y datos clínicos']];
+  const tierRows = tierOrder.map(([k, name]) => {
+    const t = tiers[k];
+    const mark = t && t.present ? '●' : '○';
+    return `<div style="font-size:12px; color:var(--text-dim); line-height:1.7;">${mark} <b style="color:var(--text);">${name}</b> — ${escapeHtml(t ? t.summary : 'Sin datos')}</div>`;
+  }).join('');
+  const disRows = (gv.diseases || []).map(dd => `<div style="font-size:12px; color:var(--text-dim); line-height:1.7;">${escapeHtml(dd.name)} <span style="font-family:var(--font-mono); font-size:11px;">(${escapeHtml(String(dd.score))})</span></div>`).join('');
   
   document.getElementById('gene-panel-body').innerHTML = `
     <div style="margin-bottom:20px;">
@@ -332,6 +355,11 @@ async function openGenePanel(gene) {
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Relevancia Patológica Detallada</small>
       <div style="font-family:'Spectral', serif; font-size:13.5px; text-align:justify; color:var(--text); line-height:1.7;">${escapeHtml(d.pathology)}</div>
     </div>
+    ${Object.keys(tiers).length ? `<div style="margin-bottom:20px; padding:15px; background:rgba(79,195,161,0.03); border-radius:8px; border-left:4px solid var(--teal);">
+      <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Dossier de evidencia — ${gv.tiers_present ?? '—'}/4 niveles</small>
+      ${tierRows}
+      ${disRows ? `<div style="margin-top:8px; font-size:11px; color:var(--text-dim);">Enfermedades asociadas (Open Targets):</div>${disRows}` : ''}
+    </div>` : ''}
     ${d.protein ? `<div style="margin-bottom:20px; padding:15px; background:rgba(79,195,161,0.05); border-radius:8px; border-left:4px solid var(--teal);">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Proteína (UniProt)</small>
       <div style="font-size:13.5px; font-weight:600; color:var(--text);">${escapeHtml(d.protein.protein_name)} ${(d.protein.url && d.protein.url.startsWith('https://rest.uniprot.org/')) ? `<a href="${escapeHtml(d.protein.url)}" target="_blank" style="color:var(--gold); font-size:11px; font-family:var(--font-mono);">${escapeHtml(d.protein.uniprot_id || '')}</a>` : escapeHtml(d.protein.uniprot_id || '')}</div>

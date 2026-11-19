@@ -2,6 +2,92 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.49] — 2026-11-19
+
+### Ronda 3 (resto): fondo del enriquecimiento, Open Targets + dossier de cuatro niveles, H-15 / H-19 / H-20 / H-22 / H-23
+
+**Fondo del enriquecimiento: universo predicho.** El test de Fisher
+local usaba como fondo la unión de cada biblioteca GMT (~20.000 genes
+que el análisis nunca probó) y diluía todos los términos. Ahora el
+fondo es el universo predicho: la unión de las dianas del panel
+(TargetScan local, o el respaldo de miRTarBase cuando TargetScan no
+tiene el miRNA). Es la población que el análisis probó. La ruta viva
+de Enrichr usa el fondo propio de Enrichr (su API no admite un fondo
+personalizado). Detalle: un fondo vacío ya no recae en silencio en la
+unión de la GMT (era un `background or ...` que trataba el conjunto
+vacío como «sin fondo»). Consecuencia honesta: el panel de control
+pasaba de 1 término offline (GO, respuesta al TGF-beta, p-adj 0,0288)
+a 0 — ese término era un artefacto del fondo viejo, porque las dianas
+del panel ya están enriquecidas en esa ruta. Los paneles de la tesis y
+de cáncer siguen en 0 términos offline: ningún término local reúne
+≥2 de sus genes (el GMT de GO 2023, por ejemplo, no contiene ABCA1).
+
+**Open Targets + dossier de cuatro niveles.** Cada gen investigado
+trae ahora sus enfermedades asociadas desde Open Targets (GraphQL
+gratuito, sin clave; el símbolo se resuelve a Ensembl vía mygene.info;
+top 3 por puntuación de asociación). DisGeNET sigue siendo la fuente
+cuando hay clave `DISGENET_API_KEY`; si no, Open Targets; el origen
+queda en `diseases_source`. La enfermedad **no entra en el puntaje**:
+dice que el gen importa, no que el microARN lo regule. El dossier es
+ahora de cuatro niveles independientes por gen — predicción,
+experimental, enfermedad, literatura/datos clínicos — con
+`evidence_tiers` y `tiers_present` (n de 4) en la respuesta, una
+columna «Dossier» en la tabla de validación y un bloque en la ficha
+del gen. La caché de investigación sube de v4 a v5 (el resultado gana
+`diseases` y `diseases_source`).
+
+**H-15: caché atómica, acotada y con frescura.** `save_persistent_cache`
+escribe a un temporal y renombra (`os.replace`) bajo un candado de
+proceso; cada sección se recorta a un límite (traducciones 2.000,
+PubMed 1.000, Enrichr 200, investigación 500; sobreviven las más
+recientes); la investigación multi-fuente caduca a los 90 días
+(`_saved_at` en el archivo; las traducciones y los metadatos de PubMed
+son hechos estables y no caducan).
+
+**H-20: descargas robustas.** `download_file` reintenta 429 (respeta
+`Retry-After`, tope 60 s) y timeouts de conexión (3 intentos, backoff
+2/4 s); un 404 no se reintenta; solo se admiten URLs https. Cobertura
+nueva: `transform_html_fasta` escribe con `newline="\n"` (en Windows
+el `\n` se traducía a `\r\n`: 161 vs 157 bytes) y `verify_fasta` ya no
+exige dos cabeceras `>` — un FASTA válido de una sola entrada fallaba.
+
+**H-22: Dockerfile.** Imagen base fijada por digest
+(`python:3.11-slim@sha256:07d48240…`); `build-essential` se purga tras
+`pip install` (no queda compilador en la imagen final); `local_db`
+pasa de 777 a 755. No se pudo probar la construcción aquí (no hay
+Docker en esta máquina).
+
+**H-19: datos coherentes.** El zip de TargetScan se renombra a
+`data/targetscan_full.txt.zip` (contiene un .txt, no JSON); el nombre
+viejo queda como respaldo en el cargador para que el Space siga
+funcionando hasta su próximo sync. La nota de `data_versions.json`
+aclara el GMT de respaldo: 596 filas (576 hsa-miRNAs + 20 de otras
+especies).
+
+**H-23: documentación.** `SECURITY.md` con el correo real del autor
+y sin la mención a NutriKen; los README corrigen «18k+ dianas» por
+13.035 genes humanos verificados, STEP 02 ya no describe miRTarBase
+como «Remote API» (es el índice local oficial 9.0), el ejemplo JSON
+muestra base64 crudo (la API no añade el prefijo `data:image/png`) y
+el roadmap marca hechos el miRTarBase oficial y el fondo; el
+`index.html` duplicado y desactualizado de la raíz se elimina (la
+interfaz vive en `static/`). `paper.md`: 31 → 162 tests, 18.000 →
+13.035 genes; la declaración de uso de IA se elimina por indicación
+del autor.
+
+**Números antes/después (corrida en vivo local, 2026-11-19).**
+Panel de la tesis (mismos 5 genes, mismos puntajes): ABCA1 100 alta,
+SNTB2 65 media, TSC22D2 65 media, KPNA3 50 media, SCN1A 60 media;
+media 68,0. Dossier: ABCA1/SNTB2/TSC22D2 4/4, KPNA3/SCN1A 3/4 (les
+falta el nivel experimental). Enfermedades en vivo (Open Targets):
+ABCA1 Tangier 0,838; SCN1A Dravet 0,877; KPNA3 paraplejia espástica
+88 0,504; SNTB2 neurodegenerativa 0,312; TSC22D2 diabetes tipo 2
+0,394. Enriquecimiento en vivo: 19 términos (sin cambio).
+`require_experimental`: [ABCA1, SNTB2, TSC22D2] (sin cambio). Control
+offline: 1 término → 0 (artefacto del fondo viejo, ver arriba).
+
+**Tests: 139 → 162.**
+
 ## [1.48] — 2026-11-19
 
 ### Ronda 3: miRTarBase oficial 9.0 + dossier de tres niveles + KEGG por descarga

@@ -1,4 +1,4 @@
-import os, json, zipfile, asyncio, logging, re, io, base64, datetime, hmac
+import os, json, zipfile, asyncio, logging, re, io, base64, datetime, hmac, threading
 from pathlib import Path
 from typing import List, Literal, Optional
 from collections import Counter
@@ -36,7 +36,7 @@ class AnalysisRequest(BaseModel):
     require_experimental: bool = False
 
 BASE_DIR = Path(__file__).resolve().parent
-# Directorio de datos: contiene targetscan_full.json.zip y los archivos
+# Directorio de datos: contiene targetscan_full.txt.zip y los archivos
 # hsa-miR-*.txt de ejemplo. Compatible hacia atrás: si data/ no existe
 # se cae a BASE_DIR (estructura antigua).
 DATA_DIR = BASE_DIR / "data" if (BASE_DIR / "data").exists() else BASE_DIR
@@ -117,6 +117,15 @@ def load_gmt_libraries():
 pubmed_semaphore = asyncio.Semaphore(3)
 PERSISTENT_CACHE = {"trans": {}, "pubmed": {}, "enrichr": {}, "gene_research": {}}
 CACHE_FILE = Path("local_db/analysis_cache.json")
+# H-15 (Ronda 3, v1.49): la caché en disco debe ser atómica (escribir a
+# un temporal y renombrar), estar acotada (las secciones viejas crecen
+# sin límite) y tener frescura (la investigación multi-fuente caduca;
+# las traducciones y los metadatos de PubMed son hechos estables y no
+# caducan). El candado es de proceso: el servidor es un solo proceso y
+# las escrituras concurrentes vendrían de sus propias tareas.
+_CACHE_LOCK = threading.Lock()
+_CACHE_LIMITS = {"trans": 2000, "pubmed": 1000, "enrichr": 200, "gene_research": 500}
+CACHE_TTL_DAYS = 90
 
 def load_persistent_cache():
     global PERSISTENT_CACHE
@@ -124,6 +133,22 @@ def load_persistent_cache():
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
+            # Frescura: la investigación multi-fuente caduca a los
+            # CACHE_TTL_DAYS; sin _saved_at (archivos viejos) se trata
+            # como fresca para no borrar datos sin avisar.
+            saved_at = data.get("_saved_at")
+            expired = False
+            if saved_at:
+                try:
+                    saved = datetime.datetime.fromisoformat(saved_at)
+                    if saved.tzinfo is None:
+                        saved = saved.replace(tzinfo=datetime.timezone.utc)
+                    expired = (datetime.datetime.now(datetime.timezone.utc) - saved).days >= CACHE_TTL_DAYS
+                except ValueError:
+                    expired = False
+            if expired:
+                data.pop("gene_research", None)
+                logger.info("💾 Caché: investigación multi-fuente caducada (>90 días), descartada.")
             # Fusionar de forma defensiva — versiones antiguas del cache
             # no tienen 'gene_research', no debe fallar la carga.
             for key in ("trans", "pubmed", "enrichr", "gene_research"):
@@ -139,10 +164,26 @@ def load_persistent_cache():
             logger.warning(f"No se pudo cargar la caché: {e}")
 
 def save_persistent_cache():
+    """Guarda la caché de forma atómica y acotada: escribe a un archivo
+    temporal en el mismo directorio y lo renombra (os.replace), bajo un
+    candado de proceso. Cada sección se recorta a _CACHE_LIMITS
+    (sobreviven las entradas más recientes). Un fallo a mitad de
+    escritura deja intacto el archivo anterior."""
     try:
-        CACHE_FILE.parent.mkdir(exist_ok=True)
-        with open(CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump(PERSISTENT_CACHE, f, ensure_ascii=False, indent=2)
+        with _CACHE_LOCK:
+            CACHE_FILE.parent.mkdir(exist_ok=True)
+            trimmed = {}
+            for key, limit in _CACHE_LIMITS.items():
+                section = PERSISTENT_CACHE.get(key, {})
+                if len(section) > limit:
+                    section = dict(list(section.items())[-limit:])
+                trimmed[key] = section
+            payload = dict(trimmed)
+            payload["_saved_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            tmp = CACHE_FILE.with_suffix(CACHE_FILE.suffix + ".tmp")
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, CACHE_FILE)
     except Exception as e:
         logger.warning(f"No se pudo guardar la caché: {e}")
 
@@ -204,6 +245,11 @@ def load_local_data():
 
     candidates = [
         BASE_DIR / "Predicted_Targets_Info.default_predictions.txt",
+        DATA_DIR / "targetscan_full.txt.zip",
+        BASE_DIR / "targetscan_full.txt.zip",
+        # H-19 (v1.49): the zip was renamed from targetscan_full.json.zip
+        # (it holds a .txt, not JSON). The old name stays as a fallback
+        # so the Hugging Face Space keeps working until its next sync.
         DATA_DIR / "targetscan_full.json.zip",
         BASE_DIR / "targetscan_full.json.zip",
         RAW_DATA_DIR / "Predicted_Targets_Info.default_predictions.txt",
@@ -879,6 +925,60 @@ async def fetch_disgenet(gene: str, client: httpx.AsyncClient, api_key=None):
         return {"diseases": []}
 
 
+async def fetch_opentargets_diseases(gene: str, client: httpx.AsyncClient) -> dict:
+    """Disease associations from Open Targets (api.platform.opentargets.org,
+    free GraphQL, no key): the gene symbol is resolved to an Ensembl ID
+    via mygene.info, then the target's associated diseases are fetched
+    with their association scores. Returns {"diseases": [{"name", "score"}],
+    "ensembl_id": ...} (top 3 by score) or {"diseases": []}. Never raises:
+    any failure (no Ensembl ID, API error, timeout) is an empty result,
+    not an error — the disease tier is informative, never blocking."""
+    try:
+        r = await client.get(
+            "https://mygene.info/v3/query",
+            params={"q": f"symbol:{gene}", "fields": "ensembl.gene",
+                    "species": "human"},
+            timeout=15.0)
+        if r.status_code != 200:
+            return {"diseases": []}
+        ensembl_id = None
+        for hit in r.json().get("hits") or []:
+            ens = hit.get("ensembl")
+            if isinstance(ens, dict) and ens.get("gene"):
+                ensembl_id = ens["gene"]
+                break
+            if isinstance(ens, list):
+                for entry in ens:
+                    if isinstance(entry, dict) and entry.get("gene"):
+                        ensembl_id = entry["gene"]
+                        break
+                if ensembl_id:
+                    break
+        if not ensembl_id:
+            return {"diseases": []}
+        query = ("query TargetDiseases($ensemblId: String!) { "
+                 "target(ensemblId: $ensemblId) { associatedDiseases { "
+                 "rows { disease { name } score } } } }")
+        r2 = await client.post(
+            "https://api.platform.opentargets.org/api/v4/graphql",
+            json={"query": query, "variables": {"ensemblId": ensembl_id}},
+            timeout=20.0)
+        if r2.status_code != 200:
+            return {"diseases": []}
+        target = (r2.json().get("data") or {}).get("target") or {}
+        rows = (target.get("associatedDiseases") or {}).get("rows") or []
+        diseases = []
+        for row in rows:
+            name = (row.get("disease") or {}).get("name")
+            score = row.get("score")
+            if name and score is not None:
+                diseases.append({"name": name, "score": round(float(score), 3)})
+        diseases.sort(key=lambda d: -d["score"])
+        return {"diseases": diseases[:3], "ensembl_id": ensembl_id}
+    except Exception:
+        return {"diseases": []}
+
+
 def dedupe_pubmed_refs(refs):
     """Elimina referencias duplicadas por PMID, conservando la primera.
     Pura, sin red. Cada término de evidencia clínica busca por separado en
@@ -912,8 +1012,9 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
     # en inglés + filtro de título en Trials. v3 = v2 + deduplicación de
     # PubMed por PMID (sin ella, un mismo artículo sumaba 5 puntos dos veces).
     # v4 = v3 + H-06 (orden de prioridad por validación; los genes no
-    # investigados ya no se puntúan).
-    cache_key = f"v4|{gene}|{years}"
+    # investigados ya no se puntúan). v5 = v4 + Open Targets: el resultado
+    # gana "diseases" (asociaciones de enfermedad) y "diseases_source".
+    cache_key = f"v5|{gene}|{years}"
     if cache_key in PERSISTENT_CACHE["gene_research"]:
         logger.info(f"  💾 Cache hit: {gene} (años={years})")
         return PERSISTENT_CACHE["gene_research"][cache_key]
@@ -963,16 +1064,30 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
     # PMID sumaba 5 puntos dos veces en el puntaje de validación.
     pubmed_refs = dedupe_pubmed_refs(pubmed_refs)
 
-    # 2-4. OMIM + ClinVar + ClinicalTrials en paralelo
-    omim, clinvar, trials = await asyncio.gather(
+    # 2-4. OMIM + ClinVar + ClinicalTrials + enfermedades en paralelo.
+    # Enfermedades: DisGeNET cuando tiene clave; si no, Open Targets
+    # (gratis, sin clave). El origen queda registrado en diseases_source.
+    omim, clinvar, trials, disgenet, opentargets = await asyncio.gather(
         fetch_omim_for_gene(gene, client),
         fetch_clinvar_for_gene(gene, client),
         fetch_clinicaltrials_for_gene(gene, client),
+        fetch_disgenet(gene, client, os.environ.get("DISGENET_API_KEY")),
+        fetch_opentargets_diseases(gene, client),
         return_exceptions=True,
     )
     if isinstance(omim, Exception): omim = []
     if isinstance(clinvar, Exception): clinvar = {"count": 0, "url": ""}
     if isinstance(trials, Exception): trials = []
+    if isinstance(disgenet, Exception): disgenet = {"diseases": []}
+    if isinstance(opentargets, Exception): opentargets = {"diseases": []}
+    disgenet_diseases = (disgenet or {}).get("diseases") or []
+    opentargets_diseases = (opentargets or {}).get("diseases") or []
+    if disgenet_diseases:
+        diseases, diseases_source = disgenet_diseases, "disgenet"
+    elif opentargets_diseases:
+        diseases, diseases_source = opentargets_diseases, "opentargets"
+    else:
+        diseases, diseases_source = [], "none"
 
     # Ventana real usada: si alguna ref usó "any" (fallback), el campo lo refleja
     year_windows = [r["year_window"] for r in pubmed_refs]
@@ -990,8 +1105,8 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
         "omim": omim,
         "clinvar": clinvar,
         "trials": trials,
-        "diseases": (await fetch_disgenet(
-            gene, client, os.environ.get("DISGENET_API_KEY"))).get("diseases", []),
+        "diseases": diseases,
+        "diseases_source": diseases_source,
         "year_window_used": year_window_used,
     }
     PERSISTENT_CACHE["gene_research"][cache_key] = result
@@ -1265,7 +1380,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.48"
+APP_VERSION = "1.49"
 app = FastAPI(title="KENRYU Bioinformatics Engine", version=APP_VERSION)
 
 # Seguridad CORS (H-14, v1.47): solo el origen exacto del Space. Antes el
@@ -1673,16 +1788,25 @@ async def analyze(req: AnalysisRequest):
     
     if len(gene_list_enr) >= 3:
         load_gmt_libraries()
+        # Fondo del enriquecimiento local (v1.49): el universo predicho —
+        # la unión de las dianas de los miRNAs del panel. Es la población
+        # que el análisis probó; la unión de cada GMT (~20k genes) es la
+        # población equivocada y diluye todos los términos. La ruta viva
+        # de Enrichr usa el fondo propio de Enrichr (su API no admite un
+        # fondo personalizado); el local es el que controlamos.
+        predicted_universe = set().union(*gene_sets) if gene_sets else None
         async with make_async_client(timeout=45.0) as client:
             try:
                 logger.info(f"🧪 Iniciando Enriquecimiento para {len(gene_list_enr)} genes...")
                 if req.offline:
-                    enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES)
+                    enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES,
+                                                      background=predicted_universe)
                     logger.info(f"📚 Enriquecimiento local (offline): {len(enrichr_terms)} rutas")
                 else:
                     enrichr_terms = await enrich_genes_direct(gene_list_enr, client)
                     if not enrichr_terms:
-                        enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES)
+                        enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES,
+                                                          background=predicted_universe)
                         logger.info(f"📚 Enrichr vacío; usando enriquecimiento local: {len(enrichr_terms)} rutas")
 
                 if enrichr_terms:
@@ -1781,7 +1905,7 @@ async def analyze(req: AnalysisRequest):
         # Sin red: investigación vacía, marcada como offline (no inventada).
         research_results = [
             {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""},
-             "trials": [], "diseases": [], "year_window_used": "offline"}
+             "trials": [], "diseases": [], "diseases_source": "none", "year_window_used": "offline"}
             for g in prioritized_common[:RESEARCH_CAP]
         ]
     else:
@@ -1795,7 +1919,7 @@ async def analyze(req: AnalysisRequest):
     for g, res in zip(prioritized_common[:RESEARCH_CAP], research_results):
         if isinstance(res, Exception):
             logger.warning(f"⚠️  Investigación falló para {g}: {res}")
-            gene_research_data[g] = {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""}, "trials": [], "diseases": [], "year_window_used": "error"}
+            gene_research_data[g] = {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""}, "trials": [], "diseases": [], "diseases_source": "none", "year_window_used": "error"}
             continue
         gene_research_data[g] = res
         # Acumular PMIDs frescos como candidatos para el bloque de Bibliografía

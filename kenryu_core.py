@@ -620,7 +620,11 @@ def fisher_enrichment(genes, library, background=None, top_n=8, p_adj_max=0.05):
     genes = set(genes)
     if not genes or not library:
         return []
-    universe = background or set().union(*library.values())
+    # Un fondo vacío NO es "sin fondo": es una población vacía (el panel
+    # no tiene dianas predichas) y no hay enriquecimiento que calcular.
+    # Solo None usa la unión de la GMT como fondo.
+    universe = (set().union(*library.values()) if background is None
+                else set(background))
     n_bg = len(universe)
     if n_bg == 0:
         return []
@@ -658,14 +662,20 @@ def fisher_enrichment(genes, library, background=None, top_n=8, p_adj_max=0.05):
     return rows[:top_n]
 
 
-def local_enrichment(genes, libraries, top_total=24):
+def local_enrichment(genes, libraries, background=None, top_total=24):
     """Enrichment against several local GMT libraries (offline).
     `libraries` maps a label (KEGG/Reactome/WikiPathways/GO) to a
     {term: set(genes)} library. Returns the combined top terms in the
-    same shape the live Enrichr path produces."""
+    same shape the live Enrichr path produces.
+
+    `background` is the population the genes were drawn from: the
+    predicted universe (the union of the panel's predicted targets).
+    Without it, each library falls back to its own GMT union — the
+    wrong population, ~20k genes the analysis never tested (v1.49:
+    the engine now passes the predicted universe)."""
     out = []
     for label, library in libraries.items():
-        for row in fisher_enrichment(genes, library):
+        for row in fisher_enrichment(genes, library, background=background):
             out.append({"Term": row["Term"], "Source": label,
                         "Pval": row["Pval"], "RawTerm": row["Term"]})
     out.sort(key=lambda r: r["Pval"])
@@ -812,6 +822,59 @@ _VALIDATION_WEIGHTS = {
 }
 
 
+def build_evidence_tiers(predicted, evidence_level, research):
+    """Four independent tiers of evidence for one gene. Pure.
+
+    1. prediction — TargetScan predicted the gene for the panel.
+    2. experimental — miRTarBase level (strong / weak / legacy / none).
+    3. disease — disease associations (Open Targets, or DisGeNET when
+       it is configured); says the gene matters, not that the miRNA
+       regulates it — so it never enters the validation score.
+    4. clinical_literature — PubMed / OMIM / ClinVar / ClinicalTrials
+       counts from the multi-source research.
+    Returns {tier: {"present": bool, "summary": str}}."""
+    research = research or {}
+    diseases = research.get("diseases") or []
+    pubmed = research.get("pubmed") or []
+    omim = research.get("omim") or []
+    clinvar_count = (research.get("clinvar") or {}).get("count", 0)
+    trials = research.get("trials") or []
+    if evidence_level == "strong":
+        exp_summary = "Validado experimentalmente (miRTarBase, evidencia fuerte)"
+    elif evidence_level == "weak":
+        exp_summary = ("Validado experimentalmente (miRTarBase, evidencia débil: "
+                       "CLIP-seq, microarray o proteómica)")
+    elif evidence_level == "legacy":
+        exp_summary = "Validado experimentalmente (miRTarBase, snapshot)"
+    else:
+        exp_summary = "Sin validación experimental en miRTarBase"
+    n_dis = len(diseases)
+    disease_summary = (
+        f"{n_dis} enfermedad{'es' if n_dis != 1 else ''} asociada{'s' if n_dis != 1 else ''}"
+        if n_dis else "Sin enfermedades asociadas registradas")
+    clinical_present = bool(pubmed or omim or clinvar_count or trials)
+    clinical_summary = (
+        f"{len(pubmed)} PubMed, {len(omim)} OMIM, {clinvar_count} variantes "
+        f"ClinVar, {len(trials)} ensayos clínicos"
+        if clinical_present else "Sin literatura ni datos clínicos en esta corrida")
+    return {
+        "prediction": {
+            "present": bool(predicted),
+            "summary": ("Predicho por TargetScan para el panel"
+                        if predicted else "Sin predicción TargetScan para el panel"),
+        },
+        "experimental": {
+            "present": evidence_level in ("strong", "weak", "legacy"),
+            "summary": exp_summary,
+        },
+        "disease": {"present": bool(diseases), "summary": disease_summary},
+        "clinical_literature": {
+            "present": clinical_present,
+            "summary": clinical_summary,
+        },
+    }
+
+
 def validation_score(gene, research, predicted, validated):
     """Score one gene 0-100 from its evidence layers. Pure and
     deterministic. `research` is the gene_research entry for the gene
@@ -924,7 +987,12 @@ def build_validation_report(mirnas, common_genes, gene_research,
     `evidence_by_mirna` maps each panel miRNA to its per-gene miRTarBase
     evidence ({gene: {"level", "pmids", "experiments"}}) and drives the
     three-level dossier: strong / weak (CLIP or weak) / only predicted.
-    Without it, validated genes are reported as "legacy" (no level)."""
+    Without it, validated genes are reported as "legacy" (no level).
+    Each gene also carries `evidence_tiers` (four independent tiers:
+    prediction, experimental, disease, clinical_literature) and
+    `tiers_present` (how many of the four are present), plus the top
+    disease associations in `diseases` (Open Targets, or DisGeNET when
+    configured). The disease tier never enters the score."""
     import datetime
     predicted_set = set().union(*local_by_mirna.values()) if local_by_mirna else set()
     validated_set = set().union(*remote_by_mirna.values()) if remote_by_mirna else set()
@@ -934,6 +1002,11 @@ def build_validation_report(mirnas, common_genes, gene_research,
         evidence = _best_evidence(gene, evidence_by_mirna)
         if evidence_by_mirna is None and gene in validated_set:
             evidence["level"] = "legacy"
+        tiers = build_evidence_tiers(gene in predicted_set,
+                                     evidence["level"],
+                                     gene_research.get(gene))
+        tiers_present = sum(1 for t in tiers.values() if t["present"])
+        diseases = (gene_research.get(gene) or {}).get("diseases") or []
         if gene not in gene_research:
             # No investigado en esta corrida (fuera del tope por costo de
             # API): "no evaluado", sin puntaje — nunca "baja" (v1.46, H-06).
@@ -951,6 +1024,9 @@ def build_validation_report(mirnas, common_genes, gene_research,
                 "evidence_level": evidence["level"],
                 "mirtarbase_pmids": evidence["pmids"],
                 "mirtarbase_experiments": evidence["experiments"],
+                "evidence_tiers": tiers,
+                "tiers_present": tiers_present,
+                "diseases": diseases,
                 "layers": local_layers,
                 "missing": ["investigación multi-fuente (PubMed/OMIM/ClinVar/ClinicalTrials)"],
                 "explanation": (
@@ -967,6 +1043,9 @@ def build_validation_report(mirnas, common_genes, gene_research,
         )
         entry["mirtarbase_pmids"] = evidence["pmids"]
         entry["mirtarbase_experiments"] = evidence["experiments"]
+        entry["evidence_tiers"] = tiers
+        entry["tiers_present"] = tiers_present
+        entry["diseases"] = diseases
         genes[gene] = entry
     evaluated = [g for g in genes.values() if g["level"] != "not_evaluated"]
     scores = [g["score"] for g in evaluated]
@@ -999,7 +1078,13 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "que regulan el gen y por validación en el índice oficial de "
             "miRTarBase 9.0; los genes fuera de ese tope "
             "figuran como «no evaluado», sin puntaje y sin nivel — no es "
-            "evidencia en contra, es ausencia de investigación en esta corrida."
+            "evidencia en contra, es ausencia de investigación en esta corrida. "
+            "Cada gen lleva además un dossier de cuatro niveles independientes "
+            "(predicción, validación experimental, enfermedades asociadas y "
+            "literatura/datos clínicos): las enfermedades vienen de Open Targets "
+            "(gratis, sin clave) o de DisGeNET cuando está configurado, y dicen "
+            "que el gen importa en enfermedad, no que el microARN lo regule — "
+            "por eso no entran en el puntaje."
         ),
         "genes": genes,
         "summary": {

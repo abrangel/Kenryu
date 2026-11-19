@@ -345,7 +345,9 @@ def test_reverse_endpoint():
 
 def test_analyze_offline_end_to_end():
     """The full pipeline with offline=true makes NO network calls and
-    still returns genes, local enrichment, validation, export, heatmap."""
+    still returns genes, validation, export, heatmap (local enrichment
+    is empty for this panel since v1.49: the predicted universe correctly
+    discounts its only GMT-union term)."""
     import kenryu_engine as ke
     from fastapi.testclient import TestClient
 
@@ -364,7 +366,14 @@ def test_analyze_offline_end_to_end():
     expected = (["NFIA", "GMFB", "KLF12", "PDE3A", "SKI", "SOX6"] if official.exists()
                 else ["GMFB", "KLF12", "NFIA", "PDE3A", "SKI", "SOX6"])
     assert body["common_genes"] == expected
-    assert body["enrichment"]  # local GMT enrichment
+    # v1.49 (Ronda 3): con el universo predicho como fondo, el panel de
+    # control ya no devuelve términos offline. Su único término (GO,
+    # respuesta al TGF-beta, p-adj 0,0288) era un artefacto del fondo de
+    # la unión de GMTs: las dianas del panel ya están enriquecidas en esa
+    # ruta, así que el fondo correcto la descuenta. El enriquecimiento
+    # local sigue funcionando — lo prueban los tests de test_enrichment.py
+    # y el cálculo directo con el universo predicho.
+    assert body["enrichment"] == []
     assert body["validation"]["summary"]["n_genes"] == 6
     assert body["validation"]["data_sources"]["mirbase"] == "23.1"
     assert body["export"]["schema_version"] == "1.0"
@@ -425,3 +434,109 @@ def test_install_kegg_end_to_end(tmp_path):
     recorded = json.loads((d / "data_versions.json").read_text())
     assert recorded["kegg"]["local"].startswith("snapshot-")
     assert len(report["installed"]) == 1
+
+
+# ── Ronda 3 (v1.49) — H-20: descargas robustas ─────────────────────────────
+# Método: pruebas escritas primero; download_file no reintentaba 429 ni
+# timeouts, y transform_html_fasta escribía \r\n en Windows.
+
+
+def test_transform_html_fasta_writes_lf_bytes(tmp_path, monkeypatch):
+    """H-20: simula la traducción de saltos de línea de Windows
+    (write_text sin newline convierte \n en \r\n: 161 vs 157 bytes).
+    El transform debe pasar newline="\n" para que el archivo quede con
+    bytes exactos y size == len(text.encode())."""
+    import pathlib
+    real_write_text = pathlib.Path.write_text
+
+    def _windows_write_text(self, data, encoding=None, errors=None, newline=None):
+        if newline is None:
+            data = data.replace("\n", "\r\n")
+        return real_write_text(self, data, encoding=encoding, errors=errors, newline=newline)
+
+    monkeypatch.setattr(pathlib.Path, "write_text", _windows_write_text)
+    dest = tmp_path / "mature.fa"
+    dest.write_text("<p>&gt;hsa-miR-33a-5p MIMAT0000091<br>GUGCAUUGUAGUUGCAUUGCA<br></p>\n",
+                    encoding="utf-8")
+    assert ku.transform_html_fasta(dest) is True
+    data = dest.read_bytes()
+    assert b"\r\n" not in data
+    assert data.startswith(b">hsa-miR-33a-5p MIMAT0000091")
+
+
+def test_download_file_retries_on_429(tmp_path, monkeypatch):
+    monkeypatch.setattr(ku, "_DOWNLOAD_RETRY_DELAYS", (0.0, 0.0))
+    calls = {"n": 0}
+
+    def _handler(request):
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            return httpx.Response(429, text="slow down")
+        return httpx.Response(200, content=b">x\nACGT\n")
+
+    client = _mock_client(_handler)
+    path, sha, size = ku.download_file(
+        "https://example.org/x.fa", tmp_path / "x.fa", client, verify="fasta")
+    assert calls["n"] == 3
+    assert size == 8
+    assert path.read_bytes() == b">x\nACGT\n"
+
+
+def test_download_file_retries_on_timeout_then_raises(tmp_path, monkeypatch):
+    monkeypatch.setattr(ku, "_DOWNLOAD_RETRY_DELAYS", (0.0, 0.0))
+    calls = {"n": 0}
+
+    def _handler(request):
+        calls["n"] += 1
+        raise httpx.ConnectTimeout("timed out")
+
+    client = _mock_client(_handler)
+    dest = tmp_path / "x.fa"
+    with pytest.raises(httpx.ConnectTimeout):
+        ku.download_file("https://example.org/x.fa", dest, client)
+    assert calls["n"] == 3
+    assert not dest.exists()
+    assert not dest.with_suffix(".fa.tmp").exists()
+
+
+def test_download_file_no_retry_on_404(tmp_path, monkeypatch):
+    monkeypatch.setattr(ku, "_DOWNLOAD_RETRY_DELAYS", (0.0, 0.0))
+    calls = {"n": 0}
+
+    def _handler(request):
+        calls["n"] += 1
+        return httpx.Response(404, text="not found")
+
+    client = _mock_client(_handler)
+    with pytest.raises(httpx.HTTPStatusError):
+        ku.download_file("https://example.org/x.fa", tmp_path / "x.fa", client)
+    assert calls["n"] == 1
+
+
+def test_download_file_rejects_http(tmp_path):
+    calls = {"n": 0}
+
+    def _handler(request):
+        calls["n"] += 1
+        return httpx.Response(200, content=b">x\nACGT\n")
+
+    client = _mock_client(_handler)
+    with pytest.raises(ValueError, match="https"):
+        ku.download_file("http://example.org/x.fa", tmp_path / "x.fa", client)
+    assert calls["n"] == 0
+
+
+def test_verify_fasta_single_entry(tmp_path):
+    # H-20 (cobertura): el verificador exigía DOS cabeceras '>' — un
+    # FASTA válido de una sola entrada fallaba con "no entries".
+    single = tmp_path / "one.fa"
+    single.write_text(">hsa-miR-33a-5p MIMAT0000091\nGUGCAUUGUAGUUGCAUUGCA\n")
+    assert ku.verify_fasta(single) is True
+    empty = tmp_path / "empty.fa"
+    empty.write_text("")
+    with pytest.raises(ValueError):
+        ku.verify_fasta(empty)
+    not_fasta = tmp_path / "nope.fa"
+    not_fasta.write_text("ACGT\n")
+    with pytest.raises(ValueError):
+        ku.verify_fasta(not_fasta)

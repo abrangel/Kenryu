@@ -48,7 +48,7 @@
 <!-- STATS -->
 <p align="center">
   <img src="https://img.shields.io/badge/miRNA%20families-285-c8a96e?style=flat-square&labelColor=1a1d24"/>
-  <img src="https://img.shields.io/badge/genomic%20targets-18k%2B-4fc3a1?style=flat-square&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/genomic%20targets-13%2C035-4fc3a1?style=flat-square&labelColor=1a1d24"/>
   <img src="https://img.shields.io/badge/validation-miRTarBase-6eaadc?style=flat-square&labelColor=1a1d24"/>
   <img src="https://img.shields.io/badge/evidence-PubMed%20Integrated-f5a623?style=flat-square&labelColor=1a1d24"/>
   <img src="https://img.shields.io/badge/enrichment-KEGG%20%C2%B7%20GO%20%C2%B7%20Reactome-c8a96e?style=flat-square&labelColor=1a1d24"/>
@@ -135,7 +135,7 @@ MicroRNAs (miRNAs) are post-transcriptional regulators that control the expressi
 
 > **The Engine:** Parallel querying of high-fidelity databases.
 - **TargetScan 8.0:** Thermodynamic binding predictions (Local Database).
-- **miRTarBase:** Gold-standard experimental validation via Harmonizome (Remote API).
+- **miRTarBase 9.0:** Gold-standard experimental validation from the official local index (strong/weak evidence level + PMID per interaction); the Harmonizome GMT is kept only as a fallback.
 </details>
 
 <details>
@@ -330,7 +330,7 @@ MicroRNAs (miRNAs) are post-transcriptional regulators that control the expressi
 | Source | Function | Type |
 |--------|----------|------|
 | 🧬 **TargetScanHuman v8.0** | Thermodynamic prediction of binding sites | `Local (zip)` |
-| 🔬 **miRTarBase** (local GMT snapshot, Harmonizome) | Experimental interaction validation (CLIP-seq, Luciferase, WB) | `Local GMT + live fallback` |
+| 🔬 **miRTarBase 9.0** (official local index) | Experimental interaction validation with evidence level (strong/weak) + PMID per interaction | `Local index + GMT fallback` |
 | 📊 **Enrichr** | Functional enrichment — KEGG / Reactome / WikiPathways / GO | `Local GMTs + live fallback` |
 | 📚 **NCBI PubMed eUtils** | Scientific articles per gene + context with cascade + retries | `Remote API` |
 | 🏥 **NCBI OMIM** | Associated hereditary diseases by gene symbol | `Remote API` |
@@ -411,6 +411,8 @@ curl -X POST "http://localhost:7860/api/v1/analyze" \
 <details>
 <summary><b>📋 Example JSON Response</b></summary>
 
+Plot fields (`venn_plot`, `volcano_plot`, `ppi_plot`) carry **raw base64 PNG** — decode it before use; the API does not prefix a `data:image/png` URI.
+
 ```json
 {
   "common_genes": ["ABCA1", "KPNA3", "SCN1A"],
@@ -424,9 +426,9 @@ curl -X POST "http://localhost:7860/api/v1/analyze" \
   },
   "enrichment": ["..."],
   "scientific_synthesis": "...",
-  "venn_plot":    "data:image/png;base64,...",
-  "volcano_plot": "data:image/png;base64,...",
-  "ppi_plot":     "data:image/png;base64,..."
+  "venn_plot":    "iVBORw0KGgoAAAANSUhEUgAA...",
+  "volcano_plot": "iVBORw0KGgoAAAANSUhEUgAA...",
+  "ppi_plot":     "iVBORw0KGgoAAAANSUhEUgAA..."
 }
 ```
 
@@ -456,7 +458,7 @@ KENRYU has been validated live against the deployed Space (`POST /api/v1/analyze
 ## ⚠️ Known Limitations
 
 - **miRTarBase is now the official 9.0 index, not the Harmonizome snapshot.** The engine loads `local_db/mirtarbase_official.json.gz` (396,758 miRNA–gene pairs with strong/weak evidence level, PMID and experiment per interaction), built from the official `hsa_MTI.xlsx` by `build_mirtarbase_official.py`. The old snapshot is kept only as a fallback when the official index is absent. Each gene in the dossier carries its evidence level (strong / weak / only predicted) with its PMIDs. The index is runtime data, not committed: to reproduce it, download `hsa_MTI.xlsx` from the official miRTarBase page and run the builder (see `DATA_LICENSES.md`).
-- **Enrichment background is the union of each GMT library**, not a curated reference universe; treat cross-library comparisons with care (fix planned).
+- **Enrichment background (local path): since v1.49, the predicted universe** — the union of the panel's predicted targets, the population the analysis actually tested. The live Enrichr path uses Enrichr's own background (its API takes no custom background).
 - **KEGG is not redistributed in this repository** (license: Kanehisa Labs prohibits repackaging KEGG without an agreement — see `DATA_LICENSES.md`). Since v1.48 the updater downloads the Enrichr KEGG_2021_Human library on demand, for local use only, so KEGG enrichment works offline too once downloaded; the file is never committed. KEGG enrichment is also available through the live Enrichr path.
 - **No HGNC alias mapping.** Gene symbols are compared as stored: TargetScan (~2021), the GMT libraries (2019–2024) and the live APIs can spell the same gene differently, and an alias will not match. Reverse lookup is case-insensitive since v1.47, but an old alias (e.g. a renamed gene) still needs the current symbol. The local miRBase FASTA files (`local_db/mirbase_*.fa`, 14 MB) are downloaded by the updater but are not used for name validation; they stay in the repository as updater-managed data.
 
@@ -479,7 +481,7 @@ Kenryu/
 │   └── style.css                 # Dark mode · gold/teal accents
 │
 ├── data/
-│   ├── targetscan_full.json.zip  # TargetScan v8.0 indexed DB (~8 MB, stored directly in the repo)
+│   ├── targetscan_full.txt.zip   # TargetScan v8.0 indexed DB (~8 MB, stored directly in the repo)
 │   └── hsa-miR-*.txt             # Pre-processed per-miRNA example files
 │
 └── local_db/                     # Local data (miRTarBase + enrichment GMTs,
@@ -519,8 +521,8 @@ Kenryu/
 
 ### 🔜 Planned
 
-- [ ] Official miRTarBase (strong/weak evidence + PMID per interaction) replacing the Harmonizome snapshot
-- [ ] Enrichment background fix — proper reference universe; "significant" only for adjusted p < 0.05
+- [x] Official miRTarBase (strong/weak evidence + PMID per interaction) replacing the Harmonizome snapshot (v1.48)
+- [x] Enrichment background fix — predicted universe as the reference population; "significant" only for adjusted p < 0.05 (v1.49)
 - [ ] Open Targets clinical layer + four-level evidence dossier
 - [ ] miRDB independent predictions
 - [ ] GTEx tissue expression context

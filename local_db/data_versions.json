@@ -19,7 +19,7 @@
     "download_url": "https://mirtarbase.cuhk.edu.cn/php/download.php",
     "latest_known": "10.0",
     "local": "miRTarBase 9.0 official index (hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, 396,758 pairs; built 2026-11-19)",
-    "note": "Validated targets served LOCALLY from the official miRTarBase 9.0 index (local_db/mirtarbase_official.json.gz, built by build_mirtarbase_official.py from the user's own download of hsa_MTI.xlsx). Levels: strong = Functional MTI (+30), weak = Functional MTI (Weak): CLIP-seq/microarray/proteomics (+15). Live Harmonizome API only a fallback. The old Harmonizome GMT snapshot (local_db/mirtarbase_gene_set_library.gmt.gz) is kept as a fallback when the official index is absent. Redistribution terms could not be verified: the official site returned 404 on every page when checked on 2026-11-19 (see DATA_LICENSES.md); the raw xlsx is never committed.",
+    "note": "Validated targets served LOCALLY from the official miRTarBase 9.0 index (local_db/mirtarbase_official.json.gz, built by build_mirtarbase_official.py from the user's own download of hsa_MTI.xlsx). Levels: strong = Functional MTI (+30), weak = Functional MTI (Weak): CLIP-seq/microarray/proteomics (+15). Live Harmonizome API only a fallback. The old Harmonizome GMT snapshot (local_db/mirtarbase_gene_set_library.gmt.gz, 596 rows: 576 hsa-miRNAs + 20 rows from other species) is kept as a fallback when the official index is absent. Redistribution terms could not be verified: the official site returned 404 on every page when checked on 2026-11-19 (see DATA_LICENSES.md); the raw xlsx is never committed.",
     "updated_at": "2026-11-19T18:30:00+00:00"
   },
   "targetscan": {

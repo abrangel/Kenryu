@@ -6,7 +6,7 @@ The following versions of this project are currently being actively monitored an
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.0   | :white_check_mark: |
+| 1.49    | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
@@ -16,12 +16,12 @@ Please report any security vulnerabilities by contacting the primary maintainer 
 
 * **Contact Name:** Dr. Cesar Abrahan Manzo Carvajal
 * **Role:** Lead Clinical Informatics Researcher & Developer
-* **Email:** [Tu Correo Electrónico Aquí]
+* **Email:** Abrangelm@gmail.com
 
 ### What to Include in Your Report
 To help us patch the issue quickly, please provide:
 1. A detailed description of the vulnerability.
-2. The specific endpoint or module affected (e.g., NutriKen backend, KENRYU microRNA integration).
+2. The specific endpoint or module affected (e.g., KENRYU microRNA integration).
 3. Steps to reproduce the issue or a proof-of-concept (PoC) script.
 
 ### Our Response Commitment
