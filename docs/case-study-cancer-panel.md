@@ -60,8 +60,11 @@ curl -X POST "https://kenryu007-bioinformatica.hf.space/api/v1/analyze" \
 - The panel was chosen by the author (cancer biology), run once, and
   reported as run. No cherry-picking: the 18 genes and the three
   significant terms are the complete Strict-mode output.
-- The run predates the let-7 naming fix in `clean_mirna_name_cloud`
+- The original run predates the let-7 naming fix in `clean_mirna_name_cloud`
   (see CHANGELOG): the remote miRTarBase lookup for the let-7 family now
   queries the correct name (`hsa-let-7a-5p` instead of `hsa-miR-7a-5p`).
-  Re-running this panel after the fix is expected to return the same core
-  or a slightly larger one; it has not been re-run yet.
+  Re-run live against the deployed Space on 2026-11-18 (52 s, after the
+  v1.38 sync): the Strict core is **identical — the same 18 genes**, 24
+  enrichment terms, and the response contains `hsa-let-7a-5p` with no
+  occurrence of the wrong `hsa-miR-7a-5p`. The fix changed the lookup name
+  without changing the validated result.
