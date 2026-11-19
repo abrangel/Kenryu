@@ -1018,15 +1018,21 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             "protein": None}
     
     # Descripciones de ÉLITE con EVIDENCIA ESTRUCTURADA
+    # NOTA (2026-11-19): los PMIDs escritos a mano de clinical_evidence se
+    # eliminaron porque los 11 resolvían en PubMed a artículos SIN relación
+    # con el gen ni con la frase (p. ej. veterinaria, salmón, escoliosis).
+    # La evidencia PubMed verificada la aporta la capa viva de investigación
+    # (research_gene_complete), no estos presets. No volver a escribir PMIDs
+    # a mano: todo PMID que se muestre debe venir de una consulta en vivo.
     PRESETS = {
         "ABCA1": {
             "full_name": "ATP binding cassette subfamily A member 1",
             "system": "Cardiovascular / Metabólico",
             "pathology": "Regulador maestro del eflujo de colesterol. Su deficiencia causa el Síndrome de Tangier y aumenta drásticamente el riesgo de aterosclerosis coronaria.",
             "clinical_evidence": [
-                {"term": "Metabolismo del colesterol", "source": "KEGG", "pmid": "30212345", "desc": "miR-33 suprime ABCA1, reduciendo el eflujo de colesterol en macrófagos."},
-                {"term": "SREBF y miR33", "source": "WikiPathways", "pmid": "25678901", "desc": "La inhibición de miR-33 restaura ABCA1 y aumenta HDL en modelos animales."},
-                {"term": "Ensamblaje de HDL", "source": "Reactome", "pmid": "25648732", "desc": "Ruta crítica para la formación de lipoproteínas mediada por ABCA1."}
+                {"term": "Metabolismo del colesterol", "source": "KEGG", "pmid": None, "desc": "miR-33 suprime ABCA1, reduciendo el eflujo de colesterol en macrófagos."},
+                {"term": "SREBF y miR33", "source": "WikiPathways", "pmid": None, "desc": "La inhibición de miR-33 restaura ABCA1 y aumenta HDL en modelos animales."},
+                {"term": "Ensamblaje de HDL", "source": "Reactome", "pmid": None, "desc": "Ruta crítica para la formación de lipoproteínas mediada por ABCA1."}
             ],
             "full_routes": [
                 "Ensamblaje de HDL", "SREBF y miR33 en la homeostasis de lípidos WP2011",
@@ -1044,8 +1050,8 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             "system": "Celular / Inmunológico",
             "pathology": "Importina clave en el transporte nucleocitoplasmático de factores de transcripción. Implicada en la respuesta al estrés celular y la progresión oncológica.",
             "clinical_evidence": [
-                {"term": "Importación de proteínas al núcleo", "source": "GO", "pmid": "29104567", "desc": "Modulación de la importación de proteínas críticas para la respuesta al estrés."},
-                {"term": "Efectos mediados por NS1", "source": "WikiPathways", "pmid": "31045678", "desc": "Interacción con rutas virales que afectan la estabilidad genómica."}
+                {"term": "Importación de proteínas al núcleo", "source": "GO", "pmid": None, "desc": "Modulación de la importación de proteínas críticas para la respuesta al estrés."},
+                {"term": "Efectos mediados por NS1", "source": "WikiPathways", "pmid": None, "desc": "Interacción con rutas virales que afectan la estabilidad genómica."}
             ],
             "full_routes": [
                 "Importación de proteínas con NLS al núcleo (GO:0006607)", "Efectos mediados por NS1 en rutas del huésped",
@@ -1058,8 +1064,8 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             "system": "Neurológico",
             "pathology": "Canal de sodio esencial para la excitabilidad neuronal. Mutaciones están vinculadas al Síndrome de Dravet y diversas formas de epilepsia severa.",
             "clinical_evidence": [
-                {"term": "Sistema Neuronal", "source": "Reactome", "pmid": "30218151", "desc": "Disfunción de interneuronas GABAérgicas por alteración del canal de sodio."},
-                {"term": "Percepción sensorial del dolor", "source": "GO", "pmid": "32181510", "desc": "Implicado en la detección y procesamiento de estímulos nociceptivos."}
+                {"term": "Sistema Neuronal", "source": "Reactome", "pmid": None, "desc": "Disfunción de interneuronas GABAérgicas por alteración del canal de sodio."},
+                {"term": "Percepción sensorial del dolor", "source": "GO", "pmid": None, "desc": "Implicado en la detección y procesamiento de estímulos nociceptivos."}
             ],
             "full_routes": [
                 "Detección de estímulos en percepción del dolor (GO:0062149)",
@@ -1073,11 +1079,11 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             "system": "Metabólico / Renal",
             "pathology": "Regulador de la transcripción inducido por estrés. Vinculado a la respuesta osmótica en nefropatías.",
             "clinical_evidence": [
-                {"term": "Respuesta al estrés osmótico", "source": "GO", "pmid": "26789432", "desc": "Regulación de la homeostasis de aminoácidos bajo estrés osmótico renal."},
-                {"term": "Actividad de factores de transcripción", "source": "KEGG", "pmid": "27894320", "desc": "Control transcripcional en rutas de supervivencia celular."}
+                {"term": "Respuesta al estrés osmótico", "source": "GO", "pmid": None, "desc": "Regulación de la homeostasis de aminoácidos bajo estrés osmótico renal."},
+                {"term": "Actividad de factores de transcripción", "source": "KEGG", "pmid": None, "desc": "Control transcripcional en rutas de supervivencia celular."}
             ],
             "full_routes": ["Regulación por miRNA", "Actividad de factores de transcripción", "Respuesta al estrés osmótico", "Homeostasis renal"],
-            "pmid": "26789432",
+            "pmid": None,
             "conclusion": "Su papel como regulador de estrés lo posiciona como biomarcador de progresión en nefropatías."
         },
         "SNTB2": {
@@ -1085,8 +1091,8 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             "system": "Cardiovascular / Estructural",
             "pathology": "Proteína adaptadora del complejo distrofina. Su alteración se asocia a cardiomiopatías y disfunción del citoesqueleto.",
             "clinical_evidence": [
-                {"term": "Complejo asociado a distrofina", "source": "Reactome", "pmid": "28456123", "desc": "Afecta la integridad de la membrana celular en cardiomiocitos."},
-                {"term": "Organización del citoesqueleto", "source": "GO", "pmid": "29456123", "desc": "Regula el anclaje de proteínas de membrana al citoesqueleto de actina."}
+                {"term": "Complejo asociado a distrofina", "source": "Reactome", "pmid": None, "desc": "Afecta la integridad de la membrana celular en cardiomiocitos."},
+                {"term": "Organización del citoesqueleto", "source": "GO", "pmid": None, "desc": "Regula el anclaje de proteínas de membrana al citoesqueleto de actina."}
             ],
             "full_routes": ["Regulación por miRNA", "Complejo de glicoproteína asociado a distrofina", "Organización del citoesqueleto", "Rutas de cardiomiopatía"],
             "conclusion": "La pérdida de integridad estructural por desregulación de SNTB2 es un factor clave en cardiomiopatías estructurales."
@@ -1096,8 +1102,8 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             "system": "Neurológico",
             "pathology": "Factor neurotrófico esencial para la maduración glial y la regeneración neural. Su sobreexpresión está vinculada a neuroinflamación en Alzheimer y Parkinson.",
             "clinical_evidence": [
-                {"term": "Señalización MAPK/ERK", "source": "KEGG", "pmid": "25648732", "desc": "Regula la diferenciación y supervivencia celular en el sistema nervioso central."},
-                {"term": "Regulación del complejo Arp2/3", "source": "GO", "pmid": "26789432", "desc": "Modula la dinámica de actina, vital para la plasticidad sináptica y movilidad glial."}
+                {"term": "Señalización MAPK/ERK", "source": "KEGG", "pmid": None, "desc": "Regula la diferenciación y supervivencia celular en el sistema nervioso central."},
+                {"term": "Regulación del complejo Arp2/3", "source": "GO", "pmid": None, "desc": "Modula la dinámica de actina, vital para la plasticidad sináptica y movilidad glial."}
             ],
             "full_routes": [
                 "Señalización MAPK/ERK", "Diferenciación de astrocitos", "Regulación del complejo Arp2/3",
@@ -1110,8 +1116,8 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             "system": "Oncológico / Inmunológico",
             "pathology": "Factor de transcripción tipo dedos de zinc que actúa como represor génico (AP-2rep). Vinculado a susceptibilidad en Artritis Reumatoide y progresión tumoral.",
             "clinical_evidence": [
-                {"term": "Señalización Wnt/beta-catenina", "source": "WikiPathways", "pmid": "29104567", "desc": "Regula la proliferación y metástasis en diversos tipos de cáncer y endometriosis."},
-                {"term": "Evasión Inmune PD-L1/PD-1", "source": "Reactome", "pmid": "31045678", "desc": "Participa en los mecanismos de escape inmunitario del microambiente tumoral."}
+                {"term": "Señalización Wnt/beta-catenina", "source": "WikiPathways", "pmid": None, "desc": "Regula la proliferación y metástasis en diversos tipos de cáncer y endometriosis."},
+                {"term": "Evasión Inmune PD-L1/PD-1", "source": "Reactome", "pmid": None, "desc": "Participa en los mecanismos de escape inmunitario del microambiente tumoral."}
             ],
             "full_routes": [
                 "Señalización Wnt/beta-catenina", "Represión de la transcripción por ARN Pol II",
@@ -1218,7 +1224,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     return info
 
 # ── GRÁFICOS ──────────────────────────────────────────────────────────────────
-app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.42")
+app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.43")
 
 # Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
 origins = [
@@ -1257,7 +1263,7 @@ async def serve_style():
 
 @app.get("/health")
 async def health():
-    return {"status": "OK", "version": "1.42",
+    return {"status": "OK", "version": "1.43",
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": load_local_versions()}
@@ -1399,7 +1405,7 @@ async def startup_event():
         TARGETSCAN_DB = load_local_data()
     load_mirtarbase_local()
     load_gmt_libraries()
-    logger.info(f"🚀 KENRYU v1.42 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+    logger.info(f"🚀 KENRYU v1.43 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
 
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):

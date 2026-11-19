@@ -2,6 +2,33 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.43] — 2026-11-19
+
+### Fixed
+- **PMIDs escritos a mano eliminados (auditoría externa):** los 7 genes con
+  texto fijo (ABCA1, KPNA3, SCN1A, SNTB2, TSC22D2, GMFB, KLF12) llevaban 11
+  PMIDs escritos a mano y TODOS resolvían en PubMed a artículos sin relación
+  con el gen ni con la frase (p. ej. PMID 25648732 es un estudio sobre
+  consejería de embarazo, citado para el ensamblaje de HDL de ABCA1 y para
+  MAPK/ERK de GMFB; PMID 29104567 es microbioma de salmón, citado para
+  KPNA3 y KLF12). Los PMIDs quedan en `None`: el panel del gen ya no muestra
+  el enlace "VERIFICAR EVIDENCIA" con un artículo falso. La evidencia PubMed
+  verificada la aporta la capa viva de investigación, no estos presets.
+  Test de regresión: ningún gen preset devuelve un PMID escrito a mano.
+
+### Docs
+- **README.md y README.es.md actualizados:** la hoja de ruta marcaba como
+  "planeado" lo ya existente (isomiRs, DisGeNET, exportación JSON, comparación
+  de paneles, heatmap, batch) — ahora está en Implementado, con la hoja de
+  ruta futura (miRTarBase oficial, fondo de enriquecimiento, Open Targets,
+  miRDB, GTEx, red interactiva, GSEA, TargetScan v9.0). **Licencia
+  corregida:** el README decía "Licencia Académica" pero el archivo LICENSE
+  del repo siempre ha sido MIT y GitHub reporta MIT; el README ahora dice MIT.
+  Sección nueva "Known Limitations / Limitaciones conocidas" con el hueco del
+  snapshot local de miRTarBase (hsa-miR-758-3p sin dianas locales) y el fondo
+  de enriquecimiento. Tabla de fuentes y estructura del repo actualizadas
+  (miRTarBase y Enrichr ahora son GMT locales + API en vivo).
+
 ## [1.42] — 2026-11-18
 
 ### Fixed

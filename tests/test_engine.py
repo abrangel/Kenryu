@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.42"
+    assert body["version"] == "1.43"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -292,3 +292,28 @@ def test_dedupe_pubmed_refs():
     assert out[0]["term"] == "term A"  # se conserva la primera ocurrencia
     assert ke.dedupe_pubmed_refs([]) == []
     assert ke.dedupe_pubmed_refs(None) == []
+
+
+def test_preset_gene_details_have_no_handwritten_pmids():
+    """Regression (auditoría externa, 2026-11-19): the 7 preset genes carried
+    11 hand-written PMIDs and EVERY one resolved in PubMed to an unrelated
+    paper (e.g. PMID 25648732 is pregnancy counselling, cited for ABCA1 HDL
+    assembly and for GMFB MAPK/ERK). A preset PMID must come from a live
+    query or be None — never written by hand. The gene panel only shows the
+    'verify evidence' link when a real PMID exists."""
+    import asyncio
+    import httpx
+
+    def _mock(request):
+        # UniProt returns nothing; get_gene_details must still work offline.
+        return httpx.Response(200, json={"results": []})
+
+    async def _run(gene):
+        transport = httpx.MockTransport(_mock)
+        async with httpx.AsyncClient(transport=transport) as client:
+            return await ke.get_gene_details(gene, client)
+
+    for gene in ["ABCA1", "KPNA3", "SCN1A", "SNTB2", "TSC22D2", "GMFB", "KLF12"]:
+        info = asyncio.run(_run(gene))
+        assert info["pmid"] is None, gene
+        assert all(ev.get("pmid") is None for ev in info["clinical_evidence"]), gene

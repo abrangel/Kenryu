@@ -42,7 +42,7 @@
   <img src="https://img.shields.io/badge/FastAPI-0.109-009688?style=flat-square&logo=fastapi&logoColor=white&labelColor=1a1d24"/>
   <img src="https://img.shields.io/badge/Docker-listo-2496ED?style=flat-square&logo=docker&logoColor=white&labelColor=1a1d24"/>
   <img src="https://img.shields.io/badge/HF%20Spaces-desplegado-FFD21E?style=flat-square&logo=huggingface&logoColor=black&labelColor=1a1d24"/>
-  <img src="https://img.shields.io/badge/Licencia-Acad%C3%A9mica%20RUO-c8a96e?style=flat-square&labelColor=1a1d24"/>
+  <img src="https://img.shields.io/badge/Licencia-MIT-c8a96e?style=flat-square&labelColor=1a1d24"/>
 </p>
 
 <!-- ESTADÍSTICAS -->
@@ -262,7 +262,7 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
        ▼          ▼              ▼               ▼                  ▼
  ┌──────────┐ ┌──────────┐ ┌─────────┐ ┌─────────────┐ ┌────────────────┐
  │TargetScan│ │miRTarBase│ │ Enrichr │ │NCBI PubMed  │ │ OMIM · ClinVar │
- │ v8 local │ │(Harmoniz)│ │KEGG/GO… │ │  eUtils     │ │  ClinicalTrials│
+ │ v8 local │ │local GMT │ │KEGG/GO… │ │  eUtils     │ │  ClinicalTrials│
  └──────────┘ └──────────┘ └─────────┘ └─────────────┘ └────────────────┘
                                  │
                                  ▼
@@ -318,8 +318,8 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
 | Fuente | Función | Tipo |
 |--------|----------|------|
 | 🧬 **TargetScanHuman v8.0** | Predicción termodinámica de sitios de unión | `Local (zip)` |
-| 🔬 **miRTarBase** vía Harmonizome | Validación experimental de interacciones (CLIP-seq, Luciferasa, WB) | `API remota` |
-| 📊 **Enrichr** | Enriquecimiento funcional — KEGG / Reactome / WikiPathways / GO | `API remota` |
+| 🔬 **miRTarBase** (snapshot GMT local, Harmonizome) | Validación experimental de interacciones (CLIP-seq, Luciferasa, WB) | `GMT local + API en vivo` |
+| 📊 **Enrichr** | Enriquecimiento funcional — KEGG / Reactome / WikiPathways / GO | `GMT locales + API en vivo` |
 | 📚 **NCBI PubMed eUtils** | Artículos científicos por gen + contexto con cascada y reintentos | `API remota` |
 | 🏥 **NCBI OMIM** | Enfermedades hereditarias asociadas por símbolo de gen | `API remota` |
 | 🧪 **NCBI ClinVar** | Variantes patogénicas / probablemente patogénicas reportadas | `API remota` |
@@ -441,11 +441,21 @@ KENRYU ha sido validado en vivo contra el Space desplegado (`POST /api/v1/analyz
 
 ---
 
+## ⚠️ Limitaciones conocidas
+
+- **miRTarBase es un snapshot local (Harmonizome, 18-11-2026), no la base de datos oficial.** La cobertura varía por miRNA: por ejemplo, `hsa-miR-758-3p` no tiene entrada en el snapshot aunque la literatura reporta dianas validadas (ABCA1, MDM2, MTOR, NOTCH2). Un gen cuyo miRNA no tiene entrada en el snapshot llega como máximo a "media" — eso es honesto sobre lo que el archivo sabe, no sobre la biología. Reemplazar el snapshot por el miRTarBase oficial (evidencia fuerte/débil + PMID por interacción) es el próximo cambio planeado.
+- **El fondo de enriquecimiento es la unión de cada biblioteca GMT**, no un universo de referencia curado; las comparaciones entre bibliotecas deben tratarse con cuidado (corrección planeada).
+
+---
+
 ## 📁 Estructura del Repositorio
 
 ```
 Kenryu/
-├── kenryu_engine.py              # Backend FastAPI + lógica bioinformática (~1700 líneas)
+├── kenryu_engine.py              # Backend FastAPI + lógica bioinformática (~1830 líneas)
+├── kenryu_core.py                # Helpers puros: nombres, consenso, visuales, síntesis (~810 líneas)
+├── kenryu_updater.py             # Chequeo de actualizaciones + instalador de fuentes de datos
+├── kenryu_cli.py                 # CLI offline: kenryu panel.txt --offline
 ├── Dockerfile                    # Configuración HF Spaces / Docker
 ├── requirements.txt
 │
@@ -455,11 +465,11 @@ Kenryu/
 │   └── style.css                 # Dark mode · acentos gold/teal
 │
 ├── data/
-│   ├── targetscan_full.json.zip  # Base TargetScan v8.0 indexada (Git LFS, ~8 MB)
+│   ├── targetscan_full.json.zip  # Base TargetScan v8.0 indexada (~8 MB, en el repo)
 │   └── hsa-miR-*.txt             # Archivos de ejemplo pre-procesados por miRNA
 │
-└── local_db/                     # Cache runtime (creado automáticamente, no en repo)
-    └── analysis_cache.json
+└── local_db/                     # Datos locales (GMT de miRTarBase + enriquecimiento,
+    └── analysis_cache.json       # FASTA de miRBase, data_versions.json) + cache runtime
 ```
 
 ---
@@ -479,15 +489,29 @@ Kenryu/
 - [x] Exportación Markdown ZIP profesional con assets de imagen separados
 - [x] Footer A4 anclado correctamente al fondo en todas las páginas PDF
 - [x] Narrativa de evidencia genómica integrada al cuerpo del informe
+- [x] Normalización de isomiRs (sufijos +N/−N tras -5p/-3p)
+- [x] Asociación gen-enfermedad con DisGeNET (cableado; necesita una DISGENET_API_KEY gratuita para activarse)
+- [x] Exportación a JSON estructurado (esquema 1.0, clave `export` con lista de aristas para Cytoscape)
+- [x] Comparación side-by-side de paneles de miRNAs (`POST /api/v1/compare`)
+- [x] Heatmap de expresión cruzada, genes × miRNAs (unión, top 20)
+- [x] Modo Batch — múltiples paneles desde CSV (`POST /api/v1/batch`)
+- [x] Dossier de validación por gen (puntaje 0–100; "alta" exige validación experimental de la interacción)
+- [x] Relevancia de proteínas vía UniProt por gen core
+- [x] Búsqueda inversa, gen → familias de miRNAs (`GET /api/v1/reverse`)
+- [x] Soporte para ratón (TargetScanMouse 8.0, 294 familias)
+- [x] Modo totalmente offline + CLI local (`kenryu panel.txt --offline`)
+- [x] Chequeo de actualizaciones + instalador para miRBase, TargetScan, miRTarBase y Enrichr
+- [x] Paneles de ejemplo en un clic (lípidos / cáncer / control)
 
 ### 🔜 Planificado
 
-- [ ] Soporte para isómeros de miRNA (isomiRs)
-- [ ] Integración con DisGeNET para asociación gen-enfermedad
-- [ ] Exportación a JSON estructurado para interoperabilidad con otras herramientas
-- [ ] Comparación side-by-side de paneles de miRNAs
-- [ ] Heatmap de expresión cruzada (genes × miRNAs)
-- [ ] Modo Batch — procesar múltiples paneles desde CSV
+- [ ] miRTarBase oficial (evidencia fuerte/débil + PMID por interacción) en lugar del snapshot de Harmonizome
+- [ ] Corrección del fondo de enriquecimiento — universo de referencia adecuado; "significativo" solo con p ajustada < 0,05
+- [ ] Capa clínica de Open Targets + dossier de evidencia de cuatro niveles
+- [ ] Predicciones independientes con miRDB
+- [ ] Contexto tisular con GTEx
+- [ ] Red interactiva (Cytoscape.js) — zoom, filtros, módulos
+- [ ] GSEA (enriquecimiento con lista ordenada de genes)
 - [ ] Integración con TargetScan v9.0 cuando esté disponible
 
 ---
@@ -510,7 +534,7 @@ Al reportar bugs incluir: pasos para reproducir, resultado esperado vs obtenido,
 
 ## 📜 Licencia
 
-Este proyecto se distribuye bajo una **Licencia Académica de Uso Libre para Investigación y Educación**. Para uso comercial, contactar al autor.
+Este proyecto se distribuye bajo la **Licencia MIT** — ver [LICENSE](LICENSE). (Una versión anterior de este README nombraba una licencia académica propia; el archivo LICENSE de este repositorio siempre ha sido MIT, y GitHub reporta MIT.)
 
 KENRYU integra datos de fuentes públicas (NCBI, Enrichr, OMIM, ClinVar, ClinicalTrials.gov, STRING-DB) sujetos a sus respectivas políticas de uso. El usuario es responsable de cumplir con los términos de servicio de cada base de datos.
 
