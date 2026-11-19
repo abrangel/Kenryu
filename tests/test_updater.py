@@ -70,7 +70,12 @@ def _handler(request):
 
 
 def test_check_updates_mocked():
-    report = ku.check_updates(client=_mock_client(_handler))
+    # Pin the old local versions explicitly: the real data_versions.json
+    # may already record a newer install, and the check must compare
+    # against what the caller pins, not the registry default.
+    pinned = {"mirbase": "22", "targetscan": "8.0",
+              "mirtarbase": "live via Harmonizome (unpinned)", "enrichr": "live API"}
+    report = ku.check_updates(client=_mock_client(_handler), local_versions=pinned)
     by_key = {s["key"]: s for s in report["sources"]}
     # miRBase local 22 vs live 23.1 -> outdated (the real finding).
     assert by_key["mirbase"]["status"] == "outdated"
@@ -84,6 +89,19 @@ def test_check_updates_mocked():
     assert by_key["enrichr"]["status"] == "live"
     assert report["updates_available"] == 1
     assert report["unpinned"] == 1
+
+
+def test_check_updates_uses_pinned_versions():
+    # After an install records 23.1, the same live 23.1 must read as
+    # up-to-date, not outdated (regression: the checker used to read the
+    # registry default "22" forever).
+    pinned = {"mirbase": "23.1", "targetscan": "8.0",
+              "mirtarbase": "live via Harmonizome (unpinned)", "enrichr": "live API"}
+    report = ku.check_updates(client=_mock_client(_handler), local_versions=pinned)
+    by_key = {s["key"]: s for s in report["sources"]}
+    assert by_key["mirbase"]["status"] == "up-to-date"
+    assert by_key["mirbase"]["local"] == "23.1"
+    assert report["updates_available"] == 0
 
 
 def test_check_updates_offline_never_raises():
@@ -106,12 +124,28 @@ def test_make_client_constructs_with_broken_no_proxy():
     client.close()
 
 
-def test_load_local_versions():
-    versions = ku.load_local_versions()
+def test_make_async_client_constructs_with_broken_no_proxy():
+    # Same trap, async twin (the analysis path uses AsyncClient).
+    import asyncio
+
+    async def _build():
+        async with ku.make_async_client(timeout=5.0):
+            pass
+
+    asyncio.run(_build())
+
+
+def test_load_local_versions(tmp_path):
+    # Against an explicit file: the pinned record is whatever the file
+    # says (the real file now records 23.1 after the live install).
+    versions_file = tmp_path / "data_versions.json"
+    versions_file.write_text(json.dumps({
+        "mirbase": {"local": "22"},
+        "targetscan": "8.0",
+    }))
+    versions = ku.load_local_versions(versions_file)
     assert versions["mirbase"] == "22"
     assert versions["targetscan"] == "8.0"
-    assert versions["mirtarbase"] == "live via Harmonizome (unpinned)"
-    assert versions["enrichr"] == "live API"
     # Missing file falls back to the registry defaults.
     assert ku.load_local_versions("/nonexistent/path.json")["mirbase"] == "22"
 
@@ -122,7 +156,11 @@ def test_updates_endpoint(monkeypatch):
     import kenryu_engine as ke
     from fastapi.testclient import TestClient
 
-    canned = ku.check_updates(client=_mock_client(_handler))
+    canned = ku.check_updates(
+        client=_mock_client(_handler),
+        local_versions={"mirbase": "22", "targetscan": "8.0",
+                        "mirtarbase": "live via Harmonizome (unpinned)",
+                        "enrichr": "live API"})
     monkeypatch.setattr(ke, "check_updates", lambda timeout=8.0: canned)
     with TestClient(ke.app) as client:
         r = client.get("/api/v1/updates")
@@ -139,5 +177,141 @@ def test_health_reports_data_sources():
     with TestClient(ke.app) as client:
         r = client.get("/health")
     assert r.status_code == 200
-    assert r.json()["data_sources"]["mirbase"] == "22"
-    assert r.json()["data_sources"]["targetscan"] == "8.0"
+    # /health reports whatever data_versions.json pins (23.1 after the
+    # live install); the contract is that it matches the pinned record.
+    assert r.json()["data_sources"] == ku.load_local_versions()
+    assert set(r.json()["data_sources"]) == {"mirbase", "targetscan",
+                                             "mirtarbase", "enrichr"}
+
+
+# ── Download + install ─────────────────────────────────────────────────────
+
+FASTA = ">hsa-miR-33a-5p MIMAT0000091\nGUGCAUUGUAGUUGCAUUGCA\n>hsa-miR-144-3p MIMAT0000436\nUACAGUAUAGAUGAUGUACU\n"
+
+
+def _install_handler(request):
+    url = str(request.url)
+    if "mirbase.org/download/CURRENT/README" in url:
+        return httpx.Response(200, text=MIRBASE_README)
+    if url.endswith("mature.fa"):
+        return httpx.Response(200, text=FASTA)
+    if url.endswith("hairpin.fa"):
+        return httpx.Response(200, text=FASTA)
+    return httpx.Response(404, text="not found")
+
+
+def _seed_versions(tmp_path):
+    versions = {
+        "mirbase": {"local": "22", "latest_known": "23.1"},
+        "targetscan": {"local": "8.0", "latest_known": "8.0"},
+    }
+    d = tmp_path / "local_db"
+    d.mkdir()
+    (d / "data_versions.json").write_text(json.dumps(versions))
+    return d
+
+
+def test_download_file_verifies_and_is_atomic(tmp_path):
+    dest = tmp_path / "mature.fa"
+    client = _mock_client(_install_handler)
+    path, sha, size = ku.download_file(
+        "https://www.mirbase.org/download/CURRENT/mature.fa",
+        dest, client, verify="fasta")
+    assert path.read_text() == FASTA
+    assert size == len(FASTA.encode())
+    assert len(sha) == 64
+    # A bad payload raises and leaves nothing at dest.
+    bad = tmp_path / "bad.fa"
+    with pytest.raises(ValueError):
+        ku.download_file("https://example.com/bad.fa", bad,
+                         _mock_client(lambda r: httpx.Response(200, text="nope")),
+                         verify="fasta")
+    assert not bad.exists()
+    assert not (tmp_path / "bad.fa.tmp").exists()
+
+
+def test_transform_html_fasta(tmp_path):
+    # miRBase serves .fa files wrapped in HTML (<p>, <br>, &gt;). The real
+    # 23.1 mature.fa unwraps to exactly 74,463 entries; here a small sample.
+    wrapped = ("<p>&gt;cel-let-7-5p MIMAT0000001 Caenorhabditis elegans let-7-5p<br>"
+               "UGAGGUAGUAGGUUGUAUAGUU<br>"
+               "&gt;hsa-miR-33a-5p MIMAT0000091 Homo sapiens miR-33a-5p<br>"
+               "GUGCAUUGUAGUUGCAUUGCA<br></p>\n")
+    dest = tmp_path / "mature.fa"
+    client = _mock_client(lambda r: httpx.Response(200, text=wrapped))
+    path, sha, size = ku.download_file(
+        "https://www.mirbase.org/download/CURRENT/mature.fa",
+        dest, client, verify="fasta", transform="html_fasta")
+    text = path.read_text()
+    assert text.startswith(">cel-let-7-5p MIMAT0000001")
+    assert ">hsa-miR-33a-5p MIMAT0000091" in text
+    assert "<" not in text and "&gt;" not in text
+    assert size == len(text.encode())
+    # And the raw HTML-wrapped payload fails verification without the transform.
+    with pytest.raises(ValueError):
+        ku.download_file("https://www.mirbase.org/download/CURRENT/mature.fa",
+                         tmp_path / "raw.fa", client, verify="fasta")
+
+
+def test_install_source_update_end_to_end(tmp_path):
+    d = _seed_versions(tmp_path)
+    old = d / "mirbase_mature.fa"
+    old.write_text(">old entry\nACGT\n")
+    report = ku.install_source_update(
+        "mirbase", client=_mock_client(_install_handler), base_dir=tmp_path)
+    assert report["old_version"] == "22"
+    assert report["new_version"] == "23.1"
+    assert len(report["installed"]) == 2
+    assert (d / "mirbase_mature.fa").read_text() == FASTA
+    assert (d / "mirbase_hairpin.fa").read_text() == FASTA
+    backups = [tmp_path / b for b in report["backups"]]
+    assert len(backups) == 1  # only mature.fa existed before
+    assert backups[0].read_text().startswith(">old entry")
+    assert "bak-22" in backups[0].name
+    recorded = json.loads((d / "data_versions.json").read_text())
+    assert recorded["mirbase"]["local"] == "23.1"
+    assert "updated_at" in recorded["mirbase"]
+    assert "23.1" in report["notice"]
+
+
+def test_install_refuses_without_files_or_unknown_source(tmp_path):
+    with pytest.raises(ValueError, match="no downloadable files"):
+        ku.install_source_update("targetscan", client=_mock_client(_install_handler),
+                                 base_dir=tmp_path)
+    with pytest.raises(ValueError, match="unknown source"):
+        ku.install_source_update("nope", client=_mock_client(_install_handler),
+                                 base_dir=tmp_path)
+
+
+def test_install_refuses_when_latest_cannot_be_verified(tmp_path):
+    d = _seed_versions(tmp_path)
+    live = d / "mirbase_mature.fa"
+    live.write_text(">old entry\nACGT\n")
+
+    def _down(request):
+        raise httpx.ConnectError("no network", request=request)
+
+    with pytest.raises(RuntimeError, match="could not verify"):
+        ku.install_source_update("mirbase", client=_mock_client(_down),
+                                 base_dir=tmp_path)
+    # The live file is untouched.
+    assert live.read_text().startswith(">old entry")
+
+
+def test_install_endpoint(monkeypatch):
+    import kenryu_engine as ke
+    from fastapi.testclient import TestClient
+
+    canned = {"source": "mirbase", "old_version": "22", "new_version": "23.1",
+              "installed": [], "backups": [], "notice": "ok"}
+    monkeypatch.setattr(ke, "install_source_update", lambda source: canned)
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/updates/mirbase/install")
+    assert r.status_code == 200
+    assert r.json()["new_version"] == "23.1"
+
+    monkeypatch.setattr(ke, "install_source_update",
+                        lambda source: (_ for _ in ()).throw(ValueError("unknown source: x")))
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/updates/x/install")
+    assert r.status_code == 400

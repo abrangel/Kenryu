@@ -90,12 +90,19 @@ async def translate_to_spanish(text: str, client: httpx.AsyncClient) -> str:
 # ── PURE HELPERS (live in kenryu_core.py, re-exported here) ─────────────
 from kenryu_core import (
     build_synthesis,
+    build_validation_report,
     clean_mirna_name_cloud,
     consensus_genes,
     create_visuals,
     deep_clean_mirna,
 )
-from kenryu_updater import DATA_SOURCES, check_updates, load_local_versions
+from kenryu_updater import (
+    DATA_SOURCES,
+    check_updates,
+    install_source_update,
+    load_local_versions,
+    make_async_client,
+)
 
 def load_local_data():
     cache_path = Path("local_db/targetscan_db.pkl")
@@ -285,7 +292,7 @@ async def fetch_mirtarbase(mirna: str) -> set:
     m_name = clean_mirna_name_cloud(mirna)
     variants = [m_name, re.sub(r'-(5p|3p)$', '', m_name, flags=re.IGNORECASE)]
     try:
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with make_async_client(timeout=12.0) as client:
             for v in variants:
                 url = f"https://maayanlab.cloud/Harmonizome/api/1.0/gene_set/{v}/miRTarBase+microRNA+Targets"
                 r = await client.get(url)
@@ -331,10 +338,22 @@ async def enrich_genes_direct(gene_list: list, client: httpx.AsyncClient):
     
     results = []
     try:
-        # 1. Subir la lista de genes
+        # 1. Subir la lista de genes (un reintento: la primera llamada
+        # en frío a veces agota el timeout de 20 s y la segunda responde
+        # en ~1 s; verificado en vivo 2026-11-18).
         payload = {"list": (None, "\n".join(gene_list[:300])), "description": (None, "KENRYU Analysis")}
-        r_add = await client.post("https://maayanlab.cloud/Enrichr/addList", files=payload, timeout=20.0)
-        if r_add.status_code != 200: return []
+        r_add = None
+        for attempt in range(2):
+            try:
+                r_add = await client.post("https://maayanlab.cloud/Enrichr/addList", files=payload, timeout=20.0)
+                break
+            except Exception as exc:
+                if attempt == 0:
+                    logger.warning(f"⏳ Enrichr addList reintentando tras fallo: {exc}")
+                    await asyncio.sleep(2.0)
+                else:
+                    raise
+        if r_add is None or r_add.status_code != 200: return []
         user_list_id = r_add.json().get("userListId")
         if not user_list_id: return []
 
@@ -1006,6 +1025,20 @@ def updates():
                 "unpinned": 0, "unknown": len(DATA_SOURCES),
                 "sources": [{**s, "latest_checked": None, "status": "unknown"}
                             for s in DATA_SOURCES]}
+
+
+@app.post("/api/v1/updates/{source}/install")
+def install_update_endpoint(source: str):
+    """Install the new release for one source. Only the registry's own
+    whitelisted files are downloaded; the old file is kept as a backup and
+    the new version is recorded. Returns the install report (the notice)."""
+    try:
+        return install_source_update(source)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    except Exception as exc:
+        logger.error(f"❌ Fallo instalando actualización {source}: {exc}")
+        raise HTTPException(502, f"install failed: {exc}")
 @app.on_event("startup")
 async def startup_event():
     global TARGETSCAN_DB
@@ -1029,9 +1062,12 @@ async def analyze(req: AnalysisRequest):
 
     # ── RECOLECCIÓN DE GENES POR miRNA ───────────────────────────────────────────
     gene_sets, found_names = [], []
+    local_by_mirna, remote_by_mirna = {}, {}
     for m in mirnas:
         local  = get_targets_local(m)
         remote = await fetch_mirtarbase(m)
+        local_by_mirna[m] = local
+        remote_by_mirna[m] = remote
 
         # ── BUG 4 CORREGIDO: si hay datos locales, NO mezclar con remoto ────
         # miRTarBase contiene genes validados experimentalmente (no predichos),
@@ -1074,6 +1110,9 @@ async def analyze(req: AnalysisRequest):
             "common_genes": [],
             "found_mirnas": found_names,
             "gene_details": {},
+            "validation": build_validation_report(
+                found_names, [], {}, local_by_mirna, remote_by_mirna,
+                load_local_versions()),
             "scientific_synthesis": (
                 f"No se encontraron genes diana comunes a todos los miRNAs analizados "
                 f"({', '.join(found_names)}) en modo de intersección estricta. "
@@ -1095,7 +1134,7 @@ async def analyze(req: AnalysisRequest):
     gene_list_enr = sorted_common[:300]
     
     if len(gene_list_enr) >= 3:
-        async with httpx.AsyncClient(timeout=45.0) as client:
+        async with make_async_client(timeout=45.0) as client:
             try:
                 logger.info(f"🧪 Iniciando Enriquecimiento para {len(gene_list_enr)} genes...")
                 enrichr_terms = await enrich_genes_direct(gene_list_enr, client)
@@ -1133,7 +1172,7 @@ async def analyze(req: AnalysisRequest):
     v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, sorted_common)
 
     # ── DETALLES DE GENES ──────────────────────────────────────────────────────
-    async with httpx.AsyncClient(timeout=20.0) as client:
+    async with make_async_client(timeout=20.0) as client:
         # Aumentar a 40 para cubrir toda la tabla del informe
         tasks = [get_gene_details(g, client) for g in sorted_common[:40]]
         details = await asyncio.gather(*tasks)
@@ -1156,7 +1195,7 @@ async def analyze(req: AnalysisRequest):
     seen_pmids = set()
 
     # 1. Investigación multi-fuente PARALELA de los 5 genes core del Venn
-    async with httpx.AsyncClient(timeout=25.0) as client:
+    async with make_async_client(timeout=25.0) as client:
         research_tasks = [
             research_gene_complete(g, gene_details.get(g, {}), req.years, client)
             for g in sorted_common[:5]
@@ -1202,7 +1241,7 @@ async def analyze(req: AnalysisRequest):
     resolved_count = 0
     fallback_count = 0
     if pubmed_candidates:
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with make_async_client(timeout=20.0) as client:
             meta_tasks = [fetch_real_article(c["pmid"], client) for c in pubmed_candidates]
             metas = await asyncio.gather(*meta_tasks, return_exceptions=True)
         for c, meta in zip(pubmed_candidates, metas):
@@ -1306,6 +1345,10 @@ async def analyze(req: AnalysisRequest):
 
     synthesis_obj = build_synthesis(found_names, sorted_common, gene_details, enrichment_results, report_references, gene_research_data)
 
+    validation_report = build_validation_report(
+        found_names, sorted_common, gene_research_data,
+        local_by_mirna, remote_by_mirna, load_local_versions())
+
     # Persistir descubrimientos (Traducciones, PubMed, Enriquecimiento)
     save_persistent_cache()
 
@@ -1313,6 +1356,7 @@ async def analyze(req: AnalysisRequest):
         "common_genes": sorted_common,
         "found_mirnas": found_names,
         "gene_details": gene_details,
+        "validation": validation_report,
         "scientific_synthesis": synthesis_obj["academic"],
         "functional_context": synthesis_obj["functional"],
         "references_text": synthesis_obj["references"],

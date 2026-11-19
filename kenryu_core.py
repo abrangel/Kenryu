@@ -425,4 +425,121 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
         "references": references_text
     }
 
-# ── FASTAPI APP ───────────────────────────────────────────────────────────────
+# ── VALIDATION OF EVERYTHING ──────────────────────────────────────────────
+# Every gene in the core gets a validation score from independent evidence
+# layers, each one verifiable on its own: predicted (TargetScan), experimentally
+# validated (miRTarBase), literature (PubMed PMIDs), disease (OMIM),
+# variants (ClinVar), trials (ClinicalTrials.gov). The score is a summary;
+# the layers are the proof. Nothing here claims what the data does not show:
+# "validated" means the gene is in miRTarBase's validated set for at least
+# one panel miRNA, checked independently of the intersection itself (the
+# analysis uses TargetScan as primary and miRTarBase only as fallback, so
+# this layer is a separate, second verification, not a repetition of the
+# intersection).
+
+_VALIDATION_WEIGHTS = {
+    "predicted": 25,   # TargetScan prediction
+    "validated": 30,   # miRTarBase experimental validation
+    "pubmed_each": 5,  # per PubMed reference, capped
+    "pubmed_cap": 15,
+    "omim": 10,
+    "clinvar": 10,
+    "trials": 10,
+}
+
+
+def validation_score(gene, research, predicted, validated):
+    """Score one gene 0-100 from its evidence layers. Pure and
+    deterministic. `research` is the gene_research entry for the gene
+    ({pubmed: [...], omim: [...], clinvar: {count}, trials: [...]})."""
+    research = research or {}
+    layers, missing = [], []
+    score = 0
+    if predicted:
+        layers.append("TargetScan (predicho)")
+        score += _VALIDATION_WEIGHTS["predicted"]
+    else:
+        missing.append("TargetScan (predicho)")
+    if validated:
+        layers.append("miRTarBase (validado experimentalmente)")
+        score += _VALIDATION_WEIGHTS["validated"]
+    else:
+        missing.append("miRTarBase (validado experimentalmente)")
+    n_pubmed = len(research.get("pubmed") or [])
+    if n_pubmed:
+        layers.append(f"PubMed ({n_pubmed} refs)")
+        score += min(_VALIDATION_WEIGHTS["pubmed_cap"],
+                     n_pubmed * _VALIDATION_WEIGHTS["pubmed_each"])
+    else:
+        missing.append("PubMed")
+    if research.get("omim"):
+        layers.append(f"OMIM ({len(research['omim'])} entradas)")
+        score += _VALIDATION_WEIGHTS["omim"]
+    else:
+        missing.append("OMIM")
+    clinvar_count = (research.get("clinvar") or {}).get("count", 0)
+    if clinvar_count:
+        layers.append(f"ClinVar ({clinvar_count} variantes)")
+        score += _VALIDATION_WEIGHTS["clinvar"]
+    else:
+        missing.append("ClinVar")
+    if research.get("trials"):
+        layers.append(f"ClinicalTrials ({len(research['trials'])} ensayos)")
+        score += _VALIDATION_WEIGHTS["trials"]
+    else:
+        missing.append("ClinicalTrials")
+    score = min(100, score)
+    level = "alta" if score >= 70 else ("media" if score >= 40 else "baja")
+    return {
+        "gene": gene,
+        "score": score,
+        "level": level,
+        "layers": layers,
+        "missing": missing,
+        "explanation": (
+            f"{gene}: validación {level} ({score}/100) — "
+            + (", ".join(layers) if layers else "sin capas de evidencia")
+            + (f"; falta: {', '.join(missing)}" if missing else "")
+        ),
+    }
+
+
+def build_validation_report(mirnas, common_genes, gene_research,
+                            local_by_mirna, remote_by_mirna, data_versions):
+    """Validation dossier for one analysis: per-gene scores plus the exact
+    database versions the result rests on. `local_by_mirna` / `remote_by_mirna`
+    map each panel miRNA to its TargetScan / miRTarBase target sets."""
+    import datetime
+    predicted_set = set().union(*local_by_mirna.values()) if local_by_mirna else set()
+    validated_set = set().union(*remote_by_mirna.values()) if remote_by_mirna else set()
+    gene_research = gene_research or {}
+    genes = {}
+    for gene in common_genes:
+        genes[gene] = validation_score(
+            gene, gene_research.get(gene),
+            predicted=gene in predicted_set,
+            validated=gene in validated_set,
+        )
+    scores = [g["score"] for g in genes.values()]
+    levels = [g["level"] for g in genes.values()]
+    return {
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "mirnas": list(mirnas),
+        "data_sources": dict(data_versions or {}),
+        "method": (
+            "Cada gen se valida por capas independientes y verificables: "
+            "predicción TargetScan, validación experimental miRTarBase "
+            "(comprobada por separado de la intersección), PubMed (PMID), "
+            "OMIM, ClinVar y ClinicalTrials.gov. La puntuación resume las "
+            "capas; las capas son la prueba."
+        ),
+        "genes": genes,
+        "summary": {
+            "n_genes": len(genes),
+            "high": levels.count("alta"),
+            "medium": levels.count("media"),
+            "low": levels.count("baja"),
+            "mean_score": round(sum(scores) / len(scores), 1) if scores else None,
+            "not_validated": [g for g, s in genes.items() if s["level"] == "baja"],
+        },
+    }

@@ -46,6 +46,14 @@ DATA_SOURCES = [
         "check_url": "https://www.mirbase.org/download/CURRENT/README/",
         "parser": "mirbase_readme",
         "download_url": "https://www.mirbase.org/download/",
+        "files": [
+            {"url": "https://www.mirbase.org/download/CURRENT/mature.fa",
+             "local": "local_db/mirbase_mature.fa", "verify": "fasta",
+             "transform": "html_fasta"},
+            {"url": "https://www.mirbase.org/download/CURRENT/hairpin.fa",
+             "local": "local_db/mirbase_hairpin.fa", "verify": "fasta",
+             "transform": "html_fasta"},
+        ],
         "note": "KENRYU validates miRNA names against miRBase v22 (thesis). "
                 "v23 (Aug 2026) added 8,847 hairpins; v23.1 (Sep 2026) "
                 "renamed/deleted entries.",
@@ -59,8 +67,11 @@ DATA_SOURCES = [
         "check_url": "https://www.targetscan.org/vert_80/",
         "parser": "targetscan_page",
         "download_url": "https://www.targetscan.org/vert_80/",
+        "files": [],
         "note": "Local database (targetscan_full.json.zip, 8.3 MB). "
-                "No v9.0 release found as of 2026-11-18.",
+                "No v9.0 release found as of 2026-11-18. No direct file URL "
+                "registered yet: downloads go through the data-download CGI "
+                "(/cgi-bin/targetscan/data_download.vert80.cgi).",
     },
     {
         "key": "mirtarbase",
@@ -71,10 +82,12 @@ DATA_SOURCES = [
         "check_url": "https://mirtarbase.cuhk.edu.cn/php/download.php",
         "parser": "mirtarbase_page",
         "download_url": "https://mirtarbase.cuhk.edu.cn/php/download.php",
+        "files": [],
         "note": "Validated targets are fetched live from Harmonizome; the "
                 "underlying miRTarBase version is not pinned. miRTarBase "
                 "10.0 (Sep 2024) holds 3,817,550 validated interactions "
-                "from 13,690 articles.",
+                "from 13,690 articles. No direct file URL registered yet "
+                "(site unreachable from this machine).",
     },
     {
         "key": "enrichr",
@@ -85,6 +98,7 @@ DATA_SOURCES = [
         "check_url": "https://maayanlab.cloud/Enrichr/datasetStatistics",
         "parser": "enrichr_stats",
         "download_url": "https://maayanlab.cloud/Enrichr/",
+        "files": [],
         "note": "Enrichment is queried live; libraries are always current "
                 "when online. No local copy yet (see local-enrichment work).",
     },
@@ -200,18 +214,10 @@ def check_source(entry, client):
     return result
 
 
-def _make_client(timeout):
-    """Build an httpx client that actually reaches the internet from
-    wherever KENRYU runs.
-
-    Two traps, both learned the hard way on this VM:
-    - httpx 0.26 with trust_env=True raises InvalidURL when NO_PROXY holds
-      bracketed IPv6 (``[::1]``). Passing the proxy explicitly with
-      trust_env=False skips that parsing entirely (our four hosts are all
-      public, so no_proxy exceptions are irrelevant here).
-    - Egress proxies that intercept TLS need their CA: honour SSL_CERT_FILE
-      when set, else the system bundle, else the default bundle.
-    """
+def _client_kwargs(timeout):
+    """Shared httpx client options: explicit proxy + egress CA when a
+    proxy is configured (skips the broken NO_PROXY parsing in httpx 0.26),
+    else the environment defaults."""
     proxy = (
         os.environ.get("HTTPS_PROXY")
         or os.environ.get("https_proxy")
@@ -222,18 +228,36 @@ def _make_client(timeout):
         str(_SYSTEM_CA) if _SYSTEM_CA.exists() else True
     )
     if proxy:
-        return httpx.Client(proxy=proxy, trust_env=False, verify=verify, timeout=timeout)
-    return httpx.Client(trust_env=True, verify=verify, timeout=timeout)
+        return {"proxy": proxy, "trust_env": False, "verify": verify, "timeout": timeout}
+    return {"trust_env": True, "verify": verify, "timeout": timeout}
 
 
-def check_updates(client=None, timeout=15.0):
+def _make_client(timeout):
+    """Build an httpx client that actually reaches the internet from
+    wherever KENRYU runs. See _client_kwargs for the two traps handled."""
+    return httpx.Client(**_client_kwargs(timeout))
+
+
+def make_async_client(timeout):
+    """Async twin of _make_client (the analysis path uses AsyncClient)."""
+    return httpx.AsyncClient(**_client_kwargs(timeout))
+
+
+def check_updates(client=None, timeout=15.0, local_versions=None):
     """Check every source. Returns a report dict; never raises. When no
-    client is given, one is created (see _make_client) and closed here."""
+    client is given, one is created (see _make_client) and closed here.
+    The 'local' version compared is the pinned record in
+    data_versions.json (or `local_versions` when given), not the registry
+    default, so a source installed yesterday is reported current today."""
     own_client = client is None
     if own_client:
         client = _make_client(timeout)
+    pinned = local_versions if local_versions is not None else load_local_versions()
     try:
-        sources = [check_source(e, client) for e in DATA_SOURCES]
+        sources = [
+            check_source({**e, "local": pinned.get(e["key"], e["local"])}, client)
+            for e in DATA_SOURCES
+        ]
     finally:
         if own_client:
             client.close()
@@ -267,3 +291,186 @@ def summarize(report):
         else:
             lines.append(f"{s['name']}: could not check (offline?)")
     return lines
+
+
+# ── Download + install ───────────────────────────────────────────────────
+# The second half of the updater: when check_updates() says a source is
+# outdated, this downloads the new release, verifies it, swaps it in with
+# the old file kept as a backup, and records the new version. Nothing is
+# ever installed silently: the caller (API or daily job) asks for it by
+# source key, and only the registry's own whitelisted file URLs are used.
+
+import hashlib
+import html as html_lib
+import os
+import shutil
+import zipfile
+
+
+def verify_fasta(path):
+    """A FASTA file must start with '>' and hold at least one entry."""
+    with open(path, encoding="utf-8", errors="strict") as fh:
+        first = fh.readline()
+        if not first.startswith(">"):
+            raise ValueError(f"{path}: not a FASTA file (first line: {first[:40]!r})")
+        for line in fh:
+            if line.startswith(">"):
+                return True
+    raise ValueError(f"{path}: FASTA file has no entries")
+
+
+def verify_zip(path):
+    """A ZIP must open and pass its internal CRC check."""
+    with zipfile.ZipFile(path) as zf:
+        if zf.testzip() is not None:
+            raise ValueError(f"{path}: ZIP failed its CRC check")
+    return True
+
+
+_VERIFIERS = {"fasta": verify_fasta, "zip": verify_zip}
+
+
+def transform_html_fasta(path):
+    """miRBase serves its .fa files wrapped in HTML (``<p>...</p>``,
+    ``<br>`` line breaks, ``&gt;`` escapes). Unwrap to plain FASTA, in
+    place. Raises ValueError if nothing FASTA-like remains."""
+    text = Path(path).read_text(encoding="utf-8", errors="strict")
+    text = re.sub(r"</?p>", "", text)
+    text = text.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+    text = html_lib.unescape(text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = text.strip() + "\n"
+    if not text.startswith(">"):
+        raise ValueError(f"{path}: no FASTA content after HTML unwrap")
+    Path(path).write_text(text, encoding="utf-8")
+    return True
+
+
+_TRANSFORMS = {"html_fasta": transform_html_fasta}
+
+
+def download_file(url, dest, client, timeout=300.0, min_bytes=1, verify=None,
+                  transform=None):
+    """Stream-download url to dest. Writes to a temp file first and only
+    renames it into place after the optional transform, the size check and
+    the optional verifier pass, so a failed download never leaves a partial
+    file at dest. Returns (dest, sha256_hex, size_bytes). Raises on any
+    failure."""
+    dest = Path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_suffix(dest.suffix + ".tmp")
+    sha = hashlib.sha256()
+    size = 0
+    try:
+        with client.stream("GET", url, follow_redirects=True, timeout=timeout) as resp:
+            resp.raise_for_status()
+            with open(tmp, "wb") as fh:
+                for chunk in resp.iter_bytes(1 << 16):
+                    fh.write(chunk)
+                    sha.update(chunk)
+                    size += len(chunk)
+        if size < min_bytes:
+            raise ValueError(f"{url}: downloaded {size} bytes, expected >= {min_bytes}")
+        if transform:
+            _TRANSFORMS[transform](tmp)
+            # Hash/size describe the stored file, not the raw download.
+            data = tmp.read_bytes()
+            sha = hashlib.sha256(data)
+            size = len(data)
+        if verify:
+            _VERIFIERS[verify](tmp)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+    os.replace(tmp, dest)
+    return dest, sha.hexdigest(), size
+
+
+def _record_version(key, new_version, versions_path=VERSIONS_FILE):
+    """Update the pinned local version in data_versions.json."""
+    try:
+        with open(versions_path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        data = {}
+    entry = data.get(key, {})
+    if not isinstance(entry, dict):
+        entry = {"local": entry}
+    old = entry.get("local")
+    entry["local"] = new_version
+    entry["updated_at"] = datetime.now(timezone.utc).isoformat()
+    data[key] = entry
+    versions_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(versions_path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2, sort_keys=True)
+    return old
+
+
+def install_source_update(key, client=None, base_dir=BASE_DIR, timeout=300.0):
+    """Download + install the new release for one registered source.
+
+    Steps: verify the latest release exists (check_source), download each
+    registered file, verify it, back the old file up as
+    ``<name>.bak-<old-version>``, swap it in, record the new version.
+    Raises ValueError for an unknown source or one with no downloadable
+    files, RuntimeError when the latest version cannot be verified.
+    Returns a report dict with the installed files, hashes and backups.
+    """
+    entry = next((s for s in DATA_SOURCES if s["key"] == key), None)
+    if entry is None:
+        raise ValueError(f"unknown source: {key}")
+    if not entry.get("files"):
+        raise ValueError(
+            f"{entry['name']}: no downloadable files registered yet "
+            f"(see the note in the registry)"
+        )
+    own_client = client is None
+    if own_client:
+        client = _make_client(timeout)
+    try:
+        checked = check_source(entry, client)
+        new_version = checked["latest_checked"]
+        if new_version is None:
+            raise RuntimeError(
+                f"{entry['name']}: could not verify the latest release "
+                f"({entry['check_url']}); refusing to install blind"
+            )
+        old_version = load_local_versions(
+            base_dir / "local_db" / "data_versions.json").get(key)
+        installed, backups = [], []
+        for spec in entry["files"]:
+            dest = base_dir / spec["local"]
+            if dest.exists():
+                backup = dest.with_name(
+                    f"{dest.stem}.bak-{old_version or 'unknown'}{dest.suffix}"
+                )
+                shutil.copy2(dest, backup)
+                backups.append(str(backup))
+            _, sha, size = download_file(
+                spec["url"], dest, client,
+                timeout=timeout, min_bytes=1, verify=spec.get("verify"),
+                transform=spec.get("transform"),
+            )
+            installed.append({
+                "file": spec["local"], "url": spec["url"],
+                "sha256": sha, "bytes": size,
+            })
+        _record_version(
+            key, new_version,
+            versions_path=base_dir / "local_db" / "data_versions.json")
+        return {
+            "source": key,
+            "name": entry["name"],
+            "old_version": old_version,
+            "new_version": new_version,
+            "installed": installed,
+            "backups": backups,
+            "notice": (
+                f"{entry['name']} updated {old_version} -> {new_version}. "
+                f"Previous files kept as backups; re-run your panels to see "
+                f"what changed in the results."
+            ),
+        }
+    finally:
+        if own_client:
+            client.close()
