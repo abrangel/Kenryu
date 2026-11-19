@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.41"
+    assert body["version"] == "1.42"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -274,3 +274,21 @@ def test_ppi_isolated_core_gene_and_neighbour():
         pubmed_counts=counts, ppi_edges=edges)
     for img in (venn, volcano, ppi):
         assert base64.b64decode(img)[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_dedupe_pubmed_refs():
+    """Regression (auditoría externa, 2026-11-18): dos términos de evidencia
+    pueden devolver el mismo PMID y cada repetición sumaba 5 puntos.
+    KPNA3, SCN1A, SNTB2 y TSC22D2 del panel de la tesis tenían el mismo
+    PMID dos veces en vivo."""
+    refs = [
+        {"pmid": "32492291", "term": "term A"},
+        {"pmid": "32492291", "term": "term B"},  # mismo artículo, otro término
+        {"pmid": "36153432", "term": "term C"},
+        {"pmid": None, "term": "sin pmid"},      # sin PMID: se conserva
+    ]
+    out = ke.dedupe_pubmed_refs(refs)
+    assert [r["pmid"] for r in out] == ["32492291", "36153432", None]
+    assert out[0]["term"] == "term A"  # se conserva la primera ocurrencia
+    assert ke.dedupe_pubmed_refs([]) == []
+    assert ke.dedupe_pubmed_refs(None) == []

@@ -745,7 +745,12 @@ def validation_score(gene, research, predicted, validated):
     else:
         missing.append("ClinicalTrials")
     score = min(100, score)
-    level = "alta" if score >= 70 else ("media" if score >= 40 else "baja")
+    # "Alta" exige validación experimental de la INTERACCIÓN (miRTarBase):
+    # PubMed, OMIM, ClinVar y ClinicalTrials describen lo importante que es
+    # el gen, no que el microARN lo regule. Sin esa capa, un gen muy estudiado
+    # llegaría a "alta" por popularidad, no por evidencia de la interacción.
+    gated = score >= 70 and not validated
+    level = "media" if gated else ("alta" if score >= 70 else ("media" if score >= 40 else "baja"))
     return {
         "gene": gene,
         "score": score,
@@ -756,6 +761,7 @@ def validation_score(gene, research, predicted, validated):
             f"{gene}: validación {level} ({score}/100) — "
             + (", ".join(layers) if layers else "sin capas de evidencia")
             + (f"; falta: {', '.join(missing)}" if missing else "")
+            + ("; nivel limitado a media: sin validación experimental de la interacción" if gated else "")
         ),
     }
 
@@ -787,7 +793,13 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "predicción TargetScan, validación experimental miRTarBase "
             "(comprobada por separado de la intersección), PubMed (PMID), "
             "OMIM, ClinVar y ClinicalTrials.gov. La puntuación resume las "
-            "capas; las capas son la prueba."
+            "capas; las capas son la prueba. El nivel alta exige validación "
+            "experimental de la interacción; sin ella, el máximo es media. "
+            "Las referencias de PubMed se deduplican por PMID antes de puntuar. "
+            "La validación experimental se comprueba contra el snapshot local "
+            "de miRTarBase (Harmonizome): un microARN sin entrada en ese "
+            "snapshot no aporta validación aunque la literatura reporte dianas "
+            "validadas, y su gen queda en media como máximo."
         ),
         "genes": genes,
         "summary": {

@@ -2,6 +2,36 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.42] — 2026-11-18
+
+### Fixed
+- **Deduplicación por PMID (auditoría externa):** `research_gene_complete`
+  buscaba en PubMed una vez por cada término de evidencia y se quedaba con el
+  primer resultado de cada uno, así que el mismo artículo podía entrar dos
+  veces y sumar 5 puntos dos veces. Verificado en vivo: KPNA3 (PMID 32492291),
+  SCN1A (36153432), SNTB2 (37762054) y TSC22D2 (35100036) tenían el mismo PMID
+  duplicado. Ahora `dedupe_pubmed_refs()` deduplica por PMID antes de puntuar
+  (la deduplicación que existía solo afectaba a la bibliografía del informe,
+  no al puntaje). Caché de investigación versionada v2 → v3 para invalidar
+  los resultados viejos con duplicados. Panel de la tesis tras el arreglo:
+  ABCA1 100 (alta), SCN1A 60, KPNA3 50, SNTB2 50, TSC22D2 50 (media).
+
+### Changed
+- **El nivel "alta" exige validación experimental de la interacción:** un gen
+  con 70+ puntos por literatura y clínica (PubMed, OMIM, ClinVar, ensayos)
+  pero sin miRTarBase ya no es "alta" — queda en "media" y la explicación lo
+  dice. El puntaje numérico no cambia; solo el nivel. La literatura describe
+  lo importante que es el gen, no que el microARN lo regule. El panel de la
+  tesis no cambia de niveles (ABCA1 sigue alta porque SÍ tiene miRTarBase).
+
+### Known limitations
+- El GMT local de miRTarBase (snapshot Harmonizome) no contiene ninguna
+  entrada para hsa-miR-758-3p, aunque la literatura reporta dianas validadas
+  (ABCA1, MDM2, MTOR, NOTCH2). El panel de la tesis no se ve afectado
+  (ABCA1 se valida vía miR-33a-5p), pero el snapshot subestima la evidencia
+  experimental de 758-3p. Pendiente: refrescar el GMT desde el miRTarBase
+  oficial cuando su descarga sea alcanzable.
+
 ## [1.41] — 2026-11-18
 
 ### Added

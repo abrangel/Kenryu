@@ -846,6 +846,23 @@ async def fetch_disgenet(gene: str, client: httpx.AsyncClient, api_key=None):
         return {"diseases": []}
 
 
+def dedupe_pubmed_refs(refs):
+    """Elimina referencias duplicadas por PMID, conservando la primera.
+    Pura, sin red. Cada término de evidencia clínica busca por separado en
+    PubMed y dos términos pueden devolver el mismo artículo; sin esto, un
+    mismo PMID sumaba 5 puntos dos veces en el puntaje de validación."""
+    seen = set()
+    out = []
+    for r in refs or []:
+        pmid = r.get("pmid") if isinstance(r, dict) else None
+        if pmid and pmid in seen:
+            continue
+        if pmid:
+            seen.add(pmid)
+        out.append(r)
+    return out
+
+
 async def research_gene_complete(gene: str, preset: dict, years: int, client: httpx.AsyncClient) -> dict:
     """Orquesta TODA la investigación de un gen core: PubMed (con cascada de años)
     + OMIM + ClinVar + ClinicalTrials.gov. Cachea el resultado por {gene}|{years}.
@@ -859,8 +876,9 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
     """
     # Cache key versionado: si subimos la versión, invalida resultados viejos
     # con queries en español/PMIDs incorrectos. v2 = búsquedas con términos
-    # en inglés + filtro de título en Trials.
-    cache_key = f"v2|{gene}|{years}"
+    # en inglés + filtro de título en Trials. v3 = v2 + deduplicación de
+    # PubMed por PMID (sin ella, un mismo artículo sumaba 5 puntos dos veces).
+    cache_key = f"v3|{gene}|{years}"
     if cache_key in PERSISTENT_CACHE["gene_research"]:
         logger.info(f"  💾 Cache hit: {gene} (años={years})")
         return PERSISTENT_CACHE["gene_research"][cache_key]
@@ -900,6 +918,11 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
                 "desc": "",
                 "year_window": window,
             })
+
+    # Deduplicar por PMID: cada término de evidencia busca por separado y
+    # dos términos pueden devolver el mismo artículo; sin esto, un mismo
+    # PMID sumaba 5 puntos dos veces en el puntaje de validación.
+    pubmed_refs = dedupe_pubmed_refs(pubmed_refs)
 
     # 2-4. OMIM + ClinVar + ClinicalTrials en paralelo
     omim, clinvar, trials = await asyncio.gather(
@@ -1195,7 +1218,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     return info
 
 # ── GRÁFICOS ──────────────────────────────────────────────────────────────────
-app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.41")
+app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.42")
 
 # Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
 origins = [
@@ -1234,7 +1257,7 @@ async def serve_style():
 
 @app.get("/health")
 async def health():
-    return {"status": "OK", "version": "1.41",
+    return {"status": "OK", "version": "1.42",
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": load_local_versions()}
@@ -1376,7 +1399,7 @@ async def startup_event():
         TARGETSCAN_DB = load_local_data()
     load_mirtarbase_local()
     load_gmt_libraries()
-    logger.info(f"🚀 KENRYU v1.41 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+    logger.info(f"🚀 KENRYU v1.42 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
 
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):

@@ -76,6 +76,21 @@ def test_build_validation_report():
     assert "verificables" in report["method"]
 
 
+def test_high_requires_experimental_validation():
+    # 25 (predicho) + 15 (PubMed) + 10 + 10 + 10 = 70 puntos SIN miRTarBase:
+    # la literatura y la clínica no pueden compensar la falta de evidencia
+    # sobre la interacción. El puntaje se mantiene (70), el nivel queda en
+    # "media" y la explicación dice por qué.
+    s = kc.validation_score("GENE3", FULL_RESEARCH, predicted=True, validated=False)
+    assert s["score"] == 70
+    assert s["level"] == "media"
+    assert "sin validación experimental" in s["explanation"]
+    # Con la misma evidencia MÁS miRTarBase, sí es "alta".
+    s2 = kc.validation_score("GENE3", FULL_RESEARCH, predicted=True, validated=True)
+    assert s2["score"] == 100
+    assert s2["level"] == "alta"
+
+
 def test_build_validation_report_empty():
     report = kc.build_validation_report(
         mirnas=["hsa-miR-33a-5p"], common_genes=[], gene_research={},
