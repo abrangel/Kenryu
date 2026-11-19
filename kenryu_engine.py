@@ -106,6 +106,52 @@ def load_mirtarbase_local():
     return MIRTARBASE_DB
 
 
+async def _download_gmt_bytes(url):
+    """GET the GMT file; returns raw bytes. Raises on any failure."""
+    async with make_async_client(timeout=30.0) as client:
+        r = await client.get(url)
+        r.raise_for_status()
+        return r.content
+
+
+async def _ensure_legacy_gmt():
+    """Best-effort startup download of the Harmonizome GMT (v1.53).
+
+    The CC BY-NC-SA snapshot is not distributed in the repo (v1.52) nor
+    in the deployed image: when neither the official miRTarBase index nor
+    the GMT is on disk, fetch the GMT from Harmonizome so the legacy
+    fallback still works. Returns True when a local miRTarBase source is
+    present afterwards. Never raises: a failed download only logs a
+    warning and the service starts without the fallback. Disabled with
+    KENRYU_STARTUP_GMT_DOWNLOAD=0 (the test suite disables it)."""
+    import gzip
+
+    official = BASE_DIR / MIRTARBASE_OFFICIAL
+    gmt = BASE_DIR / MIRTARBASE_GMT
+    if official.exists() or gmt.exists():
+        return True
+    if os.environ.get("KENRYU_STARTUP_GMT_DOWNLOAD", "1") == "0":
+        return False
+    url = next((f["url"] for s in DATA_SOURCES if s.get("key") == "mirtarbase"
+                for f in s.get("files", [])), None)
+    if not url:
+        logger.warning("⚠️ Sin URL de descarga para el GMT de Harmonizome.")
+        return False
+    try:
+        data = await _download_gmt_bytes(url)
+        if data[:2] != b"\x1f\x8b":
+            raise ValueError("la descarga no es un gzip válido")
+        gzip.decompress(data)  # valida la integridad antes de instalar
+        tmp = gmt.with_suffix(".tmp")
+        tmp.write_bytes(data)
+        os.replace(tmp, gmt)
+        logger.info(f"📥 GMT de Harmonizome descargado al arrancar ({len(data)} B).")
+        return True
+    except Exception as e:  # noqa: BLE001 - best-effort, nunca frena el arranque
+        logger.warning(f"⚠️ No se pudo descargar el GMT de Harmonizome al arrancar: {e}")
+        return False
+
+
 def load_gmt_libraries():
     """Carga las librerías GMT locales de enriquecimiento (una sola vez)."""
     global GMT_LIBRARIES
@@ -1382,7 +1428,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.52"
+APP_VERSION = "1.53"
 
 
 @asynccontextmanager
@@ -1395,6 +1441,9 @@ async def lifespan(app):
     load_persistent_cache()
     if not TARGETSCAN_DB:
         TARGETSCAN_DB = load_local_data()
+    # v1.53: el GMT de Harmonizome ya no se distribuye; si no hay índice
+    # oficial ni GMT en disco, se intenta descargar al arrancar (best-effort).
+    await _ensure_legacy_gmt()
     load_mirtarbase_local()
     load_gmt_libraries()
     logger.info(f"🚀 KENRYU v{APP_VERSION} listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")

@@ -886,10 +886,10 @@ def validation_score(gene, research, predicted, validated):
     `validated` is the miRTarBase evidence level: True/"strong"/"legacy"
     (functional assay or the legacy snapshot) scores +30, "weak"
     (CLIP-seq, microarray, proteomics) scores +15, False/None/"none"
-    scores +0. Weak evidence is high-throughput SUPPORT for the
-    interaction, not proof of direct binding — the label says so — but
-    by the v1.48 design decision it still satisfies the "alta" gate;
-    its lower weight makes "alta" harder to reach with it."""
+    scores +0. Weak evidence is high-throughput support, not proof of
+    direct binding: it adds points but does not unlock "alta", which
+    requires strong evidence (or the legacy snapshot, which carries no
+    evidence level)."""
     research = research or {}
     layers, missing = [], []
     score = 0
@@ -940,10 +940,11 @@ def validation_score(gene, research, predicted, validated):
     # PubMed, OMIM, ClinVar y ClinicalTrials describen lo importante que es
     # el gen, no que el microARN lo regule. Sin esa capa, un gen muy estudiado
     # llegaría a "alta" por popularidad, no por evidencia de la interacción.
-    # La evidencia débil (CLIP-seq: unión física) sí es validación de la
-    # interacción, así que satisface el candado; su menor peso (+15) hace
-    # que "alta" sea más difícil de alcanzar con ella.
-    gated = score >= 70 and validated_level is None
+    # v1.53: la evidencia débil (CLIP-seq, microarray, proteómica) es apoyo
+    # de alto rendimiento: no demuestra unión directa. Suma puntos (+15)
+    # pero NO desbloquea "alta"; esa etiqueta exige evidencia fuerte
+    # (reporter, western blot o qPCR) de la interacción.
+    gated = score >= 70 and validated_level != "strong"
     level = "media" if gated else ("alta" if score >= 70 else ("media" if score >= 40 else "baja"))
     return {
         "gene": gene,
@@ -956,7 +957,11 @@ def validation_score(gene, research, predicted, validated):
             f"{gene}: validación {level} ({score}/100) — "
             + (", ".join(layers) if layers else "sin capas de evidencia")
             + (f"; falta: {', '.join(missing)}" if missing else "")
-            + ("; nivel limitado a media: sin validación experimental de la interacción" if gated else "")
+            + (("; nivel limitado a media: solo evidencia débil (apoyo de alto "
+                "rendimiento); \"alta\" exige evidencia fuerte de la interacción"
+                if validated_level == "weak" else
+                "; nivel limitado a media: sin validación experimental de la interacción")
+               if gated else "")
         ),
     }
 
@@ -1093,8 +1098,8 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "predicción TargetScan, validación experimental miRTarBase "
             "(comprobada por separado de la intersección), PubMed (PMID), "
             "OMIM, ClinVar y ClinicalTrials.gov. La puntuación resume las "
-            "capas; las capas son la prueba. El nivel alta exige validación "
-            "experimental de la interacción; sin ella, el máximo es media. "
+            "capas; las capas son la prueba. El nivel alta exige evidencia "
+            "experimental fuerte de la interacción; sin ella, el máximo es media. "
             "Las referencias de PubMed se deduplican por PMID antes de puntuar. "
             "La validación experimental se comprueba contra el índice local "
             "de miRTarBase 9.0 (oficial, construido desde hsa_MTI.xlsx; "

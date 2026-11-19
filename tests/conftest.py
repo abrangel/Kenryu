@@ -21,6 +21,12 @@ os.chdir(REPO_ROOT)
 # lo activan explícitamente con monkeypatch y resetean su estado.
 os.environ.setdefault("KENRYU_RATE_LIMIT", "0")
 
+# v1.53: la descarga del GMT al arrancar está desactivada dentro de la
+# suite (KENRYU_STARTUP_GMT_DOWNLOAD=0) para que ningún test toque la
+# red; tests/test_startup_download.py la activa explícitamente con
+# monkeypatch y un descargador falso.
+os.environ.setdefault("KENRYU_STARTUP_GMT_DOWNLOAD", "0")
+
 # v1.45 (auditoría externa, H-15): a regression test once overwrote the
 # committed `local_db/analysis_cache.json` with a single TESTGENE entry.
 # Tests must never read from or write to the real cache file: the cache

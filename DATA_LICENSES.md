@@ -45,9 +45,14 @@ so anyone can rebuild the index from their own official download.
 
 **miRTarBase snapshot (Harmonizome)** was removed from the repository
 on 2026-11-19 (v1.52) and restored as a **download-on-demand** dataset:
-the updater fetches the GMT snapshot from Harmonizome at runtime when
-the official index is absent, so the platform keeps the legacy fallback
-without redistributing CC BY-NC-SA data.
+when the official index is absent, the service fetches the GMT snapshot
+from Harmonizome at runtime — at startup (best-effort, v1.53) or via
+the updater — so the platform keeps the legacy fallback. The file is
+NOT in the current repository tree, but it remains in the git history
+(commits before v1.52) and the deployed Space still carries a copy
+uploaded before v1.52; that copy is removed when the Space is next
+synced, after which the Space fetches it at startup like any other
+deployment. No new copy is distributed.
 
 ## Live data
 

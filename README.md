@@ -511,7 +511,7 @@ Kenryu/
 - [x] Side-by-side miRNA panel comparison (`POST /api/v1/compare`)
 - [x] Cross-expression heatmap, genes × miRNAs (union, top 20)
 - [x] Batch mode — multiple panels from CSV (`POST /api/v1/batch`)
-- [x] Per-gene validation dossier (0–100 score; "high" requires experimental validation of the interaction)
+- [x] Per-gene validation dossier (0–100 score; "high" requires strong experimental evidence of the interaction)
 - [x] UniProt protein relevance per core gene
 - [x] Reverse lookup, gene → miRNA families (`GET /api/v1/reverse`)
 - [x] Mouse support (TargetScanMouse 8.0, 294 families)

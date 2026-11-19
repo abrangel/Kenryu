@@ -2,6 +2,68 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.53] — 2026-11-19
+
+### Bloque 2 (resto) + "alta" exige evidencia fuerte + declaración de IA
+
+Revisión del autor y de Claude sobre los diffs de v1.51/v1.52 (2026-11-19).
+El puntaje no cambia en ningún gen; solo cambia la etiqueta de nivel
+cuando la evidencia es débil. El panel de la tesis no cambia.
+
+**"Alta" exige evidencia fuerte.** La evidencia débil (CLIP-seq,
+microarray, proteómica) es apoyo de alto rendimiento: suma +15 puntos
+pero NO desbloquea "alta", porque no demuestra unión directa. "Alta"
+exige evidencia fuerte (reporter, western blot o qPCR) de la
+interacción, o el snapshot legacy (que no trae nivel de evidencia:
+limitación documentada, no verificación). Un gen con evidencia débil
+y literatura completa sigue con 85 puntos, pero queda en "media" con
+la explicación "solo evidencia débil; 'alta' exige evidencia fuerte".
+Panel de la tesis sin cambio (ABCA1 fuerte, 100 "alta"; SNTB2 y
+TSC22D2 débiles pero con 65 y 55, por debajo de 70). En el panel de
+cáncer, CHD7 pasa de "alta" (75, débil) a "media". Esto revierte la
+decisión de diseño de v1.48 (la débil satisfacía el candado); el test
+que la codificaba se actualizó en consecuencia. Método test-first: los
+3 tests nuevos y el test actualizado fallaron primero contra v1.52.
+
+**Interruptor "exigir evidencia experimental": sin cambio de criterio.**
+Sigue conservando genes con CUALQUIER apoyo experimental (fuerte o
+débil, o legacy) para al menos un miRNA del panel: su trabajo es
+separar "con apoyo" de "solo predicho", no aplicar el criterio
+estricto — ese ya lo codifica el nivel "alta". La etiqueta de la
+interfaz ahora lo dice así ("fuerte o débil", con la aclaración de que
+la débil no prueba unión directa); el comentario del motor ya lo decía.
+
+**GMT de Harmonizome: descarga al arrancar.** La frase de
+DATA_LICENSES.md que decía que la plataforma funcionaba "sin
+redistribuir datos CC BY-NC-SA" no era cierta: el archivo sigue en el
+historial de GitHub y el Space conserva una copia. Corregido: el
+archivo NO está en el árbol actual del repo, pero permanece en el
+historial (commits anteriores a v1.52) y el Space aún lleva una copia
+que se elimina en el próximo sync. Además, el arranque ahora intenta
+descargar el GMT de Harmonizome (best-effort, con timeout, nunca frena
+el arranque) cuando no hay índice oficial ni GMT en disco, así que
+ninguna copia nueva se distribuye ni en el repo ni en la imagen
+desplegada. Desactivable con KENRYU_STARTUP_GMT_DOWNLOAD=0 (la suite
+lo desactiva; tests nuevos en tests/test_startup_download.py).
+
+**Declaración de uso de IA (paper.md).** Reescrita según la guía de
+JOSS (título exacto "AI usage disclosure", verificado en
+joss.readthedocs.io): nombra herramientas y modelos (Muse, Meta, Muse
+Spark 1.3; Claude Sonnet 5.5, Anthropic; ChatGPT GPT-6, OpenAI, 2026,
+nivel gratuito, según lo informado por la propia herramienta), cubre código,
+documentación y redacción del artículo, describe el papel de Claude
+(auditoría independiente, revisión de las correcciones, recomendación
+de prioridades) y de ChatGPT (plan inicial y lectura de la auditoría),
+y afirma la revisión y validación humana. El autor escribió su propio
+script de verificación (audit_v150.py, no subido a GitHub) y lo ejecutó
+en su máquina, con comprobaciones en vivo contra el servicio desplegado.
+Eliminada la afirmación "con su aprobación en cada versión" (no
+documentable: una versión se publicó antes de su confirmación) y la
+traducción al español del paper (ahora solo en README.es.md).
+También se corrigió "Decisiones de Claude" por "Recomendaciones de
+Claude, aprobadas por el autor" en la sección [1.51], y las frases de
+los READMEs que describían cuándo un gen llega a "alta".
+
 ## [1.52] — 2026-11-19
 
 ### Bloque 2: XSS residual, /health con lo cargado, GMT a descarga bajo demanda
@@ -61,7 +123,7 @@ comprobaciones en vivo.
 
 ### Bloque 1: tabla miRNA × gen, versiones de datos y conteos de evidencia
 
-Decisiones de Claude sobre la revisión de v1.50 (2026-11-19): las ideas 1
+Recomendaciones de Claude sobre la revisión de v1.50 (2026-11-19), aprobadas por el autor: las ideas 1
 y 2 aprobadas como primer bloque, junto con el conteo de evidencia y
 dos matices de etiquetado. Los pesos y el criterio de selección NO
 cambian (el método de la tesis sigue intacto; el interruptor "exigir

@@ -103,10 +103,9 @@ def test_build_validation_report_empty():
 # ── Ronda 3 (v1.48) — miRTarBase oficial + dossier de tres niveles ──────────
 # Niveles de evidencia por (miRNA, gen): strong (Functional MTI: reporter,
 # western, qPCR) +30; weak (Functional MTI (Weak): CLIP-seq, microarray,
-# proteómica) +15; none (sin evidencia funcional) +0. La evidencia débil
-# SÍ es validación experimental de la interacción (CLIP muestra unión
-# física), así que satisface el candado de "alta" igual que la fuerte;
-# el puntaje menor hace que "alta" sea más difícil de alcanzar con ella.
+# proteómica) +15; none (sin evidencia funcional) +0. Desde v1.53 la
+# evidencia débil suma puntos pero NO desbloquea "alta" (es apoyo de alto
+# rendimiento, no prueba de unión directa); "alta" exige evidencia fuerte.
 
 
 def test_validation_score_weak_is_half_of_strong():
@@ -114,7 +113,7 @@ def test_validation_score_weak_is_half_of_strong():
     # 15 + 10 + 10 + 10 = 85 (no 100).
     s = kc.validation_score("ABCA1", FULL_RESEARCH, predicted=True, validated="weak")
     assert s["score"] == 85
-    assert s["level"] == "alta"  # débil SÍ es evidencia experimental
+    assert s["level"] == "media"  # v1.53: débil suma puntos, no desbloquea "alta"
     assert "débil" in ", ".join(s["layers"])
 
 
@@ -176,3 +175,31 @@ def test_build_validation_report_not_evaluated_carries_evidence_level():
     assert report["genes"]["KPNA3"]["level"] == "not_evaluated"
     assert report["genes"]["KPNA3"]["evidence_level"] == "none"
     assert report["genes"]["ABCA1"]["evidence_level"] == "strong"
+
+
+# --- v1.53: "alta" exige evidencia FUERTE de la interacción ---------------
+# La evidencia débil (CLIP-seq, microarray, proteómica) es apoyo de alto
+# rendimiento: no demuestra unión directa. Con literatura y clínica
+# completas un gen alcanza 85 puntos con evidencia débil; eso no debe
+# etiquetarse "alta" (auditoría, 2026-11-19).
+
+def test_alta_requires_strong_evidence_weak_is_capped_at_media():
+    s = kc.validation_score("CHD7", FULL_RESEARCH, predicted=True,
+                            validated="weak")
+    assert s["score"] >= 70                    # el puntaje no cambia
+    assert s["evidence_level"] == "weak"
+    assert s["level"] == "media"               # el nivel sí: tope en media
+    assert "evidencia fuerte" in s["explanation"]
+
+
+def test_alta_still_reachable_with_strong_and_legacy_evidence():
+    for validated in ("strong", True, "legacy"):
+        s = kc.validation_score("ABCA1", FULL_RESEARCH, predicted=True,
+                                validated=validated)
+        assert s["level"] == "alta", validated
+
+
+def test_no_experimental_evidence_still_capped_at_media():
+    s = kc.validation_score("GENE", FULL_RESEARCH, predicted=True,
+                            validated=False)
+    assert s["score"] >= 70 and s["level"] == "media"

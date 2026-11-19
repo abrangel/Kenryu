@@ -499,7 +499,7 @@ Kenryu/
 - [x] Comparación side-by-side de paneles de miRNAs (`POST /api/v1/compare`)
 - [x] Heatmap de expresión cruzada, genes × miRNAs (unión, top 20)
 - [x] Modo Batch — múltiples paneles desde CSV (`POST /api/v1/batch`)
-- [x] Dossier de validación por gen (puntaje 0–100; "alta" exige validación experimental de la interacción)
+- [x] Dossier de validación por gen (puntaje 0–100; "alta" exige evidencia experimental fuerte de la interacción)
 - [x] Relevancia de proteínas vía UniProt por gen core
 - [x] Búsqueda inversa, gen → familias de miRNAs (`GET /api/v1/reverse`)
 - [x] Soporte para ratón (TargetScanMouse 8.0, 294 familias)
@@ -541,6 +541,12 @@ Al reportar bugs incluir: pasos para reproducir, resultado esperado vs obtenido,
 Este proyecto se distribuye bajo la **Licencia MIT** — ver [LICENSE](LICENSE). (Una versión anterior de este README nombraba una licencia académica propia; el archivo LICENSE de este repositorio siempre ha sido MIT, y GitHub reporta MIT.)
 
 KENRYU integra datos de fuentes públicas (NCBI, Enrichr, OMIM, ClinVar, ClinicalTrials.gov, STRING-DB) sujetos a sus respectivas políticas de uso. El usuario es responsable de cumplir con los términos de servicio de cada base de datos.
+
+---
+
+## 🤖 Declaración de uso de IA
+
+El autor utilizó herramientas de IA generativa durante el desarrollo. Muse (Meta, Muse Spark 1.3) ayudó a escribir código y documentación y a redactar el texto del artículo, bajo la dirección y revisión del autor. La suite de pruebas fue desarrollada por el autor, que la aportó en un estado avanzado; Muse ayudó con cobertura adicional para las correcciones de la auditoría. ChatGPT (GPT-6, OpenAI, 2026, nivel gratuito) se usó para el plan inicial — revisión conceptual, análisis de arquitectura bioinformática, evaluación de herramientas y formulación de propuestas de mejora — y para leer la auditoría externa. Claude Sonnet 5.5 (Anthropic) realizó una auditoría técnica independiente del código y de los resultados, revisó las correcciones y recomendó prioridades para los arreglos. Todas las decisiones de diseño y científicas las tomó el autor, que revisó, editó y validó los resultados asistidos por IA. El autor escribió su propio script de verificación (audit_v150.py: ejecución completa de pytest, comprobaciones adversariales de los hallazgos de la auditoría, escaneos de dependencias y de secretos) y lo ejecutó en su propia máquina, y verificó los resultados con comprobaciones en vivo contra el servicio desplegado.
 
 ---
 
