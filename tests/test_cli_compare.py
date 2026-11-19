@@ -127,3 +127,20 @@ def test_validation_ui_hooks():
     assert "validation?.genes?.[gene]?.score" in js
     # No hardcoded gene scores left in the panel.
     assert "gene === 'ABCA1'" not in js
+
+
+def test_reverse_lookup_ui_and_explanations():
+    """The page must EXPLAIN every graphic in plain language and offer the
+    reverse lookup (gene -> miRNAs) as a visible control."""
+    import re
+    html = (Path(__file__).resolve().parent.parent / "static" / "index.html").read_text()
+    js = (Path(__file__).resolve().parent.parent / "static" / "script.js").read_text()
+    assert "Búsqueda inversa" in html
+    assert 'id="reverse-gene"' in html
+    assert "reverseLookup" in js
+    assert "/api/v1/reverse" in js
+    assert "card-sub" in html
+    assert "Cada círculo es un miARN" in html
+    assert "Cada punto es un gen real" in html
+    assert "Cada fila es un gen" in html
+    assert "STRING-DB" in html

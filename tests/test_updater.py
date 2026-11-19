@@ -357,7 +357,11 @@ def test_analyze_offline_end_to_end():
     assert body["export"]["schema_version"] == "1.0"
     assert len(body["export"]["edges"]) > 0
     assert body["heatmap_plot"]
-    assert body["venn_plot"] and body["volcano_plot"] and body["ppi_plot"]
+    assert body["venn_plot"]
+    # Volcano and PPI need live data (PubMed counts, STRING): offline they
+    # are honestly absent instead of simulated.
+    assert body["volcano_plot"] is None
+    assert body["ppi_plot"] is None
     # No live research in offline mode.
     for res in body["gene_research"].values():
         assert res["year_window_used"] == "offline"

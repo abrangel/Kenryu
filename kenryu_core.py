@@ -66,7 +66,9 @@ def consensus_genes(gene_sets: list, mode: str) -> set:
     return {g for g, c in Counter(all_genes).items() if c >= threshold}
 
 
-def create_visuals(gene_sets: list, mirnas: list, common_all: list):
+def create_visuals(gene_sets: list, mirnas: list, common_all: list,
+                   pubmed_counts: dict | None = None,
+                   ppi_edges: list | None = None):
     plt.rcParams.update(plt.rcParamsDefault)
     plt.rcParams.update({
         'figure.facecolor': 'white', 'axes.facecolor': 'white',
@@ -131,101 +133,108 @@ def create_visuals(gene_sets: list, mirnas: list, common_all: list):
     plt.savefig(buf1, format='png', facecolor='white', bbox_inches='tight', dpi=150)
     plt.close(fig1); buf1.seek(0)
 
-    # ── VOLCANO ───────────────────────────────────────────────────────────────
-    fig2, ax2 = plt.subplots(figsize=(10, 6), facecolor='white')
-    ax2.set_facecolor('white')
-    np.random.seed(42)
-    n_bg = 200
-    x_bg = np.random.normal(0, 1.2, n_bg)
-    y_bg = np.abs(np.random.normal(0.5, 0.4, n_bg))
-    mask_ns = y_bg < 1.3
-    ax2.scatter(x_bg[mask_ns], y_bg[mask_ns], alpha=0.35, c='#aaaaaa', s=12, label='No significativo')
-    ax2.scatter(x_bg[~mask_ns], y_bg[~mask_ns], alpha=0.45, c='#6baed6', s=14, label='Significativo')
-    if common_all:
-        n_core = min(len(common_all), 15)
-        half = n_core // 2
-        x_down = np.random.uniform(-3.5, -1.8, half)
-        y_down = np.random.uniform(2.0, 4.5, half)
-        x_up   = np.random.uniform(1.8, 3.5, n_core - half)
-        y_up   = np.random.uniform(2.0, 4.5, n_core - half)
-        x_core = np.concatenate([x_down, x_up])
-        y_core = np.concatenate([y_down, y_up])
-        ax2.scatter(x_core, y_core, c='#e05c5c', s=55, zorder=5,
-                    edgecolors='#8b1a1a', linewidth=0.6, label='Genes Core')
-        for i in range(min(6, n_core)):
-            ax2.annotate(common_all[i], (x_core[i], y_core[i]),
-                         textcoords="offset points", xytext=(6, 4),
-                         fontsize=8.5, color='#1a3a6b', fontweight='bold',
-                         arrowprops=dict(arrowstyle='-', color='#1a3a6b55', lw=0.6))
-    ax2.axhline(y=1.3, color='#e05c5c', linestyle='--', alpha=0.6, lw=1.2, label='-log₁₀(0.05)')
-    ax2.axvline(x=1.5, color='#aaaaaa', linestyle=':', alpha=0.5, lw=1.0)
-    ax2.axvline(x=-1.5, color='#aaaaaa', linestyle=':', alpha=0.5, lw=1.0)
-    ax2.axvline(x=0, color='#cccccc', linestyle='-', alpha=0.3, lw=0.8)
-    ax2.text(-3.2, 0.1, '⬇ Regulación\nnegativa', fontsize=8, color='#666', style='italic')
-    ax2.text(2.0, 0.1, '⬆ Regulación\npositiva', fontsize=8, color='#666', style='italic')
-    ax2.set_xlabel("log₂ Fold Change (Efecto Regulador)", color='#444', fontsize=11)
-    ax2.set_ylabel("−log₁₀ (p-valor ajustado)", color='#444', fontsize=11)
-    ax2.set_title("Paisaje de Significancia Biológica",
-                  color='#1a1a2e', fontsize=13, pad=14, fontweight='bold')
-    ax2.legend(fontsize=9, framealpha=0.9, edgecolor='#cccccc')
-    ax2.set_xlim(-4.5, 4.5)
-    buf2 = io.BytesIO()
-    plt.savefig(buf2, format='png', facecolor='white', bbox_inches='tight', dpi=150)
-    plt.close(fig2); buf2.seek(0)
+    # ── VOLCANO (DATOS REALES) ───────────────────────────────────────────────
+    # Adaptación propia de la tesis (Fig. 15): X = frecuencia en PubMed,
+    # Y = nº de miRNAs del panel que regulan el gen. Cada punto es un gen
+    # real de la unión (top 25 por nº de miRNAs); los genes core
+    # (regulados por TODOS los miRNAs del panel) van en rojo y con nombre.
+    # Sin conteos reales de PubMed (modo offline) el gráfico NO se dibuja:
+    # no se inventa nada. (La versión anterior dibujaba 200 puntos
+    # aleatorios con np.random: era una ilustración, no datos.)
+    buf2 = None
+    if pubmed_counts:
+        union_counts = {}
+        for s in gene_sets:
+            for g in s:
+                union_counts[g] = union_counts.get(g, 0) + 1
+        n_mir = len(mirnas)
+        ranked = sorted(union_counts,
+                        key=lambda g: (-union_counts[g],
+                                       -(pubmed_counts.get(g, 0)), g))[:25]
+        xs = [np.log10(pubmed_counts.get(g, 0) + 1) for g in ranked]
+        ys = [union_counts[g] for g in ranked]
+        is_core = [union_counts[g] == n_mir for g in ranked]
+        fig2, ax2 = plt.subplots(figsize=(10, 6), facecolor='white')
+        ax2.set_facecolor('white')
+        xs_bg = [x for x, c in zip(xs, is_core) if not c]
+        ys_bg = [y for y, c in zip(ys, is_core) if not c]
+        xs_co = [x for x, c in zip(xs, is_core) if c]
+        ys_co = [y for y, c in zip(ys, is_core) if c]
+        core_genes = [g for g, c in zip(ranked, is_core) if c]
+        if xs_bg:
+            ax2.scatter(xs_bg, ys_bg, c='#6baed6', s=30, alpha=0.7,
+                        label='Genes de la unión')
+        if xs_co:
+            ax2.scatter(xs_co, ys_co, c='#e05c5c', s=70, zorder=5,
+                        edgecolors='#8b1a1a', linewidth=0.6,
+                        label='Genes core')
+            for g, x, y in zip(core_genes, xs_co, ys_co):
+                ax2.annotate(g, (x, y), textcoords="offset points",
+                             xytext=(6, 4), fontsize=9, color='#1a3a6b',
+                             fontweight='bold')
+        ax2.set_xlabel("Artículos en PubMed (log10)", color='#444', fontsize=11)
+        ax2.set_ylabel("miRNAs del panel que regulan el gen", color='#444', fontsize=11)
+        ax2.set_title("Volcán: evidencia en PubMed vs. regulación por el panel",
+                      color='#1a1a2e', fontsize=13, pad=14, fontweight='bold')
+        ax2.set_ylim(0.5, n_mir + 0.8)
+        ax2.set_xlim(left=0)
+        ax2.legend(fontsize=9, framealpha=0.9, edgecolor='#cccccc')
+        buf2 = io.BytesIO()
+        plt.savefig(buf2, format='png', facecolor='white', bbox_inches='tight', dpi=150)
+        plt.close(fig2); buf2.seek(0)
 
-    # ── INTERACTOMA PPI ───────────────────────────────────────────────────────
-    fig3, ax3 = plt.subplots(figsize=(9, 9), facecolor='white')
-    ax3.set_facecolor('white'); ax3.axis('off')
-    if common_all:
-        n_nodes = min(len(common_all), 12)
-        genes_disp = common_all[:n_nodes]
-        NODE_COLORS = ['#4e9af1', '#f4845f', '#57cc99', '#c77dff', '#ffd166',
-                       '#06d6a0', '#ef476f', '#118ab2', '#fca311', '#8ecae6',
-                       '#a8dadc', '#e9c46a'][:n_nodes]
+    # ── INTERACTOMA PPI (DATOS REALES: STRING-DB) ────────────────────────────
+    # Cada arista es una interacción real de STRING-DB (confianza >= 0,4);
+    # el grosor es la confianza. Sin aristas reales (modo offline) el
+    # gráfico NO se dibuja. (La versión anterior dibujaba un anillo con
+    # aristas inventadas por posición: no eran interacciones.)
+    buf3 = None
+    if ppi_edges is not None and common_all:
+        # Todos los genes core son nodos (los aislados también se ven:
+        # que STRING no registre interacción entre dos genes a >= 0,4
+        # también es información). Las aristas son solo las reales.
+        nodes = list(dict.fromkeys(common_all))[:12]
+        degree = {g: 0 for g in nodes}
+        for a, b, _s in ppi_edges:
+            if a in degree:
+                degree[a] += 1
+            if b in degree:
+                degree[b] += 1
+        nodes = sorted(nodes, key=lambda g: (-degree[g], g))
+        edges = [(a, b, s) for a, b, s in ppi_edges
+                 if a in nodes and b in nodes]
+        fig3, ax3 = plt.subplots(figsize=(9, 9), facecolor='white')
+        ax3.set_facecolor('white'); ax3.axis('off')
+        n_nodes = len(nodes)
         r = 0.33
-        positions = {}
-        for i, gene in enumerate(genes_disp):
-            angle = 2 * np.pi * i / n_nodes - np.pi / 2
-            gx = 0.5 + r * np.cos(angle)
-            gy = 0.5 + r * np.sin(angle)
-            positions[gene] = (gx, gy)
-        for i in range(n_nodes):
-            for j in range(i + 1, n_nodes):
-                if j - i <= 2 or (i == 0 and j == n_nodes - 1):
-                    g1, g2 = genes_disp[i], genes_disp[j]
-                    p1, p2 = positions[g1], positions[g2]
-                    ax3.plot([p1[0], p2[0]], [p1[1], p2[1]],
-                             c='#dddddd', linewidth=1.0, zorder=1, alpha=0.8)
-        for gene, (gx, gy) in positions.items():
-            ax3.plot([0.5, gx], [0.5, gy],
-                     c='#aaaaaa', linewidth=0.8, zorder=2, alpha=0.5, linestyle='--')
-        for i, gene in enumerate(genes_disp):
-            gx, gy = positions[gene]
-            ax3.scatter(gx, gy, c=NODE_COLORS[i], s=280, zorder=5,
-                        edgecolors='white', linewidth=1.8)
-            angle = 2 * np.pi * i / n_nodes - np.pi / 2
-            lx = 0.5 + (r + 0.09) * np.cos(angle)
-            ly = 0.5 + (r + 0.09) * np.sin(angle)
-            ax3.text(lx, ly, gene, ha='center', va='center',
-                     fontsize=8.5, fontweight='bold', color='#1a1a2e', zorder=7,
-                     bbox=dict(boxstyle='round,pad=0.15', facecolor='white',
-                               edgecolor='none', alpha=0.75))
-        ax3.scatter(0.5, 0.5, c='#1a3a6b', s=600, zorder=6,
-                    edgecolors='white', linewidth=2.5)
-        ax3.text(0.5, 0.505, "HUB", ha='center', va='center', color='white',
-                 fontsize=9, fontweight='bold', zorder=7)
-        ax3.text(0.5, 0.47, f"{n_nodes}", ha='center', va='center', color='#c8a96e',
-                 fontsize=11, fontweight='bold', zorder=7)
+        pos = {}
+        for i, gene in enumerate(nodes):
+            angle = 2 * np.pi * i / max(n_nodes, 1) - np.pi / 2
+            pos[gene] = (0.5 + r * np.cos(angle), 0.5 + r * np.sin(angle))
+        for a, b, s in edges:
+            x1, y1 = pos[a]
+            x2, y2 = pos[b]
+            ax3.plot([x1, x2], [y1, y2], c='#8aa8c8',
+                     linewidth=0.6 + 2.4 * s, zorder=1, alpha=0.75)
+        for gene in nodes:
+            gx, gy = pos[gene]
+            ax3.scatter([gx], [gy], s=220 + 90 * degree[gene], c='#4e9af1',
+                        zorder=5, edgecolors='white', linewidth=1.8)
+            ax3.text(gx, gy + 0.06, gene, ha='center', va='center',
+                     fontsize=9, fontweight='bold', color='#1a1a2e', zorder=7,
+                     bbox=dict(boxstyle='round,pad=0.2', facecolor='white',
+                               edgecolor='none', alpha=0.8))
+        ax3.set_title(f"Interactoma PPI — STRING-DB (confianza ≥ 0,4), "
+                      f"{len(edges)} interacciones",
+                      color='#1a1a2e', fontsize=13, pad=14, fontweight='bold')
         ax3.set_xlim(0.05, 0.95); ax3.set_ylim(0.05, 0.95)
-    ax3.set_title(f"Interactoma PPI — {len(common_all)} genes core",
-                  color='#1a1a2e', fontsize=13, pad=14, fontweight='bold')
-    buf3 = io.BytesIO()
-    plt.savefig(buf3, format='png', facecolor='white', bbox_inches='tight', dpi=150)
-    plt.close(fig3); buf3.seek(0)
+        buf3 = io.BytesIO()
+        plt.savefig(buf3, format='png', facecolor='white', bbox_inches='tight', dpi=150)
+        plt.close(fig3); buf3.seek(0)
 
-    return (base64.b64encode(buf1.getvalue()).decode(),
-            base64.b64encode(buf2.getvalue()).decode(),
-            base64.b64encode(buf3.getvalue()).decode())
+    def _b64(buf):
+        return base64.b64encode(buf.getvalue()).decode() if buf is not None else None
+    return (_b64(buf1), _b64(buf2), _b64(buf3))
 
 # ── SÍNTESIS ACADÉMICA ───────────────────────────────────────────────────────��────────
 def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: list, references: list, gene_research: dict = None) -> dict:
@@ -595,10 +604,31 @@ def heatmap_matrix(mirnas, common_genes, target_sets):
     return genes, list(mirnas), matrix
 
 
-def create_heatmap(mirnas, common_genes, target_sets):
-    """Heatmap PNG (base64) of the genes x miRNAs target matrix. Pure."""
+def heatmap_matrix_union(mirnas, target_sets, top_n=20):
+    """Genes x miRNAs binary matrix over the UNION of target sets, ranked
+    by how many panel miRNAs target each gene (desc). Core genes
+    (targeted by all) sit on top; genes targeted by a single miRNA at
+    the bottom — so the figure actually varies instead of being a solid
+    block (the old core-only matrix was all 1s by construction).
+    Returns (genes, mirnas, matrix, union_size)."""
+    union = set()
+    for s in target_sets:
+        union |= set(s)
+    counts = {g: sum(1 for s in target_sets if g in s) for g in union}
+    ranked = sorted(union, key=lambda g: (-counts[g], g))
+    genes = ranked[:top_n]
+    matrix = [[1 if g in s else 0 for s in target_sets] for g in genes]
+    return genes, list(mirnas), matrix, len(union)
+
+
+def create_heatmap(mirnas, common_genes, target_sets, top_n=20):
+    """Heatmap PNG (base64) of the genes x miRNAs target matrix, over the
+    UNION of targets (top `top_n` by miRNA count) so the pattern varies.
+    `common_genes` is kept for signature compatibility: the core genes
+    always sit on top, because every panel miRNA targets them."""
     import io as _io
-    genes, mirnas, matrix = heatmap_matrix(mirnas, common_genes, target_sets)
+    genes, mirnas, matrix, union_size = heatmap_matrix_union(
+        mirnas, target_sets, top_n=top_n)
     if not genes or not mirnas:
         return None
     arr = np.array(matrix, dtype=float)
@@ -606,7 +636,7 @@ def create_heatmap(mirnas, common_genes, target_sets):
                                     max(3, len(genes) * 0.45)))
     sns.heatmap(arr, ax=ax, cmap="YlGnBu", cbar=True, linewidths=0.5,
                 xticklabels=mirnas, yticklabels=genes)
-    ax.set_title("Genes diana por miRNA (1 = diana)")
+    ax.set_title(f"Genes diana por miRNA — top {len(genes)} de {union_size} (1 = diana)")
     plt.tight_layout()
     buf = _io.BytesIO()
     fig.savefig(buf, format="png", dpi=100)

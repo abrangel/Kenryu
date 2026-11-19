@@ -648,6 +648,63 @@ async def fetch_clinvar_for_gene(gene: str, client: httpx.AsyncClient) -> dict:
     }
 
 
+async def fetch_pubmed_count(gene: str, client: httpx.AsyncClient) -> int:
+    """Conteo ligero de artículos en PubMed para un gen (esearch retmax=0).
+    Solo el número, sin descargar artículos: alimenta el volcán real
+    (eje X = frecuencia en PubMed, adaptación propia de la tesis Fig. 15)."""
+    url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    data = await safe_pubmed_request(client, url, {
+        "db": "pubmed",
+        "term": f'"{gene}"[Gene/Protein Name] AND humans[MeSH Terms]',
+        "retmax": 0, "retmode": "json",
+    }, retries=2)
+    if not data:
+        return 0
+    try:
+        return int(data.get("esearchresult", {}).get("count", 0))
+    except (ValueError, TypeError):
+        return 0
+
+
+async def fetch_string_network(genes: list, client: httpx.AsyncClient) -> list:
+    """Interacciones reales entre `genes` vía STRING-DB (API pública, sin clave).
+    Devuelve [(genA, genB, score 0-1)] con confianza >= 0,4
+    (required_score=400, especie humana 9606). Solo aristas entre los genes
+    pedidos; si STRING no devuelve ninguna, la lista queda vacía y el
+    gráfico PPI no se dibuja (no se inventan aristas)."""
+    genes = [g for g in dict.fromkeys((genes or [])) if g]
+    if len(genes) < 2:
+        return []
+    try:
+        r = await client.get("https://string-db.org/api/json/network", params={
+            "identifiers": "%0d".join(genes),
+            "species": 9606, "required_score": 400,
+        }, timeout=20.0)
+        if r.status_code != 200:
+            return []
+        wanted = {g.upper() for g in genes}
+        out = []
+        for row in r.json():
+            a = (row.get("preferredName_A") or "").upper()
+            b = (row.get("preferredName_B") or "").upper()
+            if a in wanted and b in wanted and a != b:
+                try:
+                    score = float(row.get("score", 0))
+                except (TypeError, ValueError):
+                    continue
+                out.append((a, b, score))
+        seen, dedup = set(), []
+        for a, b, s in out:
+            key = tuple(sorted((a, b)))
+            if key in seen:
+                continue
+            seen.add(key)
+            dedup.append((key[0], key[1], s))
+        return dedup
+    except Exception:
+        return []
+
+
 async def fetch_clinicaltrials_for_gene(gene: str, client: httpx.AsyncClient) -> list:
     """Busca ensayos clínicos relacionados al gen vía ClinicalTrials.gov API v2.
     Filtra estrictamente por título que mencione el gen para descartar
@@ -1066,7 +1123,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     return info
 
 # ── GRÁFICOS ──────────────────────────────────────────────────────────────────
-app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.39")
+app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.40")
 
 # Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
 origins = [
@@ -1105,7 +1162,7 @@ async def serve_style():
 
 @app.get("/health")
 async def health():
-    return {"status": "OK", "version": "1.39",
+    return {"status": "OK", "version": "1.40",
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": load_local_versions()}
@@ -1247,7 +1304,7 @@ async def startup_event():
         TARGETSCAN_DB = load_local_data()
     load_mirtarbase_local()
     load_gmt_libraries()
-    logger.info(f"🚀 KENRYU v1.39 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+    logger.info(f"🚀 KENRYU v1.40 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
 
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):
@@ -1403,8 +1460,34 @@ async def analyze(req: AnalysisRequest):
             except Exception as e:
                 logger.error(f"❌ Error crítico enriquecimiento: {e}")
 
+    # ── DATOS REALES PARA LOS GRÁFICOS ────────────────────────────────────────
+    # Volcán: conteos de PubMed (top 25 genes de la unión por nº de miRNAs).
+    # PPI: interacciones reales STRING-DB entre los genes core.
+    # Sin red (offline) ambos quedan en None y la página lo dice:
+    # no se inventa ningún gráfico.
+    pubmed_counts, ppi_edges = None, None
+    if not req.offline:
+        union_counts = {}
+        for s in gene_sets:
+            for g in s:
+                union_counts[g] = union_counts.get(g, 0) + 1
+        top_genes = sorted(union_counts,
+                           key=lambda g: (-union_counts[g], g))[:25]
+        async with make_async_client(timeout=20.0) as _viz_client:
+            sem = asyncio.Semaphore(5)
+
+            async def _count(g):
+                async with sem:
+                    return g, await fetch_pubmed_count(g, _viz_client)
+
+            pairs = await asyncio.gather(*[_count(g) for g in top_genes])
+            pubmed_counts = dict(pairs)
+            ppi_edges = await fetch_string_network(sorted_common[:12], _viz_client)
+
     # ── GRÁFICOS ──────────────────────────────────────────────────────────────
-    v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, sorted_common)
+    v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, sorted_common,
+                                        pubmed_counts=pubmed_counts,
+                                        ppi_edges=ppi_edges)
 
     # ── DETALLES DE GENES ──────────────────────────────────────────────────────
     if req.offline:

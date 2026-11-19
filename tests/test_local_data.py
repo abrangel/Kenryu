@@ -145,3 +145,18 @@ def test_deep_clean_species_prefix():
     assert kc.deep_clean_mirna("hsa-let-7a-5p") == "let-7a-5p"
     assert kc.clean_mirna_name_cloud("mmu-miR-21a-5p", "mmu") == "mmu-miR-21a-5p"
     assert kc.normalize_isomir("mmu-miR-21a-5p", "mmu") == "mmu-miR-21a-5p"
+
+
+def test_heatmap_union_varies():
+    """The union heatmap must VARY: the old core-only matrix was all 1s by
+    construction (a solid teal block that explained nothing)."""
+    sets = [{"A", "B", "C"}, {"A", "B", "D"}, {"A", "E"}]
+    genes, mirnas, matrix, union_size = kc.heatmap_matrix_union(
+        ["m1", "m2", "m3"], sets)
+    assert union_size == 5
+    assert genes[0] == "A"  # targeted by all 3 -> on top
+    assert any(0 in row for row in matrix)  # real variation
+    assert matrix[genes.index("A")] == [1, 1, 1]
+    assert matrix[genes.index("E")] == [0, 0, 1]
+    png = kc.create_heatmap(["m1", "m2", "m3"], ["A"], sets)
+    assert base64.b64decode(png)[:8] == b"\x89PNG\r\n\x1a\n"

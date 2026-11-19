@@ -8,7 +8,8 @@
     "ncRNAs involved in STAT3 signaling in hepatocellular carcinoma WP4337": "ARNnc implicados en la señalización de STAT3 en el carcinoma hepatocelular WP4337",
     "Differentiation Pathway WP2848": "Vía de diferenciación WP2848",
     "Regulation Of Smooth Muscle Cell Proliferation (GO:0048660)": "Regulación de la proliferación de células musculares lisas (GO:0048660)",
-    "Post-transcriptional Silencing by Small RNAs": "Silenciamiento postranscripcional mediante ARN pequeños"
+    "Post-transcriptional Silencing by Small RNAs": "Silenciamiento postranscripcional mediante ARN pequeños",
+    "Dopaminergic synapse": "Sinapsis dopaminérgica"
   },
   "pubmed": {
     "esum_39655875": {
@@ -610,6 +611,12 @@
       "authors": "Yang G et al.",
       "year": "2024",
       "journal": "Eur J Epidemiol"
+    },
+    "esum_41139499": {
+      "title": "Critical Role of microRNA-33a/b in Cardiovascular and Metabolic Disease: Molecular Mechanisms and Therapeutic Perspectives",
+      "authors": "Horie T et al.",
+      "year": "2026",
+      "journal": "J Atheroscler Thromb"
     }
   },
   "enrichr": {

@@ -116,12 +116,27 @@ def test_build_synthesis_structure():
 
 # ── Visualizations (pure, no network) ────────────────────────────────────────
 
-def test_create_visuals_returns_three_pngs():
+def test_create_visuals_real_data_only():
+    """Venn is always real (sets). Volcano needs real PubMed counts and PPI
+    needs real STRING edges; without them the plot is None, never simulated."""
     sets = [{"ABCA1", "KPNA3"}, {"ABCA1", "SCN1A"}, {"ABCA1", "SNTB2"}]
-    venn, volcano, ppi = ke.create_visuals(sets, PANEL[:3], ["ABCA1"])
+    counts = {"ABCA1": 1200, "KPNA3": 45, "SCN1A": 900, "SNTB2": 30}
+    edges = [("ABCA1", "KPNA3", 0.7), ("SCN1A", "SNTB2", 0.9)]
+    venn, volcano, ppi = ke.create_visuals(
+        sets, PANEL[:3], ["ABCA1"], pubmed_counts=counts, ppi_edges=edges)
     for img in (venn, volcano, ppi):
         raw = base64.b64decode(img)
         assert raw[:8] == b"\x89PNG\r\n\x1a\n"  # PNG magic bytes
+    # Without real data: volcano and PPI are None (honest, not simulated).
+    venn2, volcano2, ppi2 = ke.create_visuals(sets, PANEL[:3], ["ABCA1"])
+    assert base64.b64decode(venn2)[:8] == b"\x89PNG\r\n\x1a\n"
+    assert volcano2 is None
+    assert ppi2 is None
+    # The volcano depends on the data: different counts -> different image.
+    counts2 = dict(counts, ABCA1=5)
+    _, volcano_b, _ = ke.create_visuals(
+        sets, PANEL[:3], ["ABCA1"], pubmed_counts=counts2, ppi_edges=edges)
+    assert volcano_b != volcano
 
 
 # ── Consensus modes (pure function, extracted from analyze()) ───────────────
@@ -174,6 +189,6 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.39"
+    assert body["version"] == "1.40"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5

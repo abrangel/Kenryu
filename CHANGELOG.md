@@ -2,6 +2,30 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.40] — 2026-11-18
+
+### Added
+- Every dashboard card now explains itself in plain language (how to read
+  the Venn, volcano, heatmap, PPI, enrichment and validation table), so a
+  newcomer understands each graphic without a manual.
+- Reverse lookup on the page: type a gene (e.g. ABCA1) and see the 55 miRNA
+  families that target it, with the panel's own families highlighted
+  (uses the existing `GET /api/v1/reverse`).
+- Heatmap now covers the UNION of targets (top 20 by miRNA count) instead
+  of only the core genes — the old matrix was all 1s by construction.
+
+### Fixed
+- The volcano plot was a SIMULATED illustration (200 random points): it now
+  plots real data — X = PubMed article count (log10), Y = number of panel
+  miRNAs regulating the gene, top 25 union genes, core genes in red and
+  labelled. Without live PubMed data (offline) it is honestly absent.
+- The PPI was a decorative ring with invented edges: it now draws only real
+  STRING-DB interactions (confidence ≥ 0,4) between the core genes, with
+  edge width = confidence. All core genes are shown as nodes, including
+  isolated ones. Finding: among the 5 thesis genes STRING records a single
+  direct interaction (SNTB2–ABCA1, 0.836) — the thesis two-module picture
+  came from a query that added neighbouring proteins.
+
 ## [1.39] — 2026-11-18
 
 ### Added

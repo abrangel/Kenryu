@@ -173,6 +173,46 @@ function renderDashboard(data) {
   }
 }
 
+function panelFamily(m) {
+  // hsa-miR-33a-5p -> mir-33-5p ; hsa-miR-106b-5p -> mir-106-5p ;
+  // hsa-let-7a-5p -> let-7-5p (las familias TargetScan se nombran por semilla).
+  let f = (m || '').trim().toLowerCase().replace(/^hsa-/, '');
+  f = f.replace(/^((?:mir|let)-)(\d+)[a-z](?=-[53]p)/, '$1$2');
+  return f;
+}
+
+function currentPanelFamilies() {
+  const input = document.getElementById('mirna-input').value || '';
+  return input.split(',').map(panelFamily).filter(Boolean);
+}
+
+async function reverseLookup() {
+  const gene = (document.getElementById('reverse-gene').value || '').trim();
+  const out = document.getElementById('reverse-results');
+  if (!gene) {
+    out.innerHTML = '<div style="color:var(--text-dim); font-size:12px;">Escribe un gen, por ejemplo ABCA1.</div>';
+    return;
+  }
+  out.innerHTML = '<div style="color:var(--text-dim); font-size:12px;">Buscando…</div>';
+  try {
+    const res = await fetch(`${API_URL}/api/v1/reverse?gene=${encodeURIComponent(gene)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const panelFams = currentPanelFamilies();
+    const pills = data.mirnas.map(m => {
+      const inPanel = panelFams.some(f => m.split('/').includes(f));
+      const style = inPanel ? 'background:var(--gold-dim); border-color:var(--gold); color:var(--gold);' : '';
+      return `<span class="gene-pill" style="${style}">${m}</span>`;
+    }).join('');
+    out.innerHTML = `<div style="margin-bottom:8px; font-size:13px;"><b>${data.gene}</b> es diana de <b>${data.n}</b> familias de miRNAs.</div>` +
+      (data.n
+        ? `<div style="color:var(--text-dim); font-size:11px; margin-bottom:6px;">Las doradas son de tu panel actual.</div><div class="genes-wrap">${pills}</div>`
+        : '<div style="color:var(--text-dim); font-size:12px;">Ningún miRNA de la base lo regula (o el gen no está en TargetScan).</div>');
+  } catch (e) {
+    out.innerHTML = `<div style="color:var(--red); font-size:12px;">Error: ${e.message}</div>`;
+  }
+}
+
 async function openGenePanel(gene) {
   document.getElementById('gp-name').textContent = gene;
   document.getElementById('gene-panel').classList.add('open');
