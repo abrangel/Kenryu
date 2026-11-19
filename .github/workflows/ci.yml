@@ -23,3 +23,16 @@ jobs:
           pip install pytest pytest-cov httpx
       - name: Run tests
         run: pytest -v --cov=kenryu_engine --cov=kenryu_core --cov-report=term-missing
+
+  gitleaks:
+    # Secret scan over the full history: a hardcoded credential must never
+    # reach the repo again (an NCBI API key was purged from the gh-pages
+    # branch history on 2026-11-19; see CHANGELOG [1.42]).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
