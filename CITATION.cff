@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Manzo Carvajal
+    given-names: Cesar Abrahan
+    orcid: https://orcid.org/0009-0006-4438-7456
+    affiliation: Independent Researcher
+title: "KENRYU: A Platform for Convergent microRNA Target Analysis and Multi-Source Evidence Integration"
+version: 1.38
+doi: 10.5281/zenodo.20564689
+date-released: 2026-11-18
+url: https://github.com/abrangel/Kenryu
