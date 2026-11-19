@@ -249,3 +249,21 @@ def test_build_validation_report_marks_unresearched_as_not_evaluated():
     assert rep["summary"]["not_evaluated"] == ["FOXP1"]
     assert "FOXP1" not in rep["summary"]["not_validated"]
     assert rep["summary"]["mean_score"] == 60.0
+
+
+def test_build_validation_report_labels_mean_as_evaluated_only():
+    """v1.46 (ajuste pre-publicación): la media es solo de los genes
+    evaluados y la etiqueta lo dice con el n, para que nadie lea
+    'media 80' como 'este panel tiene evidencia fuerte'."""
+    local = {"hsa-miR-21-5p": {"AGO4", "FOXP1"}, "hsa-miR-155-5p": {"AGO4", "FOXP1"}}
+    remote = {"hsa-miR-21-5p": {"AGO4"}, "hsa-miR-155-5p": {"AGO4"}}
+    research = {"AGO4": {"pubmed": [{"pmid": "12345678", "term": "x", "source": "KEGG",
+                                     "editorial_note": "", "year_window": "10y"}],
+                         "omim": [], "clinvar": {"count": 0, "url": ""},
+                         "trials": [], "diseases": []}}
+    rep = kc.build_validation_report(
+        ["hsa-miR-21-5p", "hsa-miR-155-5p"], ["AGO4", "FOXP1"], research, local, remote, {})
+    assert rep["summary"]["mean_score"] == 60.0
+    assert rep["summary"]["mean_score_label"] == "Media de los genes evaluados (1 de 2)"
+    assert "priorizados" in rep["method"] or "prioridad" in rep["method"]
+    assert "miRTarBase" in rep["method"]

@@ -143,6 +143,13 @@ function renderDashboard(data) {
         if (data.research_scope && data.research_scope.note) {
           html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">${data.research_scope.note}</div>`;
         }
+        if (s.mean_score !== null && s.mean_score !== undefined) {
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">${s.mean_score_label || 'Media de los genes evaluados'}: <b style="color:var(--text);">${s.mean_score}</b> — es la media solo de los evaluados, no de todo el panel.</div>`;
+        }
+        if (data.source_by_mirna) {
+          const srcText = Object.entries(data.source_by_mirna).map(([m, src]) => `${m} — ${src}`).join('<br>');
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">Fuente por miRNA (un consenso puede mezclar predicción y validación experimental):<br>${srcText}</div>`;
+        }
         if (data.enrichment_note) {
           html += `<div style="margin-top:4px; color:var(--text-dim); font-size:11px;">${data.enrichment_note}</div>`;
         }

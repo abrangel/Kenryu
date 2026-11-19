@@ -1483,6 +1483,9 @@ async def analyze(req: AnalysisRequest):
     # ── RECOLECCIÓN DE GENES POR miRNA ───────────────────────────────────────────
     gene_sets, found_names = [], []
     local_by_mirna, remote_by_mirna = {}, {}
+    source_by_mirna = {}  # por miRNA, qué fuente se usó (v1.46): un consenso
+    # strict puede mezclar predicción de TargetScan con validación
+    # experimental de miRTarBase; la respuesta lo dice por miRNA.
     if req.species == "mouse":
         db = load_mouse_data()
         species_prefix = "mmu"
@@ -1509,10 +1512,15 @@ async def analyze(req: AnalysisRequest):
         # Solo si local está vacío usamos miRTarBase como fallback.
         if local:
             combined = local
+            source_by_mirna[m] = "TargetScan (predicción local)"
             if remote:
                 logger.info(f"🔬 {m}: {len(local)} local (TargetScan) | {len(remote)} miRTarBase — usando solo TargetScan")
         else:
             combined = remote
+            source_by_mirna[m] = (
+                "miRTarBase (validación experimental; respaldo porque TargetScan no tenía este miRNA)"
+                if remote else "sin datos en ninguna fuente"
+            )
             logger.info(f"🔬 {m}: sin datos locales, usando miRTarBase: {len(remote)} genes")
 
         if combined:
@@ -1545,6 +1553,7 @@ async def analyze(req: AnalysisRequest):
         return {
             "common_genes": [],
             "found_mirnas": found_names,
+            "source_by_mirna": source_by_mirna,
             "gene_details": {},
             "validation": empty_validation,
             "export": build_export(found_names, [], {}, [], empty_validation, gene_sets),
@@ -1862,6 +1871,7 @@ async def analyze(req: AnalysisRequest):
     return {
         "common_genes": prioritized_common,
         "found_mirnas": found_names,
+        "source_by_mirna": source_by_mirna,
         "gene_details": gene_details,
         "validation": validation_report,
         "export": export_data,
@@ -1886,8 +1896,10 @@ async def analyze(req: AnalysisRequest):
             "note": (
                 f"Investigación multi-fuente (PubMed, OMIM, ClinVar, "
                 f"ClinicalTrials) limitada a los {RESEARCH_CAP} genes "
-                f"priorizados por costo de API; los "
-                f"{len(prioritized_common) - RESEARCH_CAP} restantes figuran "
+                f"priorizados por costo de API — la prioridad es por número "
+                f"de miRNAs del panel que regulan el gen y por validación "
+                f"en el snapshot local de miRTarBase (Harmonizome, 2026-11-18); "
+                f"los {len(prioritized_common) - RESEARCH_CAP} restantes figuran "
                 f"como no evaluados, sin puntaje."
                 if len(prioritized_common) > RESEARCH_CAP else
                 "Todos los genes del panel fueron investigados (dentro del tope por costo de API)."

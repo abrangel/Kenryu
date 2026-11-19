@@ -49,10 +49,29 @@ ACVR2A, AGO4, BNC2 y BRWD3, y los 13 restantes salían como "baja" con
   media, KPNA3/SNTB2/TSC22D2 50 media, media 62,0; enriquecimiento
   19 términos, p-adj máximo 0,0349 (todos < 0,05).
 
+### Ajustes pre-publicación (revisión externa)
+- **La media es solo de los evaluados y la etiqueta lo dice:** el
+  resumen lleva `mean_score_label` — "Media de los genes evaluados
+  (5 de 18)" — y la interfaz la muestra con esa etiqueta. La subida
+  de 40,3 a 80,0 no es una mejora de evidencia: los 5 investigados se
+  eligieron por tener validación en miRTarBase, así que son "alta" por
+  construcción. El orden de prioridad (nº de miRNAs del panel que
+  regulan el gen y validación en el snapshot local de miRTarBase,
+  Harmonizome 2026-11-18) se indica en la nota del tope, en el texto
+  del método del dossier y aquí.
+- **Fuente por miRNA en la respuesta:** `source_by_mirna` dice, por
+  cada miRNA, si se usó TargetScan (predicción local) o miRTarBase
+  como respaldo (validación experimental, porque TargetScan no tenía
+  ese miRNA). Un consenso strict puede mezclar ambos tipos de
+  evidencia y ahora se ve. La interfaz lo muestra bajo el dossier.
+  (Conecta con H-04 y H-12, ronda 2.)
+
 ### Tests
-- 100/100 (6 nuevos: orden de prioridad, "no evaluado" en el informe,
-  tope en `/analyze` offline con el panel de control y el de cáncer,
-  truncado del enriquecimiento en N-2, caché de Enrichr versionada).
+- 103/103 (9 nuevos en v1.46: orden de prioridad, "no evaluado" en el
+  informe, tope en `/analyze` offline con el panel de control y el de
+  cáncer, truncado del enriquecimiento en N-2, caché de Enrichr
+  versionada, etiqueta de la media, nota del tope con la base de
+  prioridad y el snapshot, fuente por miRNA).
 
 ## [1.45] — 2026-11-19
 

@@ -582,3 +582,41 @@ def test_enrich_genes_direct_ignores_stale_cache_and_filters_padj():
     assert not any(r["Term"] == "Stale" for r in res)
     assert any(r["Term"] == "Term A" for r in res)
     assert ("enr-v2|" + old_key) in ke.PERSISTENT_CACHE["enrichr"]
+
+
+def test_research_scope_note_states_priority_basis_and_snapshot():
+    """v1.46 (ajuste pre-publicación): la nota del tope dice por qué se
+    eligieron esos genes (nº de miRNAs del panel y validación en el
+    snapshot local de miRTarBase) y con qué versión del snapshot."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-375", "hsa-miR-29a-3p", "hsa-miR-21-5p"],
+            "years": 10, "mode": "strict", "offline": True})
+    assert r.status_code == 200
+    note = r.json()["research_scope"]["note"]
+    assert "miRNAs del panel" in note
+    assert "miRTarBase" in note
+    assert "Harmonizome" in note
+
+
+def test_analyze_offline_reports_source_per_mirna():
+    """v1.46 (ajuste pre-publicación): la respuesta dice, por miRNA, qué
+    fuente se usó — TargetScan local o miRTarBase como respaldo — porque
+    un consenso strict puede mezclar tipos de evidencia distintos."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-33a-5p", "hsa-miR-106b-3p"],
+            "years": 10, "mode": "strict", "offline": True})
+    assert r.status_code == 200
+    src = r.json()["source_by_mirna"]
+    assert src["hsa-miR-33a-5p"].startswith("TargetScan")
+    assert "miRTarBase" in src["hsa-miR-106b-3p"]
+    assert "respaldo" in src["hsa-miR-106b-3p"]
+    # El panel de control usa solo TargetScan.
+    r2 = client.post("/api/v1/analyze", json={
+        "mirnas": ["hsa-miR-375", "hsa-miR-29a-3p", "hsa-miR-21-5p"],
+        "years": 10, "mode": "strict", "offline": True})
+    assert r2.status_code == 200
+    assert all(v.startswith("TargetScan") for v in r2.json()["source_by_mirna"].values())

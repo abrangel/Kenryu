@@ -872,9 +872,11 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "cita; los PMIDs de PubMed son los primeros resultados de la "
             "búsqueda por gen + término y no se verificó que respalden la nota. "
             "La investigación multi-fuente se limita a los genes priorizados "
-            "por costo de API; los genes fuera de ese tope figuran como "
-            "«no evaluado», sin puntaje y sin nivel — no es evidencia en "
-            "contra, es ausencia de investigación en esta corrida."
+            "por costo de API; la prioridad es por número de miRNAs del panel "
+            "que regulan el gen y por validación en el snapshot local de "
+            "miRTarBase (Harmonizome, 2026-11-18); los genes fuera de ese tope "
+            "figuran como «no evaluado», sin puntaje y sin nivel — no es "
+            "evidencia en contra, es ausencia de investigación en esta corrida."
         ),
         "genes": genes,
         "summary": {
@@ -885,6 +887,9 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "medium": levels.count("media"),
             "low": levels.count("baja"),
             "mean_score": round(sum(scores) / len(scores), 1) if scores else None,
+            "mean_score_label": (
+                f"Media de los genes evaluados ({len(evaluated)} de {len(genes)})"
+            ),
             "not_validated": [g for g, s in genes.items() if s["level"] == "baja"],
             "not_evaluated": [g for g, s in genes.items() if s["level"] == "not_evaluated"],
         },
