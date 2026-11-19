@@ -366,6 +366,10 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-sans);
           </div>
           <button class="btn-run" onclick="analyzePro()"><i class="fas fa-play"></i> Ejecutar</button>
         </div>
+        <div style="margin-top:10px; display:flex; gap:6px; align-items:flex-start;">
+          <input type="checkbox" id="require-experimental" style="margin-top:2px;">
+          <label for="require-experimental" style="color:var(--text-dim); font-size:11px; line-height:1.4;">Exigir evidencia experimental (miRTarBase): el consenso solo conserva genes validados experimentalmente para al menos un miRNA del panel. Apagado por defecto: el método estándar muestra todos los genes del consenso con su nivel de evidencia (fuerte / débil / solo predicho).</label>
+        </div>
         <div style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
           <span style="color:var(--text-dim); font-size:11px;">Prueba con un ejemplo:</span>
           <button onclick="loadExample('lipidos')" style="background:var(--bg3); color:var(--text-dim); border:1px solid var(--border-md); border-radius:20px; padding:5px 12px; font-size:11px; cursor:pointer;">Lípidos (tesis)</button>

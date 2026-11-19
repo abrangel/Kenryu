@@ -83,7 +83,8 @@ async function analyzePro() {
     const res = await fetch(`${API_URL}/api/v1/analyze`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({mirnas, years: years, mode: mode})
+      body: JSON.stringify({mirnas, years: years, mode: mode,
+        require_experimental: document.getElementById('require-experimental')?.checked || false})
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     const data = await res.json();
@@ -145,12 +146,17 @@ function renderDashboard(data) {
         const s = v.summary || {};
         const badge = document.getElementById('validation-badge');
         if (badge) badge.textContent = `${s.high || 0} alta · ${s.medium || 0} media · ${s.low || 0} baja` + (s.n_not_evaluated ? ` · ${s.n_not_evaluated} sin evaluar` : '');
-        let html = `<table class="sci-table"><thead><tr><th>Gen</th><th>Puntaje</th><th>Nivel</th><th>Capas de evidencia</th><th>Qué falta</th></tr></thead><tbody>`;
+        let html = `<table class="sci-table"><thead><tr><th>Gen</th><th>Puntaje</th><th>Nivel</th><th>Evidencia miRTarBase</th><th>Capas de evidencia</th><th>Qué falta</th></tr></thead><tbody>`;
         for (const [gene, gv] of Object.entries(v.genes)) {
           const levelColor = gv.level === 'alta' ? 'var(--teal)' : gv.level === 'media' ? 'var(--gold)' : gv.level === 'not_evaluated' ? 'var(--text-dim)' : 'var(--red)';
           const levelLabel = gv.level === 'not_evaluated' ? 'no evaluado' : gv.level;
           const scoreText = gv.score === null || gv.score === undefined ? '—' : `${gv.score}/100`;
-          html += `<tr><td><b>${escapeHtml(gene)}</b></td><td><span style="font-family:var(--font-mono);">${scoreText}</span></td><td><span style="color:${levelColor}; font-weight:600;">${escapeHtml(levelLabel)}</span></td><td style="font-size:11px;">${(gv.layers || []).map(escapeHtml).join('<br>') || '—'}</td><td style="font-size:11px; color:var(--text-dim);">${(gv.missing || []).map(escapeHtml).join('<br>') || '—'}</td></tr>`;
+          // Ronda 3 (v1.48): nivel de evidencia miRTarBase por gen
+          // (fuerte / débil / solo predicho) con sus PMIDs.
+          const evLabel = {strong: 'fuerte', weak: 'débil', legacy: 'validado', none: 'solo predicho'}[gv.evidence_level] || '—';
+          const evPmids = (gv.mirtarbase_pmids || []).filter(p => Number.isInteger(p)).map(p => `<a href="https://pubmed.ncbi.nlm.nih.gov/${p}/" target="_blank" rel="noopener">${p}</a>`).join(', ');
+          const evCell = `${escapeHtml(evLabel)}${evPmids ? `<br><span style="font-family:var(--font-mono); font-size:10px;">${evPmids}</span>` : ''}`;
+          html += `<tr><td><b>${escapeHtml(gene)}</b></td><td><span style="font-family:var(--font-mono);">${scoreText}</span></td><td><span style="color:${levelColor}; font-weight:600;">${escapeHtml(levelLabel)}</span></td><td style="font-size:11px;">${evCell}</td><td style="font-size:11px;">${(gv.layers || []).map(escapeHtml).join('<br>') || '—'}</td><td style="font-size:11px; color:var(--text-dim);">${(gv.missing || []).map(escapeHtml).join('<br>') || '—'}</td></tr>`;
         }
         html += '</tbody></table>';
         const ds = v.data_sources || {};

@@ -74,7 +74,8 @@ def test_check_updates_mocked():
     # may already record a newer install, and the check must compare
     # against what the caller pins, not the registry default.
     pinned = {"mirbase": "22", "targetscan": "8.0",
-              "mirtarbase": "live via Harmonizome (unpinned)", "enrichr": "live API"}
+              "mirtarbase": "live via Harmonizome (unpinned)", "enrichr": "live API",
+              "kegg": "not installed"}
     report = ku.check_updates(client=_mock_client(_handler), local_versions=pinned)
     by_key = {s["key"]: s for s in report["sources"]}
     # miRBase local 22 vs live 23.1 -> outdated (the real finding).
@@ -87,8 +88,10 @@ def test_check_updates_mocked():
     assert by_key["mirtarbase"]["latest_checked"] == "10.0"
     # Enrichr answers -> live.
     assert by_key["enrichr"]["status"] == "live"
+    # KEGG is not installed -> unpinned (available to download on demand).
+    assert by_key["kegg"]["status"] == "unpinned"
     assert report["updates_available"] == 1
-    assert report["unpinned"] == 1
+    assert report["unpinned"] == 2
 
 
 def test_check_updates_uses_pinned_versions():
@@ -181,7 +184,7 @@ def test_health_reports_data_sources():
     # live install); the contract is that it matches the pinned record.
     assert r.json()["data_sources"] == ku.load_local_versions()
     assert set(r.json()["data_sources"]) == {"mirbase", "targetscan",
-                                             "mirtarbase", "enrichr"}
+                                             "mirtarbase", "enrichr", "kegg"}
 
 
 # ── Download + install ─────────────────────────────────────────────────────
@@ -354,7 +357,13 @@ def test_analyze_offline_end_to_end():
     body = r.json()
     assert body["offline"] is True
     assert len(body["common_genes"]) == 6  # same core as the live run
-    assert body["common_genes"] == ["GMFB", "KLF12", "NFIA", "PDE3A", "SKI", "SOX6"]
+    # v1.48 (Ronda 3): con el índice oficial de miRTarBase, NFIA tiene
+    # validación experimental (n_val=2) y sube al primer puesto por
+    # prioridad; con el GMT anterior el orden era alfabético.
+    official = ke.BASE_DIR / "local_db" / "mirtarbase_official.json.gz"
+    expected = (["NFIA", "GMFB", "KLF12", "PDE3A", "SKI", "SOX6"] if official.exists()
+                else ["GMFB", "KLF12", "NFIA", "PDE3A", "SKI", "SOX6"])
+    assert body["common_genes"] == expected
     assert body["enrichment"]  # local GMT enrichment
     assert body["validation"]["summary"]["n_genes"] == 6
     assert body["validation"]["data_sources"]["mirbase"] == "23.1"
@@ -370,3 +379,49 @@ def test_analyze_offline_end_to_end():
     for res in body["gene_research"].values():
         assert res["year_window_used"] == "offline"
         assert res["pubmed"] == []
+
+
+# ── Ronda 3 (v1.48) — KEGG como descarga en ejecución, nunca en el repo ─────
+KEGG_GMT = ("ABC transporters\t\tABCA1\tABCB1\n"
+            "Glycolysis / Gluconeogenesis\t\tGAPDH\tHK1\n")
+
+
+def _kegg_handler(request):
+    url = str(request.url)
+    if "datasetStatistics" in url:
+        return httpx.Response(200, text=ENRICHR_STATS)
+    if "geneSetLibrary" in url and "KEGG_2021_Human" in url:
+        return httpx.Response(200, text=KEGG_GMT)
+    return httpx.Response(404, text="not found")
+
+
+def test_verify_gmt(tmp_path):
+    good = tmp_path / "good.gmt"
+    good.write_text(KEGG_GMT)
+    assert ku.verify_gmt(good) is True
+    bad = tmp_path / "bad.gmt"
+    bad.write_text("not a gmt file\n")
+    with pytest.raises(ValueError):
+        ku.verify_gmt(bad)
+
+
+def test_kegg_source_registered():
+    entry = next(s for s in ku.DATA_SOURCES if s["key"] == "kegg")
+    assert entry["files"], "KEGG must have a downloadable file"
+    spec = entry["files"][0]
+    assert "KEGG_2021_Human" in spec["url"]
+    assert spec["local"] == "local_db/gmt_KEGG_2021_Human.gmt"
+    assert spec["verify"] == "gmt"
+    assert "never bundled" in entry["note"].lower()
+
+
+def test_install_kegg_end_to_end(tmp_path):
+    d = _seed_versions(tmp_path)
+    report = ku.install_source_update(
+        "kegg", client=_mock_client(_kegg_handler), base_dir=tmp_path)
+    installed = d / "gmt_KEGG_2021_Human.gmt"
+    assert installed.read_text() == KEGG_GMT
+    assert report["new_version"].startswith("snapshot-")
+    recorded = json.loads((d / "data_versions.json").read_text())
+    assert recorded["kegg"]["local"].startswith("snapshot-")
+    assert len(report["installed"]) == 1

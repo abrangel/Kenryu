@@ -4,7 +4,7 @@
     "download_url": "https://maayanlab.cloud/Enrichr/",
     "latest_known": "live",
     "local": "live API",
-    "note": "Enrichment is queried live; libraries are always current when online. No local copy yet (see local-enrichment work)."
+    "note": "Enrichment is queried live; libraries are always current when online. Local GMT copies (Reactome, WikiPathways, GO) are bundled for the offline path; KEGG is fetched on demand by the updater, never bundled (see DATA_LICENSES.md)."
   },
   "mirbase": {
     "check_url": "https://www.mirbase.org/download/CURRENT/README/",
@@ -18,9 +18,9 @@
     "check_url": "https://mirtarbase.cuhk.edu.cn/php/download.php",
     "download_url": "https://mirtarbase.cuhk.edu.cn/php/download.php",
     "latest_known": "10.0",
-    "local": "local GMT (Harmonizome snapshot 2026-11-18)",
-    "note": "Validated targets served LOCALLY from Harmonizome miRTarBase gene-set library GMT (576 hsa-miRNAs, 2026-11-18); live Harmonizome API only a fallback. miRTarBase 10.0 (Sep 2024) holds 3,817,550 validated interactions from 13,690 articles.",
-    "updated_at": "2026-11-19T05:45:00+00:00"
+    "local": "miRTarBase 9.0 official index (hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, 396,758 pairs; built 2026-11-19)",
+    "note": "Validated targets served LOCALLY from the official miRTarBase 9.0 index (local_db/mirtarbase_official.json.gz, built by build_mirtarbase_official.py from the user's own download of hsa_MTI.xlsx). Levels: strong = Functional MTI (+30), weak = Functional MTI (Weak): CLIP-seq/microarray/proteomics (+15). Live Harmonizome API only a fallback. The old Harmonizome GMT snapshot (local_db/mirtarbase_gene_set_library.gmt.gz) is kept as a fallback when the official index is absent. Redistribution terms could not be verified: the official site returned 404 on every page when checked on 2026-11-19 (see DATA_LICENSES.md); the raw xlsx is never committed.",
+    "updated_at": "2026-11-19T18:30:00+00:00"
   },
   "targetscan": {
     "check_url": "https://www.targetscan.org/vert_80/",
@@ -28,5 +28,13 @@
     "latest_known": "8.0",
     "local": "8.0",
     "note": "Local database (targetscan_full.json.zip, 8.3 MB). No v9.0 release found as of 2026-11-18."
+  },
+  "kegg": {
+    "check_url": "https://maayanlab.cloud/Enrichr/datasetStatistics",
+    "download_url": "https://maayanlab.cloud/Enrichr/geneSetLibrary?mode=text&libraryName=KEGG_2021_Human",
+    "latest_known": "2021",
+    "local": "snapshot-2026-11-19 (KEGG_2021_Human, 320 terms, downloaded from Enrichr)",
+    "note": "Downloaded on demand by the updater; never bundled in the repo (Kanehisa Labs prohibits redistributing KEGG).",
+    "updated_at": "2026-11-19T18:45:00+00:00"
   }
 }

@@ -98,3 +98,81 @@ def test_build_validation_report_empty():
     assert report["summary"]["n_genes"] == 0
     assert report["summary"]["mean_score"] is None
     assert report["genes"] == {}
+
+
+# ── Ronda 3 (v1.48) — miRTarBase oficial + dossier de tres niveles ──────────
+# Niveles de evidencia por (miRNA, gen): strong (Functional MTI: reporter,
+# western, qPCR) +30; weak (Functional MTI (Weak): CLIP-seq, microarray,
+# proteómica) +15; none (sin evidencia funcional) +0. La evidencia débil
+# SÍ es validación experimental de la interacción (CLIP muestra unión
+# física), así que satisface el candado de "alta" igual que la fuerte;
+# el puntaje menor hace que "alta" sea más difícil de alcanzar con ella.
+
+
+def test_validation_score_weak_is_half_of_strong():
+    # Misma evidencia que el caso 100, pero validación débil: 25 + 15 +
+    # 15 + 10 + 10 + 10 = 85 (no 100).
+    s = kc.validation_score("ABCA1", FULL_RESEARCH, predicted=True, validated="weak")
+    assert s["score"] == 85
+    assert s["level"] == "alta"  # débil SÍ es evidencia experimental
+    assert "débil" in ", ".join(s["layers"])
+
+
+def test_validation_score_strong_equals_legacy_true():
+    s_strong = kc.validation_score("ABCA1", FULL_RESEARCH, predicted=True, validated="strong")
+    s_true = kc.validation_score("ABCA1", FULL_RESEARCH, predicted=True, validated=True)
+    s_legacy = kc.validation_score("ABCA1", FULL_RESEARCH, predicted=True, validated="legacy")
+    assert s_strong["score"] == s_true["score"] == s_legacy["score"] == 100
+
+
+def test_validation_score_none_gives_no_points_and_caps_level():
+    s = kc.validation_score("GENE3", FULL_RESEARCH, predicted=True, validated="none")
+    assert s["score"] == 70
+    assert s["level"] == "media"
+    assert "sin validación experimental" in s["explanation"]
+
+
+def test_build_validation_report_carries_evidence_levels():
+    report = kc.build_validation_report(
+        mirnas=["hsa-miR-33a-5p", "hsa-miR-144-3p"],
+        common_genes=["ABCA1", "SNTB2", "KPNA3"],
+        gene_research={"ABCA1": FULL_RESEARCH, "SNTB2": FULL_RESEARCH,
+                       "KPNA3": FULL_RESEARCH},
+        local_by_mirna={"hsa-miR-33a-5p": {"ABCA1", "SNTB2", "KPNA3"},
+                        "hsa-miR-144-3p": {"ABCA1", "SNTB2", "KPNA3"}},
+        remote_by_mirna={"hsa-miR-33a-5p": {"ABCA1", "SNTB2"},
+                         "hsa-miR-144-3p": {"SNTB2"}},
+        evidence_by_mirna={
+            "hsa-miR-33a-5p": {
+                "ABCA1": {"level": "strong", "pmids": [20466885], "experiments": ["Luciferase reporter assay"]},
+                "SNTB2": {"level": "weak", "pmids": [22012620], "experiments": ["PAR-CLIP"]}},
+            "hsa-miR-144-3p": {
+                "SNTB2": {"level": "weak", "pmids": [24906430], "experiments": ["HITS-CLIP"]}}},
+        data_versions={"mirbase": "22", "targetscan": "8.0"},
+    )
+    # Fuerte: 100, alta. Débil: 85, alta (débil + resto de capas llega a 70+).
+    assert report["genes"]["ABCA1"]["evidence_level"] == "strong"
+    assert report["genes"]["ABCA1"]["score"] == 100
+    assert report["genes"]["SNTB2"]["evidence_level"] == "weak"
+    assert report["genes"]["SNTB2"]["score"] == 85
+    assert report["genes"]["SNTB2"]["mirtarbase_pmids"] == [22012620, 24906430]
+    assert report["genes"]["KPNA3"]["evidence_level"] == "none"
+    assert report["genes"]["KPNA3"]["score"] == 70
+    assert report["genes"]["KPNA3"]["level"] == "media"
+
+
+def test_build_validation_report_not_evaluated_carries_evidence_level():
+    # Los genes fuera del tope muestran su nivel local sin puntaje.
+    report = kc.build_validation_report(
+        mirnas=["hsa-miR-33a-5p"],
+        common_genes=["ABCA1", "KPNA3"],
+        gene_research={"ABCA1": FULL_RESEARCH},
+        local_by_mirna={"hsa-miR-33a-5p": {"ABCA1", "KPNA3"}},
+        remote_by_mirna={"hsa-miR-33a-5p": {"ABCA1"}},
+        evidence_by_mirna={"hsa-miR-33a-5p": {
+            "ABCA1": {"level": "strong", "pmids": [20466885], "experiments": []}}},
+        data_versions={},
+    )
+    assert report["genes"]["KPNA3"]["level"] == "not_evaluated"
+    assert report["genes"]["KPNA3"]["evidence_level"] == "none"
+    assert report["genes"]["ABCA1"]["evidence_level"] == "strong"

@@ -19,7 +19,13 @@ def test_cli_offline(tmp_path):
     rc = cli.main([str(p), "--offline", "--out", str(out)])
     assert rc == 0
     data = json.loads((out / "analysis.json").read_text())
-    assert data["common_genes"] == ["GMFB", "KLF12", "NFIA", "PDE3A", "SKI", "SOX6"]
+    # v1.48 (Ronda 3): con el índice oficial de miRTarBase, NFIA tiene
+    # validación experimental (n_val=2) y sube al primer puesto por
+    # prioridad; con el GMT anterior (sin NFIA) el orden era alfabético.
+    official = Path(__file__).resolve().parent.parent / "local_db" / "mirtarbase_official.json.gz"
+    expected = (["NFIA", "GMFB", "KLF12", "PDE3A", "SKI", "SOX6"] if official.exists()
+                else ["GMFB", "KLF12", "NFIA", "PDE3A", "SKI", "SOX6"])
+    assert data["common_genes"] == expected
     assert (out / "report.md").read_text().startswith("# KENRYU")
     assert (out / "venn.png").stat().st_size > 1000
     assert (out / "heatmap.png").stat().st_size > 1000

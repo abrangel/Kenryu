@@ -2,6 +2,82 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.48] — 2026-11-19
+
+### Ronda 3: miRTarBase oficial 9.0 + dossier de tres niveles + KEGG por descarga
+
+**miRTarBase oficial (el cambio central).** El snapshot de Harmonizome
+queda como respaldo; el motor carga ahora el índice oficial de
+miRTarBase 9.0, construido localmente desde `hsa_MTI.xlsx` con
+`build_mirtarbase_official.py` (957.040 filas → 396.758 pares miRNA–gen,
+2.947 miRNAs, 2,3 MB). Cada par lleva su nivel de evidencia
+(fuerte = Functional MTI; débil = Functional MTI (Weak): CLIP-seq,
+microarray, proteómica), sus PMIDs y sus experimentos. El archivo
+derivado es un dato de ejecución y **no se sube a git**: para
+reproducirlo, descarga `hsa_MTI.xlsx` desde la página oficial de
+miRTarBase y ejecuta el constructor (ver `DATA_LICENSES.md`). Los
+términos de redistribución de miRTarBase **no se pudieron verificar**:
+el sitio oficial devolvió 404 en todas sus páginas al comprobarlo el
+2026-11-19. Un detalle del archivo oficial: 1.863 símbolos génicos
+(SEPT/MARCH/DEC1) venían convertidos en fechas por Excel; el
+constructor los recupera a su símbolo original.
+
+**Dossier de tres niveles.** Cada gen del dossier lleva
+`evidence_level` (fuerte / débil / solo predicho) con sus
+`mirtarbase_pmids` y `mirtarbase_experiments`; la interfaz muestra una
+columna «Evidencia miRTarBase» con el nivel y los PMIDs enlazados a
+PubMed. Puntaje: fuerte +30 (como antes), débil +15, sin evidencia +0.
+La evidencia débil SÍ es validación experimental de la interacción
+(CLIP muestra unión física), así que satisface el candado de «alta»;
+su menor peso hace que «alta» sea más difícil de alcanzar con ella.
+Los puntajes se calculan en vivo en cada análisis; no hay caché
+estancada que subir de versión (la caché de investigación v4 guarda
+solo PubMed/OMIM/ClinVar/ClinicalTrials, no la pertenencia a
+miRTarBase).
+
+**Interruptor opcional «exigir evidencia experimental».** Nuevo campo
+`require_experimental` en `POST /api/v1/analyze` (apagado por defecto)
+y casilla en la interfaz. Cuando está activo, el consenso solo
+conserva genes con evidencia en miRTarBase (fuerte o débil) para al
+menos un miRNA del panel. Es un filtro sobre el consenso, no un cambio
+de método: por defecto todo sigue igual.
+
+**KEGG vuelve, por descarga (decisión del usuario).** KEGG no se
+redistribuye: el actualizador descarga la biblioteca KEGG_2021_Human
+de Enrichr en ejecución (`POST /api/v1/updates/kegg/install`), el
+archivo es gitignored y nunca se sube al repo. El enriquecimiento
+offline lo carga si existe. El modelo es el de Galaxy: el repo trae el
+código, no todos los datos; quien clone descarga los datos desde sus
+páginas oficiales (ver `DATA_LICENSES.md`).
+
+**Números antes/después (corrida en vivo local, 2026-11-19).**
+Panel de la tesis (mismos 5 genes): ABCA1 100 alta (fuerte, PMIDs
+20466882/20466885/20566875 + 22473208); SNTB2 50 → **65 media**
+(débil: PAR-CLIP 22012620/21572407, HITS-CLIP 22473208); TSC22D2
+50 → **65 media** (débil: PAR-CLIP 23592263, HITS-CLIP 24906430);
+KPNA3 50 media (sin evidencia); SCN1A 60 media (sin evidencia).
+Media del panel 62,0 → **68,0**. Dossier de tres niveles: 1 fuerte,
+2 con apoyo CLIP/débil, 2 solo predichos. Con el interruptor activo,
+el panel queda en [ABCA1, SNTB2, TSC22D2]. Enriquecimiento: 19
+términos, máx. p-adj 0,0349, ahora 8 WikiPathways + 8 GO + **3 KEGG**
+(«Transportadoras de ABC», «Metabolismo del colesterol», «Digestión y
+absorción»). Panel de cáncer (18 genes, sin cambio): los 5
+investigados cambian porque el índice oficial tiene más cobertura —
+AAK1/CHD7/IL6R (validados en 2 miRNAs) entran por delante de
+PURB/RPS6KA3/WNK3 (1 miRNA); AGO4 y MEIS1 siguen 80 alta (fuerte).
+Panel de control (6 genes, sin cambio): NFIA sube al primer puesto
+por prioridad (validación fuerte en 2 miRNAs), antes el orden era
+alfabético por empate a 0.
+
+**Versiones de datos (H-19, parcial).** `data_versions.json` registra
+ahora el índice oficial de miRTarBase 9.0 y la instalación de KEGG
+(snapshot con fecha), y la nota de Enrichr ya no dice «No local copy
+yet».
+
+**Tests: 139/139** (123 de v1.47 + 16 nuevos: niveles de puntaje y
+dossier, carga del índice oficial y recuperación de símbolos,
+interruptor, KEGG y su instalador).
+
 ## [1.47] — 2026-11-19
 
 ### Ronda 2, Commit A: afirmaciones y consistencia (H-12, H-18, H-11, H-17, H-16, H-21)

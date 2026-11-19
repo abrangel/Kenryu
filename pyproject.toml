@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kenryu"
-version = "1.47"
+version = "1.48"
 description = "KENRYU — miRNA target convergence and evidence platform (offline-first)"
 readme = "README.md"
 requires-python = ">=3.11"

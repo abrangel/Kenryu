@@ -28,6 +28,12 @@ class AnalysisRequest(BaseModel):
     month: Optional[str] = None
     offline: bool = False
     species: str = "human"
+    # Ronda 3 (v1.48): interruptor opcional, apagado por defecto. Cuando
+    # está activo, el consenso solo conserva genes con evidencia
+    # experimental en miRTarBase (fuerte o débil) para al menos un miRNA
+    # del panel. No cambia el método por defecto (el consenso sigue
+    # siendo TargetScan + respaldo miRTarBase); es un filtro opcional.
+    require_experimental: bool = False
 
 BASE_DIR = Path(__file__).resolve().parent
 # Directorio de datos: contiene targetscan_full.json.zip y los archivos
@@ -57,31 +63,44 @@ def load_mouse_data():
         else:
             logger.warning(f"⚠️ Sin base de ratón ({path} no existe).")
     return MOUSE_DB
-# miRTarBase validado (local, GMT de Harmonizome) y librerías GMT de
-# enriquecimiento (Reactome/WikiPathways/GO, de Enrichr). KEGG NO está en
-# el repo: Kanehisa Labs prohíbe redistribuir KEGG sin acuerdo (ver
-# DATA_LICENSES.md); el enriquecimiento en vivo lo consulta vía Enrichr.
-# Se cargan bajo demanda y se cachean como TARGETSCAN_DB.
+# miRTarBase validado (local: índice OFICIAL 9.0 si existe, si no el GMT de
+# Harmonizome) y librerías GMT de enriquecimiento (Reactome/WikiPathways/GO,
+# de Enrichr). KEGG NO está en el repo: Kanehisa Labs prohíbe redistribuir
+# KEGG sin acuerdo (ver DATA_LICENSES.md); el actualizador lo descarga en
+# ejecución si el usuario lo pide, y el enriquecimiento en vivo lo consulta
+# vía Enrichr. Se cargan bajo demanda y se cachean como TARGETSCAN_DB.
 MIRTARBASE_DB = {}
+MIRTARBASE_FORMAT = None  # "official" | "gmt" | None
 GMT_LIBRARIES = {}
 GMT_FILES = {
+    "KEGG": "local_db/gmt_KEGG_2021_Human.gmt",
     "Reactome": "local_db/gmt_Reactome_Pathways_2024.gmt",
     "WikiPathways": "local_db/gmt_WikiPathways_2019_Human.gmt",
     "GO": "local_db/gmt_GO_Biological_Process_2023.gmt",
 }
 MIRTARBASE_GMT = "local_db/mirtarbase_gene_set_library.gmt.gz"
+MIRTARBASE_OFFICIAL = "local_db/mirtarbase_official.json.gz"
 
 
 def load_mirtarbase_local():
-    """Carga la librería local de miRTarBase (una sola vez)."""
-    global MIRTARBASE_DB
+    """Carga la librería local de miRTarBase (una sola vez). Prefiere el
+    índice oficial 9.0 (con niveles fuerte/débil); si no existe, usa el
+    GMT de Harmonizome (nivel "legacy", sin distinción de evidencia)."""
+    global MIRTARBASE_DB, MIRTARBASE_FORMAT
     if not MIRTARBASE_DB:
-        path = BASE_DIR / MIRTARBASE_GMT
-        if path.exists():
-            MIRTARBASE_DB = load_mirtarbase_gmt(path)
-            logger.info(f"📚 miRTarBase local: {len(MIRTARBASE_DB)} miRNAs validados.")
+        official = BASE_DIR / MIRTARBASE_OFFICIAL
+        if official.exists():
+            MIRTARBASE_DB = load_mirtarbase_official(official)
+            MIRTARBASE_FORMAT = "official"
+            logger.info(f"📚 miRTarBase local: índice oficial 9.0, {len(MIRTARBASE_DB)} miRNAs.")
         else:
-            logger.warning(f"⚠️ Sin miRTarBase local ({path} no existe).")
+            path = BASE_DIR / MIRTARBASE_GMT
+            if path.exists():
+                MIRTARBASE_DB = load_mirtarbase_gmt(path)
+                MIRTARBASE_FORMAT = "gmt"
+                logger.info(f"📚 miRTarBase local: {len(MIRTARBASE_DB)} miRNAs validados (GMT Harmonizome).")
+            else:
+                logger.warning(f"⚠️ Sin miRTarBase local ({official} ni {path} existen).")
     return MIRTARBASE_DB
 
 
@@ -156,9 +175,11 @@ from kenryu_core import (
     create_heatmap,
     create_visuals,
     deep_clean_mirna,
+    get_validated_evidence,
     get_validated_local,
     load_gmt_library,
     load_mirtarbase_gmt,
+    load_mirtarbase_official,
     local_enrichment,
     normalize_isomir,
     prioritize_genes,
@@ -1244,7 +1265,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.47"
+APP_VERSION = "1.48"
 app = FastAPI(title="KENRYU Bioinformatics Engine", version=APP_VERSION)
 
 # Seguridad CORS (H-14, v1.47): solo el origen exacto del Space. Antes el
@@ -1515,6 +1536,7 @@ async def analyze(req: AnalysisRequest):
     gene_sets, found_names = [], []
     missing_mirnas = []  # H-17 (v1.47): miRNAs sin datos en ninguna fuente.
     local_by_mirna, remote_by_mirna = {}, {}
+    evidence_by_mirna = {}  # Ronda 3 (v1.48): {miRNA: {gen: evidencia}}
     source_by_mirna = {}  # por miRNA, qué fuente se usó (v1.46): un consenso
     # strict puede mezclar predicción de TargetScan con validación
     # experimental de miRTarBase; la respuesta lo dice por miRNA.
@@ -1532,10 +1554,15 @@ async def analyze(req: AnalysisRequest):
         # Validado: primero la librería local de miRTarBase; la API viva
         # de Harmonizome solo como respaldo (y nunca en modo offline).
         remote = get_validated_local(m, MIRTARBASE_DB, species_prefix)
+        evidence = get_validated_evidence(m, MIRTARBASE_DB, species_prefix)
         if not remote and not req.offline:
             remote = await fetch_mirtarbase(m, species_prefix)
+            # La API viva no distingue niveles: sus genes son "legacy".
+            evidence = {g: {"level": "legacy", "pmids": [], "experiments": []}
+                        for g in remote}
         local_by_mirna[m] = local
         remote_by_mirna[m] = remote
+        evidence_by_mirna[m] = evidence
 
         # ── BUG 4 CORREGIDO: si hay datos locales, NO mezclar con remoto ────
         # miRTarBase contiene genes validados experimentalmente (no predichos),
@@ -1574,6 +1601,17 @@ async def analyze(req: AnalysisRequest):
     common = consensus_genes(gene_sets, mode)
     logger.info(f"🎯 Modo {mode.upper()}: {len(common)} genes")
 
+    # Ronda 3 (v1.48): interruptor opcional "exigir evidencia experimental"
+    # (apagado por defecto). Cuando está activo, el consenso solo conserva
+    # genes con evidencia en miRTarBase (fuerte o débil) para al menos un
+    # miRNA del panel. Es un filtro sobre el consenso, no un cambio de método.
+    if req.require_experimental:
+        supported = {g for ev in evidence_by_mirna.values() for g, e in ev.items()
+                     if e.get("level") in ("strong", "weak", "legacy")}
+        before = len(common)
+        common = [g for g in common if g in supported]
+        logger.info(f"🔬 require_experimental: {before} → {len(common)} genes")
+
     # ── BUG 5 CORREGIDO: eliminado el fallback automático silencioso ──────────
     # Si el usuario eligió "strict" y la intersección es vacía, informar
     # correctamente en lugar de cambiar el modo sin avisar.
@@ -1582,7 +1620,7 @@ async def analyze(req: AnalysisRequest):
         # Devolver respuesta vacía pero informativa en lugar de cambiar modo
         empty_validation = build_validation_report(
             found_names, [], {}, local_by_mirna, remote_by_mirna,
-            load_local_versions())
+            load_local_versions(), evidence_by_mirna)
         return {
             "engine_version": APP_VERSION,
             "common_genes": [],
@@ -1899,7 +1937,8 @@ async def analyze(req: AnalysisRequest):
 
     validation_report = build_validation_report(
         found_names, prioritized_common, gene_research_data,
-        local_by_mirna, remote_by_mirna, load_local_versions())
+        local_by_mirna, remote_by_mirna, load_local_versions(),
+        evidence_by_mirna)
 
     export_data = build_export(
         found_names, prioritized_common, gene_details, enrichment_results,

@@ -513,20 +513,60 @@ def load_mirtarbase_gmt(path):
     return db
 
 
+def load_mirtarbase_official(path):
+    """Load the local miRTarBase OFFICIAL index (v1.48, Ronda 3): the compact
+    derived file built by build_mirtarbase_official.py from hsa_MTI.xlsx
+    (miRTarBase 9.0). Returns {miRNA: {gene: {"level", "pmids",
+    "experiments"}}}; level is "strong" (Functional MTI), "weak"
+    (Functional MTI (Weak): CLIP-seq, microarray, proteomics) or "none"
+    (only Non-Functional rows). Pure, no network."""
+    import gzip
+    import json
+    opener = gzip.open if str(path).endswith(".gz") else open
+    with opener(path, "rt", encoding="utf-8") as fh:
+        payload = json.load(fh)
+    return payload.get("mirnas") or {}
+
+
+def _evidence_for_name(name, db):
+    """Per-gene evidence for one cleaned miRNA name, or None. Handles both
+    index shapes: the official dict {gene: {...}} and the legacy GMT
+    {gene set} (level "legacy", no PMIDs)."""
+    if name not in db:
+        return None
+    entry = db[name]
+    if isinstance(entry, dict):
+        return entry
+    return {g: {"level": "legacy", "pmids": [], "experiments": []}
+            for g in entry}
+
+
+def get_validated_evidence(mirna, db, species="hsa"):
+    """Validated targets WITH evidence for one miRNA from the local
+    miRTarBase library. Tries the cleaned name and the name without the
+    -5p/-3p suffix. Returns {gene: {"level", "pmids", "experiments"}}.
+    The library is human (hsa-); other species return empty here and
+    fall back to the live Harmonizome API."""
+    if not db:
+        return {}
+    name = clean_mirna_name_cloud(mirna, species)
+    ev = _evidence_for_name(name, db)
+    if ev is not None:
+        return dict(ev)
+    base = re.sub(r"-(5p|3p)$", "", name, flags=re.IGNORECASE)
+    ev = _evidence_for_name(base, db)
+    return dict(ev) if ev is not None else {}
+
+
 def get_validated_local(mirna, db, species="hsa"):
     """Validated targets for one miRNA from the local miRTarBase library.
     Tries the cleaned name and the name without the -5p/-3p suffix.
     The library is human (hsa-); other species return empty here and
-    fall back to the live Harmonizome API."""
-    if not db:
-        return set()
-    name = clean_mirna_name_cloud(mirna, species)
-    if name in db:
-        return set(db[name])
-    base = re.sub(r"-(5p|3p)$", "", name, flags=re.IGNORECASE)
-    if base in db:
-        return set(db[base])
-    return set()
+    fall back to the live Harmonizome API. Only genes with functional
+    support count (level strong/weak/legacy); "none" (tested, not
+    functional) does not."""
+    return {g for g, ev in get_validated_evidence(mirna, db, species).items()
+            if ev.get("level") in ("strong", "weak", "legacy")}
 
 
 def load_gmt_library(path):
@@ -762,7 +802,8 @@ def normalize_isomir(name, species="hsa"):
 
 _VALIDATION_WEIGHTS = {
     "predicted": 25,   # TargetScan prediction
-    "validated": 30,   # miRTarBase experimental validation
+    "validated": 30,   # miRTarBase experimental validation, strong (or legacy)
+    "validated_weak": 15,  # miRTarBase, weak (CLIP-seq, microarray, proteomics)
     "pubmed_each": 5,  # per PubMed reference, capped
     "pubmed_cap": 15,
     "omim": 10,
@@ -774,7 +815,13 @@ _VALIDATION_WEIGHTS = {
 def validation_score(gene, research, predicted, validated):
     """Score one gene 0-100 from its evidence layers. Pure and
     deterministic. `research` is the gene_research entry for the gene
-    ({pubmed: [...], omim: [...], clinvar: {count}, trials: [...]})."""
+    ({pubmed: [...], omim: [...], clinvar: {count}, trials: [...]}).
+    `validated` is the miRTarBase evidence level: True/"strong"/"legacy"
+    (functional assay or the legacy snapshot) scores +30, "weak"
+    (CLIP-seq, microarray, proteomics) scores +15, False/None/"none"
+    scores +0. Weak evidence IS experimental validation of the
+    interaction (CLIP shows physical binding), so it satisfies the
+    "alta" gate; its lower weight makes "alta" harder to reach with it."""
     research = research or {}
     layers, missing = [], []
     score = 0
@@ -783,11 +830,20 @@ def validation_score(gene, research, predicted, validated):
         score += _VALIDATION_WEIGHTS["predicted"]
     else:
         missing.append("TargetScan (predicho)")
-    if validated:
-        layers.append("miRTarBase (validado experimentalmente)")
+    if validated is True or validated in ("strong", "legacy"):
+        layers.append(
+            "miRTarBase (validado experimentalmente"
+            + (", evidencia fuerte" if validated == "strong" else "")
+            + ")")
         score += _VALIDATION_WEIGHTS["validated"]
+        validated_level = "strong"
+    elif validated == "weak":
+        layers.append("miRTarBase (validado experimentalmente, evidencia débil)")
+        score += _VALIDATION_WEIGHTS["validated_weak"]
+        validated_level = "weak"
     else:
         missing.append("miRTarBase (validado experimentalmente)")
+        validated_level = None
     n_pubmed = len(research.get("pubmed") or [])
     if n_pubmed:
         layers.append(f"PubMed ({n_pubmed} refs)")
@@ -816,12 +872,16 @@ def validation_score(gene, research, predicted, validated):
     # PubMed, OMIM, ClinVar y ClinicalTrials describen lo importante que es
     # el gen, no que el microARN lo regule. Sin esa capa, un gen muy estudiado
     # llegaría a "alta" por popularidad, no por evidencia de la interacción.
-    gated = score >= 70 and not validated
+    # La evidencia débil (CLIP-seq: unión física) sí es validación de la
+    # interacción, así que satisface el candado; su menor peso (+15) hace
+    # que "alta" sea más difícil de alcanzar con ella.
+    gated = score >= 70 and validated_level is None
     level = "media" if gated else ("alta" if score >= 70 else ("media" if score >= 40 else "baja"))
     return {
         "gene": gene,
         "score": score,
         "level": level,
+        "evidence_level": validated_level or "none",
         "layers": layers,
         "missing": missing,
         "explanation": (
@@ -833,17 +893,47 @@ def validation_score(gene, research, predicted, validated):
     }
 
 
+_EVIDENCE_RANK = {"strong": 3, "weak": 2, "legacy": 1, "none": 0}
+
+
+def _best_evidence(gene, evidence_by_mirna):
+    """Best miRTarBase evidence for one gene across the panel miRNAs:
+    the strongest level, with the union of PMIDs and experiments.
+    Returns {"level", "pmids", "experiments"}; "none" when absent."""
+    best = {"level": "none", "pmids": set(), "experiments": set()}
+    for ev_by_gene in (evidence_by_mirna or {}).values():
+        ev = (ev_by_gene or {}).get(gene)
+        if not ev:
+            continue
+        level = ev.get("level") or "none"
+        if _EVIDENCE_RANK.get(level, 0) > _EVIDENCE_RANK.get(best["level"], 0):
+            best["level"] = level
+        best["pmids"].update(ev.get("pmids") or [])
+        best["experiments"].update(ev.get("experiments") or [])
+    return {"level": best["level"],
+            "pmids": sorted(best["pmids"]),
+            "experiments": sorted(best["experiments"])}
+
+
 def build_validation_report(mirnas, common_genes, gene_research,
-                            local_by_mirna, remote_by_mirna, data_versions):
+                            local_by_mirna, remote_by_mirna, data_versions,
+                            evidence_by_mirna=None):
     """Validation dossier for one analysis: per-gene scores plus the exact
     database versions the result rests on. `local_by_mirna` / `remote_by_mirna`
-    map each panel miRNA to its TargetScan / miRTarBase target sets."""
+    map each panel miRNA to its TargetScan / miRTarBase target sets;
+    `evidence_by_mirna` maps each panel miRNA to its per-gene miRTarBase
+    evidence ({gene: {"level", "pmids", "experiments"}}) and drives the
+    three-level dossier: strong / weak (CLIP or weak) / only predicted.
+    Without it, validated genes are reported as "legacy" (no level)."""
     import datetime
     predicted_set = set().union(*local_by_mirna.values()) if local_by_mirna else set()
     validated_set = set().union(*remote_by_mirna.values()) if remote_by_mirna else set()
     gene_research = gene_research or {}
     genes = {}
     for gene in common_genes:
+        evidence = _best_evidence(gene, evidence_by_mirna)
+        if evidence_by_mirna is None and gene in validated_set:
+            evidence["level"] = "legacy"
         if gene not in gene_research:
             # No investigado en esta corrida (fuera del tope por costo de
             # API): "no evaluado", sin puntaje — nunca "baja" (v1.46, H-06).
@@ -858,6 +948,9 @@ def build_validation_report(mirnas, common_genes, gene_research,
                 "gene": gene,
                 "score": None,
                 "level": "not_evaluated",
+                "evidence_level": evidence["level"],
+                "mirtarbase_pmids": evidence["pmids"],
+                "mirtarbase_experiments": evidence["experiments"],
                 "layers": local_layers,
                 "missing": ["investigación multi-fuente (PubMed/OMIM/ClinVar/ClinicalTrials)"],
                 "explanation": (
@@ -867,11 +960,14 @@ def build_validation_report(mirnas, common_genes, gene_research,
                 ),
             }
             continue
-        genes[gene] = validation_score(
+        entry = validation_score(
             gene, gene_research.get(gene),
             predicted=gene in predicted_set,
-            validated=gene in validated_set,
+            validated=(evidence["level"] if evidence["level"] != "none" else False),
         )
+        entry["mirtarbase_pmids"] = evidence["pmids"]
+        entry["mirtarbase_experiments"] = evidence["experiments"]
+        genes[gene] = entry
     evaluated = [g for g in genes.values() if g["level"] != "not_evaluated"]
     scores = [g["score"] for g in evaluated]
     levels = [g["level"] for g in evaluated]
@@ -887,17 +983,21 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "capas; las capas son la prueba. El nivel alta exige validación "
             "experimental de la interacción; sin ella, el máximo es media. "
             "Las referencias de PubMed se deduplican por PMID antes de puntuar. "
-            "La validación experimental se comprueba contra el snapshot local "
-            "de miRTarBase (Harmonizome): un microARN sin entrada en ese "
-            "snapshot no aporta validación aunque la literatura reporte dianas "
-            "validadas, y su gen queda en media como máximo. Las notas "
+            "La validación experimental se comprueba contra el índice local "
+            "de miRTarBase 9.0 (oficial, construido desde hsa_MTI.xlsx; "
+            "fuerte = Functional MTI, +30; débil = Functional MTI (Weak): "
+            "CLIP-seq, microarray o proteómica, +15). Un microARN sin entrada "
+            "en ese índice no aporta validación aunque la literatura reporte "
+            "dianas validadas, y su gen queda en media como máximo. Cada gen "
+            "lleva su nivel de evidencia (fuerte / débil / solo predicho) con "
+            "los PMIDs y experimentos que lo respaldan. Las notas "
             "editoriales sobre las rutas son contexto del equipo y no llevan "
             "cita; los PMIDs de PubMed son los primeros resultados de la "
             "búsqueda por gen + término y no se verificó que respalden la nota. "
             "La investigación multi-fuente se limita a los genes priorizados "
             "por costo de API; la prioridad es por número de miRNAs del panel "
-            "que regulan el gen y por validación en el snapshot local de "
-            "miRTarBase (Harmonizome, 2026-11-18); los genes fuera de ese tope "
+            "que regulan el gen y por validación en el índice oficial de "
+            "miRTarBase 9.0; los genes fuera de ese tope "
             "figuran como «no evaluado», sin puntaje y sin nivel — no es "
             "evidencia en contra, es ausencia de investigación en esta corrida."
         ),

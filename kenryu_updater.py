@@ -89,13 +89,39 @@ DATA_SOURCES = [
             {"url": "https://maayanlab.cloud/static/hdfs/harmonizome/data/mirtarbase/gene_set_library_crisp.gmt.gz",
              "local": "local_db/mirtarbase_gene_set_library.gmt.gz", "verify": "gzip"},
         ],
-        "note": "Validated targets are served LOCALLY from Harmonizome's "
-                "miRTarBase gene-set library (GMT, 576 hsa-miRNAs, "
-                "downloaded 2026-11-18); the live Harmonizome API is only "
-                "a fallback for miRNAs missing from the file. miRTarBase "
-                "10.0 (Sep 2024) holds 3,817,550 validated interactions "
-                "from 13,690 articles. The snapshot carries no upstream "
-                "version, so installs record the download date.",
+        "note": "Validated targets are served LOCALLY from the official "
+                "miRTarBase 9.0 index (local_db/mirtarbase_official.json.gz, "
+                "built by build_mirtarbase_official.py from the user's own "
+                "download of hsa_MTI.xlsx; strong/weak levels with PMIDs). "
+                "The Harmonizome GMT snapshot "
+                "(local_db/mirtarbase_gene_set_library.gmt.gz) is kept only "
+                "as a fallback when the official index is absent; the live "
+                "Harmonizome API is a further fallback for miRNAs missing "
+                "from the file. miRTarBase 10.0 (Sep 2024) holds 3,817,550 "
+                "validated interactions from 13,690 articles. The snapshot "
+                "carries no upstream version, so installs record the "
+                "download date.",
+    },
+    {
+        "key": "kegg",
+        "name": "KEGG (Enrichr gene-set library)",
+        "role": "functional enrichment (KEGG pathways, local GMT)",
+        "local": "not installed",
+        "latest_known": "2021",
+        "check_url": "https://maayanlab.cloud/Enrichr/datasetStatistics",
+        "parser": "enrichr_stats",
+        "download_url": "https://maayanlab.cloud/Enrichr/geneSetLibrary?mode=text&libraryName=KEGG_2021_Human",
+        "version_from": "download_date",
+        "files": [
+            {"url": "https://maayanlab.cloud/Enrichr/geneSetLibrary?mode=text&libraryName=KEGG_2021_Human",
+             "local": "local_db/gmt_KEGG_2021_Human.gmt", "verify": "gmt"},
+        ],
+        "note": "KEGG is NEVER bundled in this repository: Kanehisa Labs "
+                "prohibits redistributing KEGG data in third-party repos "
+                "(see DATA_LICENSES.md). The updater downloads the Enrichr "
+                "KEGG_2021_Human gene-set library on demand, for local use "
+                "only; the file is gitignored and never committed. KEGG "
+                "enrichment is also available live via the Enrichr API.",
     },
     {
         "key": "enrichr",
@@ -108,7 +134,9 @@ DATA_SOURCES = [
         "download_url": "https://maayanlab.cloud/Enrichr/",
         "files": [],
         "note": "Enrichment is queried live; libraries are always current "
-                "when online. No local copy yet (see local-enrichment work).",
+                "when online. Local GMT copies (Reactome, WikiPathways, GO) "
+                "are bundled for the offline path; KEGG is fetched on demand "
+                "by the updater, never bundled (see DATA_LICENSES.md).",
     },
 ]
 
@@ -344,7 +372,19 @@ def verify_gzip(path):
     return True
 
 
-_VERIFIERS = {"fasta": verify_fasta, "zip": verify_zip, "gzip": verify_gzip}
+def verify_gmt(path):
+    """A GMT file must hold at least one gene-set line: term, description,
+    then at least one gene (tab-separated)."""
+    with open(path, encoding="utf-8", errors="strict") as fh:
+        for line in fh:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) >= 3 and parts[0].strip() and any(g.strip() for g in parts[2:]):
+                return True
+    raise ValueError(f"{path}: no GMT gene-set line found")
+
+
+_VERIFIERS = {"fasta": verify_fasta, "zip": verify_zip, "gzip": verify_gzip,
+              "gmt": verify_gmt}
 
 
 def transform_html_fasta(path):
@@ -447,9 +487,11 @@ def install_source_update(key, client=None, base_dir=BASE_DIR, timeout=300.0):
     try:
         checked = check_source(entry, client)
         new_version = checked["latest_checked"]
-        if new_version is None and entry.get("version_from") == "download_date":
-            # Snapshots without an upstream version (miRTarBase GMT):
-            # the install is dated, never versioned silently.
+        if entry.get("version_from") == "download_date":
+            # Snapshots without an upstream version (miRTarBase GMT, KEGG
+            # library): the install is dated, never versioned silently —
+            # even when the check returns a value (e.g. "live" for Enrichr),
+            # that value is the API's status, not the file's version.
             from datetime import date
             new_version = f"snapshot-{date.today().isoformat()}"
         if new_version is None:

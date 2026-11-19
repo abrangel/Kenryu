@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.47"
+    assert body["version"] == "1.48"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -521,7 +521,13 @@ def test_analyze_offline_cancer_panel_researches_prioritized_genes():
     val = d["validation"]
     researched = {g for g, s in val["genes"].items() if s["level"] != "not_evaluated"}
     not_ev = {g for g, s in val["genes"].items() if s["level"] == "not_evaluated"}
-    assert researched == {"AGO4", "MEIS1", "PURB", "RPS6KA3", "WNK3"}
+    # v1.48 (Ronda 3): con el índice oficial de miRTarBase, AAK1/CHD7/IL6R
+    # tienen validación en 2 miRNAs del panel (antes 0 en el snapshot), así
+    # que entran en el tope de 5 por delante de PURB/RPS6KA3/WNK3 (1 miRNA).
+    # Con el GMT anterior, los 5 investigados eran los únicos validados.
+    expected = ({"AAK1", "AGO4", "CHD7", "IL6R", "MEIS1"} if _OFFICIAL.exists()
+                else {"AGO4", "MEIS1", "PURB", "RPS6KA3", "WNK3"})
+    assert researched == expected
     assert len(not_ev) == 13
     assert all(val["genes"][g]["score"] is None for g in not_ev)
     assert val["summary"]["low"] == 0
@@ -894,3 +900,59 @@ def test_build_synthesis_intro_describes_real_algorithm():
     assert "intersección de TargetScan y miRTarBase" not in syn["academic"]
     assert "TargetScan" in syn["academic"]
     assert "miRTarBase" in syn["academic"]
+
+
+# ── Ronda 3 (v1.48) — interruptor "exigir evidencia experimental" ───────────
+import pytest as _pytest
+
+_THESIS = ["hsa-miR-33a-5p", "hsa-miR-144-3p", "hsa-miR-758-3p",
+           "hsa-miR-106b-5p", "hsa-miR-33b-5p"]
+_OFFICIAL = ke.BASE_DIR / "local_db" / "mirtarbase_official.json.gz"
+
+
+@_pytest.mark.skipif(not _OFFICIAL.exists(),
+                     reason="official miRTarBase index not built")
+def test_analyze_require_experimental_filters_thesis_panel():
+    """v1.48: con require_experimental=true, el panel de la tesis conserva
+    solo los genes con evidencia en miRTarBase (ABCA1 fuerte, SNTB2 y
+    TSC22D2 débil); KPNA3 y SCN1A (solo predichos) salen del consenso."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": _THESIS, "years": 10, "mode": "strict",
+            "offline": True, "require_experimental": True})
+    assert r.status_code == 200
+    assert sorted(r.json()["common_genes"]) == ["ABCA1", "SNTB2", "TSC22D2"]
+
+
+def test_analyze_default_keeps_all_thesis_genes():
+    """v1.48: sin el interruptor (por defecto), el consenso no cambia:
+    los 5 genes de la tesis, como siempre."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": _THESIS, "years": 10, "mode": "strict",
+            "offline": True})
+    assert r.status_code == 200
+    assert sorted(r.json()["common_genes"]) == [
+        "ABCA1", "KPNA3", "SCN1A", "SNTB2", "TSC22D2"]
+
+
+@_pytest.mark.skipif(not _OFFICIAL.exists(),
+                     reason="official miRTarBase index not built")
+def test_analyze_validation_report_has_evidence_levels():
+    """v1.48: el dossier trae el nivel de evidencia por gen (fuerte /
+    débil / solo predicho) con sus PMIDs."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": _THESIS, "years": 10, "mode": "strict",
+            "offline": True})
+    assert r.status_code == 200
+    genes = r.json()["validation"]["genes"]
+    assert genes["ABCA1"]["evidence_level"] == "strong"
+    assert 20466885 in genes["ABCA1"]["mirtarbase_pmids"]
+    assert genes["SNTB2"]["evidence_level"] == "weak"
+    assert genes["TSC22D2"]["evidence_level"] == "weak"
+    assert genes["KPNA3"]["evidence_level"] == "none"
+    assert genes["SCN1A"]["evidence_level"] == "none"

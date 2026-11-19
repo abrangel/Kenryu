@@ -277,3 +277,83 @@ def test_reverse_lookup_is_case_insensitive():
     assert kc.reverse_lookup("c8orf58", db) == ["hsa-miR-21-5p"]
     assert kc.reverse_lookup("C8ORF58", db) == ["hsa-miR-21-5p"]
     assert kc.reverse_lookup("PTEN", db) == ["hsa-miR-155-5p", "hsa-miR-21-5p"]
+
+
+# ── Ronda 3 (v1.48) — miRTarBase oficial 9.0 ────────────────────────────────
+import gzip
+import json
+
+import pytest
+
+MIRTARBASE_OFFICIAL = LOCAL_DB / "mirtarbase_official.json.gz"
+
+
+def _tiny_official_db(tmp_path):
+    """A minimal official index (same shape as build_mirtarbase_official.py)."""
+    payload = {
+        "version": "miRTarBase 9.0", "source": "https://example.invalid/",
+        "rows_read": 3, "pairs": 3,
+        "mirnas": {
+            "hsa-miR-33a-5p": {
+                "ABCA1": {"level": "strong", "pmids": [20466885],
+                          "experiments": ["Luciferase reporter assay"]},
+                "SNTB2": {"level": "weak", "pmids": [22012620],
+                          "experiments": ["PAR-CLIP"]}},
+            "hsa-miR-1": {
+                "GENE1": {"level": "weak", "pmids": [123], "experiments": ["HITS-CLIP"]}},
+        },
+    }
+    path = tmp_path / "mirtarbase_official.json.gz"
+    with gzip.open(path, "wt", encoding="utf-8") as fh:
+        json.dump(payload, fh)
+    return path
+
+
+def test_load_mirtarbase_official(tmp_path):
+    db = kc.load_mirtarbase_official(_tiny_official_db(tmp_path))
+    assert db["hsa-miR-33a-5p"]["ABCA1"]["level"] == "strong"
+    assert db["hsa-miR-33a-5p"]["ABCA1"]["pmids"] == [20466885]
+    assert db["hsa-miR-33a-5p"]["SNTB2"]["level"] == "weak"
+
+
+def test_get_validated_evidence_official(tmp_path):
+    db = kc.load_mirtarbase_official(_tiny_official_db(tmp_path))
+    ev = kc.get_validated_evidence("hsa-miR-33a-5p", db)
+    assert ev["ABCA1"]["level"] == "strong"
+    assert ev["SNTB2"]["experiments"] == ["PAR-CLIP"]
+    # Suffix fallback: hsa-miR-1-5p resolves to the hsa-miR-1 entry.
+    assert kc.get_validated_evidence("hsa-miR-1-5p", db)["GENE1"]["level"] == "weak"
+    assert kc.get_validated_evidence("hsa-miR-999-5p", db) == {}
+
+
+def test_get_validated_local_excludes_none_level(tmp_path):
+    db = kc.load_mirtarbase_official(_tiny_official_db(tmp_path))
+    # Both strong and weak count as validated targets...
+    assert kc.get_validated_local("hsa-miR-33a-5p", db) == {"ABCA1", "SNTB2"}
+    # ...but a "none" (non-functional only) gene does not.
+    db["hsa-miR-33a-5p"]["DEAD"] = {"level": "none", "pmids": [1], "experiments": []}
+    assert "DEAD" not in kc.get_validated_local("hsa-miR-33a-5p", db)
+
+
+def test_get_validated_evidence_legacy_gmt():
+    # The old Harmonizome GMT has no levels: its genes are "legacy".
+    db = {"hsa-miR-21-5p": {"PTEN", "PDCD4"}}
+    ev = kc.get_validated_evidence("hsa-miR-21-5p", db)
+    assert ev["PTEN"]["level"] == "legacy"
+    assert ev["PTEN"]["pmids"] == []
+    assert kc.get_validated_local("hsa-miR-21-5p", db) == {"PTEN", "PDCD4"}
+
+
+@pytest.mark.skipif(not MIRTARBASE_OFFICIAL.exists(),
+                    reason="official index not built (see build_mirtarbase_official.py)")
+def test_load_mirtarbase_official_real_file():
+    db = kc.load_mirtarbase_official(MIRTARBASE_OFFICIAL)
+    assert len(db) == 2947
+    assert db["hsa-miR-33a-5p"]["ABCA1"]["level"] == "strong"
+    assert db["hsa-miR-33a-5p"]["ABCA1"]["pmids"] == [20466882, 20466885, 20566875]
+    assert db["hsa-miR-33a-5p"]["SNTB2"]["level"] == "weak"
+    assert db["hsa-miR-758-3p"]["TSC22D2"]["level"] == "weak"
+    assert "KPNA3" not in db["hsa-miR-33a-5p"]
+    assert "SCN1A" not in db["hsa-miR-33a-5p"]
+    # Excel-mangled symbols recovered (SEPT/MARCH), not datetimes.
+    assert all(isinstance(g, str) for genes in db.values() for g in genes)
