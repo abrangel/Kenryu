@@ -95,6 +95,7 @@ from kenryu_core import (
     create_visuals,
     deep_clean_mirna,
 )
+from kenryu_updater import DATA_SOURCES, check_updates, load_local_versions
 
 def load_local_data():
     cache_path = Path("local_db/targetscan_db.pkl")
@@ -988,7 +989,23 @@ async def serve_style():
 async def health():
     return {"status": "OK", "version": "1.38",
             "db_families": len(TARGETSCAN_DB),
-            "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0}
+            "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
+            "data_sources": load_local_versions()}
+
+
+@app.get("/api/v1/updates")
+def updates():
+    """Self-update check: which reference databases are outdated, and
+    where to download the new release. Never fails the request: with no
+    network every source reports 'unknown'."""
+    try:
+        return check_updates(timeout=8.0)
+    except Exception as exc:  # pragma: no cover - belt and braces
+        logger.error(f"❌ Fallo chequeo de actualizaciones: {exc}")
+        return {"checked_at": None, "updates_available": 0,
+                "unpinned": 0, "unknown": len(DATA_SOURCES),
+                "sources": [{**s, "latest_checked": None, "status": "unknown"}
+                            for s in DATA_SOURCES]}
 @app.on_event("startup")
 async def startup_event():
     global TARGETSCAN_DB
