@@ -67,11 +67,13 @@ DATA_SOURCES = [
         "check_url": "https://www.targetscan.org/vert_80/",
         "parser": "targetscan_page",
         "download_url": "https://www.targetscan.org/vert_80/",
-        "files": [],
+        "files": [
+            {"url": "https://www.targetscan.org/vert_80/vert_80_data_download/Predicted_Targets_Info.default_predictions.txt.zip",
+             "local": "data/targetscan_full.json.zip", "verify": "zip"},
+        ],
         "note": "Local database (targetscan_full.json.zip, 8.3 MB). "
-                "No v9.0 release found as of 2026-11-18. No direct file URL "
-                "registered yet: downloads go through the data-download CGI "
-                "(/cgi-bin/targetscan/data_download.vert80.cgi).",
+                "No v9.0 release found as of 2026-11-18. Direct file URL "
+                "resolved from the data-download CGI 2026-11-18.",
     },
     {
         "key": "mirtarbase",
@@ -82,12 +84,18 @@ DATA_SOURCES = [
         "check_url": "https://mirtarbase.cuhk.edu.cn/php/download.php",
         "parser": "mirtarbase_page",
         "download_url": "https://mirtarbase.cuhk.edu.cn/php/download.php",
-        "files": [],
-        "note": "Validated targets are fetched live from Harmonizome; the "
-                "underlying miRTarBase version is not pinned. miRTarBase "
+        "version_from": "download_date",
+        "files": [
+            {"url": "https://maayanlab.cloud/static/hdfs/harmonizome/data/mirtarbase/gene_set_library_crisp.gmt.gz",
+             "local": "local_db/mirtarbase_gene_set_library.gmt.gz", "verify": "gzip"},
+        ],
+        "note": "Validated targets are served LOCALLY from Harmonizome's "
+                "miRTarBase gene-set library (GMT, 576 hsa-miRNAs, "
+                "downloaded 2026-11-18); the live Harmonizome API is only "
+                "a fallback for miRNAs missing from the file. miRTarBase "
                 "10.0 (Sep 2024) holds 3,817,550 validated interactions "
-                "from 13,690 articles. No direct file URL registered yet "
-                "(site unreachable from this machine).",
+                "from 13,690 articles. The snapshot carries no upstream "
+                "version, so installs record the download date.",
     },
     {
         "key": "enrichr",
@@ -327,7 +335,16 @@ def verify_zip(path):
     return True
 
 
-_VERIFIERS = {"fasta": verify_fasta, "zip": verify_zip}
+def verify_gzip(path):
+    """A gzip file must decompress cleanly (at least one byte)."""
+    import gzip
+    with gzip.open(path, "rb") as fh:
+        if not fh.read(1):
+            raise ValueError(f"{path}: empty gzip file")
+    return True
+
+
+_VERIFIERS = {"fasta": verify_fasta, "zip": verify_zip, "gzip": verify_gzip}
 
 
 def transform_html_fasta(path):
@@ -430,6 +447,11 @@ def install_source_update(key, client=None, base_dir=BASE_DIR, timeout=300.0):
     try:
         checked = check_source(entry, client)
         new_version = checked["latest_checked"]
+        if new_version is None and entry.get("version_from") == "download_date":
+            # Snapshots without an upstream version (miRTarBase GMT):
+            # the install is dated, never versioned silently.
+            from datetime import date
+            new_version = f"snapshot-{date.today().isoformat()}"
         if new_version is None:
             raise RuntimeError(
                 f"{entry['name']}: could not verify the latest release "

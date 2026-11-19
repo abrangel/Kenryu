@@ -18,8 +18,9 @@
     "check_url": "https://mirtarbase.cuhk.edu.cn/php/download.php",
     "download_url": "https://mirtarbase.cuhk.edu.cn/php/download.php",
     "latest_known": "10.0",
-    "local": "live via Harmonizome (unpinned)",
-    "note": "Validated targets are fetched live from Harmonizome; the underlying miRTarBase version is not pinned. miRTarBase 10.0 (Sep 2024) holds 3,817,550 validated interactions from 13,690 articles. Verified 2026-11-18."
+    "local": "local GMT (Harmonizome snapshot 2026-11-18)",
+    "note": "Validated targets served LOCALLY from Harmonizome miRTarBase gene-set library GMT (576 hsa-miRNAs, 2026-11-18); live Harmonizome API only a fallback. miRTarBase 10.0 (Sep 2024) holds 3,817,550 validated interactions from 13,690 articles.",
+    "updated_at": "2026-11-19T05:45:00+00:00"
   },
   "targetscan": {
     "check_url": "https://www.targetscan.org/vert_80/",

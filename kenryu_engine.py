@@ -28,6 +28,7 @@ class AnalysisRequest(BaseModel):
     years: int = 10
     mode: str = "strict"
     month: Optional[str] = None
+    offline: bool = False
 
 BASE_DIR = Path(__file__).resolve().parent
 # Directorio de datos: contiene targetscan_full.json.zip y los archivos
@@ -36,6 +37,43 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data" if (BASE_DIR / "data").exists() else BASE_DIR
 RAW_DATA_DIR = DATA_DIR
 TARGETSCAN_DB = {}
+# miRTarBase validado (local, GMT de Harmonizome) y librerías GMT de
+# enriquecimiento (KEGG/Reactome/WikiPathways/GO, de Enrichr). Se cargan
+# bajo demanda y se cachean como TARGETSCAN_DB.
+MIRTARBASE_DB = {}
+GMT_LIBRARIES = {}
+GMT_FILES = {
+    "KEGG": "local_db/gmt_KEGG_2021_Human.gmt",
+    "Reactome": "local_db/gmt_Reactome_Pathways_2024.gmt",
+    "WikiPathways": "local_db/gmt_WikiPathways_2019_Human.gmt",
+    "GO": "local_db/gmt_GO_Biological_Process_2023.gmt",
+}
+MIRTARBASE_GMT = "local_db/mirtarbase_gene_set_library.gmt.gz"
+
+
+def load_mirtarbase_local():
+    """Carga la librería local de miRTarBase (una sola vez)."""
+    global MIRTARBASE_DB
+    if not MIRTARBASE_DB:
+        path = BASE_DIR / MIRTARBASE_GMT
+        if path.exists():
+            MIRTARBASE_DB = load_mirtarbase_gmt(path)
+            logger.info(f"📚 miRTarBase local: {len(MIRTARBASE_DB)} miRNAs validados.")
+        else:
+            logger.warning(f"⚠️ Sin miRTarBase local ({path} no existe).")
+    return MIRTARBASE_DB
+
+
+def load_gmt_libraries():
+    """Carga las librerías GMT locales de enriquecimiento (una sola vez)."""
+    global GMT_LIBRARIES
+    if not GMT_LIBRARIES:
+        for label, rel in GMT_FILES.items():
+            path = BASE_DIR / rel
+            if path.exists():
+                GMT_LIBRARIES[label] = load_gmt_library(path)
+        logger.info(f"📚 GMT locales: {', '.join(f'{k} ({len(v)} términos)' for k, v in GMT_LIBRARIES.items()) or 'ninguna'}.")
+    return GMT_LIBRARIES
 pubmed_semaphore = asyncio.Semaphore(3)
 PERSISTENT_CACHE = {"trans": {}, "pubmed": {}, "enrichr": {}, "gene_research": {}}
 CACHE_FILE = Path("local_db/analysis_cache.json")
@@ -89,12 +127,20 @@ async def translate_to_spanish(text: str, client: httpx.AsyncClient) -> str:
 # ── LIMPIEZA DE NOMBRES ─────────────────────────────────────────────────────
 # ── PURE HELPERS (live in kenryu_core.py, re-exported here) ─────────────
 from kenryu_core import (
+    build_export,
     build_synthesis,
     build_validation_report,
     clean_mirna_name_cloud,
     consensus_genes,
+    create_heatmap,
     create_visuals,
     deep_clean_mirna,
+    get_validated_local,
+    load_gmt_library,
+    load_mirtarbase_gmt,
+    local_enrichment,
+    normalize_isomir,
+    reverse_lookup,
 )
 from kenryu_updater import (
     DATA_SOURCES,
@@ -1039,12 +1085,26 @@ def install_update_endpoint(source: str):
     except Exception as exc:
         logger.error(f"❌ Fallo instalando actualización {source}: {exc}")
         raise HTTPException(502, f"install failed: {exc}")
+
+
+@app.get("/api/v1/reverse")
+def reverse(gene: str):
+    """Búsqueda inversa: qué miRNAs (familias TargetScan locales) tienen
+    a `gene` como diana predicha."""
+    global TARGETSCAN_DB
+    if not TARGETSCAN_DB:
+        TARGETSCAN_DB = load_local_data()
+    hits = reverse_lookup(gene, TARGETSCAN_DB)
+    return {"gene": (gene or "").strip().upper(), "mirnas": hits,
+            "n": len(hits)}
 @app.on_event("startup")
 async def startup_event():
     global TARGETSCAN_DB
     load_persistent_cache()
     if not TARGETSCAN_DB:
         TARGETSCAN_DB = load_local_data()
+    load_mirtarbase_local()
+    load_gmt_libraries()
     logger.info(f"🚀 KENRYU v1.38 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
 
 @app.post("/api/v1/analyze")
@@ -1056,16 +1116,23 @@ async def analyze(req: AnalysisRequest):
     # ... resto del procesamiento ...
 
 
-    mirnas = [m.strip() for m in req.mirnas if m.strip()]
+    mirnas = [normalize_isomir(m.strip()) for m in req.mirnas if m.strip()]
     if not mirnas:
         raise HTTPException(400, "Debe ingresar al menos un miRNA.")
 
     # ── RECOLECCIÓN DE GENES POR miRNA ───────────────────────────────────────────
     gene_sets, found_names = [], []
     local_by_mirna, remote_by_mirna = {}, {}
+    if not TARGETSCAN_DB:
+        TARGETSCAN_DB = load_local_data()
+    load_mirtarbase_local()
     for m in mirnas:
         local  = get_targets_local(m)
-        remote = await fetch_mirtarbase(m)
+        # Validado: primero la librería local de miRTarBase; la API viva
+        # de Harmonizome solo como respaldo (y nunca en modo offline).
+        remote = get_validated_local(m, MIRTARBASE_DB)
+        if not remote and not req.offline:
+            remote = await fetch_mirtarbase(m)
         local_by_mirna[m] = local
         remote_by_mirna[m] = remote
 
@@ -1106,13 +1173,17 @@ async def analyze(req: AnalysisRequest):
     if not common and mode == "strict":
         logger.warning("⚠️ Intersección estricta vacía. Considere usar modo N-1 o N-2.")
         # Devolver respuesta vacía pero informativa en lugar de cambiar modo
+        empty_validation = build_validation_report(
+            found_names, [], {}, local_by_mirna, remote_by_mirna,
+            load_local_versions())
         return {
             "common_genes": [],
             "found_mirnas": found_names,
             "gene_details": {},
-            "validation": build_validation_report(
-                found_names, [], {}, local_by_mirna, remote_by_mirna,
-                load_local_versions()),
+            "validation": empty_validation,
+            "export": build_export(found_names, [], {}, [], empty_validation, gene_sets),
+            "heatmap_plot": None,
+            "offline": req.offline,
             "scientific_synthesis": (
                 f"No se encontraron genes diana comunes a todos los miRNAs analizados "
                 f"({', '.join(found_names)}) en modo de intersección estricta. "
@@ -1134,24 +1205,36 @@ async def analyze(req: AnalysisRequest):
     gene_list_enr = sorted_common[:300]
     
     if len(gene_list_enr) >= 3:
+        load_gmt_libraries()
         async with make_async_client(timeout=45.0) as client:
             try:
                 logger.info(f"🧪 Iniciando Enriquecimiento para {len(gene_list_enr)} genes...")
-                enrichr_terms = await enrich_genes_direct(gene_list_enr, client)
-                
+                if req.offline:
+                    enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES)
+                    logger.info(f"📚 Enriquecimiento local (offline): {len(enrichr_terms)} rutas")
+                else:
+                    enrichr_terms = await enrich_genes_direct(gene_list_enr, client)
+                    if not enrichr_terms:
+                        enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES)
+                        logger.info(f"📚 Enrichr vacío; usando enriquecimiento local: {len(enrichr_terms)} rutas")
+
                 if enrichr_terms:
                     # Procesamiento en PARALELO para PubMed y Traducción
                     async def process_row(term_data):
                         term = term_data['Term']
                         pval = term_data['Pval']
                         gs_label = term_data['Source']
-                        try:
-                            # Motor experto con reintentos y 429-handling
-                            pubmed_task = get_pubmed_for_term(term, req.years, client)
-                            trans_task = translate_to_spanish(term, client)
-                            pubmed, trans_term = await asyncio.gather(pubmed_task, trans_task)
-                        except:
+                        if req.offline:
+                            # Sin red: término sin traducir y sin PubMed.
                             pubmed, trans_term = [], term
+                        else:
+                            try:
+                                # Motor experto con reintentos y 429-handling
+                                pubmed_task = get_pubmed_for_term(term, req.years, client)
+                                trans_task = translate_to_spanish(term, client)
+                                pubmed, trans_term = await asyncio.gather(pubmed_task, trans_task)
+                            except:
+                                pubmed, trans_term = [], term
                         
                         return {
                             "Term": trans_term, "Source": gs_label, "Pval": float(pval),
@@ -1172,11 +1255,14 @@ async def analyze(req: AnalysisRequest):
     v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, sorted_common)
 
     # ── DETALLES DE GENES ──────────────────────────────────────────────────────
-    async with make_async_client(timeout=20.0) as client:
-        # Aumentar a 40 para cubrir toda la tabla del informe
-        tasks = [get_gene_details(g, client) for g in sorted_common[:40]]
-        details = await asyncio.gather(*tasks)
-    gene_details = {g: d for g, d in zip(sorted_common[:40], details)}
+    if req.offline:
+        gene_details = {}
+    else:
+        async with make_async_client(timeout=20.0) as client:
+            # Aumentar a 40 para cubrir toda la tabla del informe
+            tasks = [get_gene_details(g, client) for g in sorted_common[:40]]
+            details = await asyncio.gather(*tasks)
+        gene_details = {g: d for g, d in zip(sorted_common[:40], details)}
 
     # ── REFERENCIAS — INVESTIGACIÓN MULTI-FUENTE ──────────────────────────────
     # Para CADA gen core del Venn (sorted_common[:5]):
@@ -1195,12 +1281,20 @@ async def analyze(req: AnalysisRequest):
     seen_pmids = set()
 
     # 1. Investigación multi-fuente PARALELA de los 5 genes core del Venn
-    async with make_async_client(timeout=25.0) as client:
-        research_tasks = [
-            research_gene_complete(g, gene_details.get(g, {}), req.years, client)
+    if req.offline:
+        # Sin red: investigación vacía, marcada como offline (no inventada).
+        research_results = [
+            {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""},
+             "trials": [], "year_window_used": "offline"}
             for g in sorted_common[:5]
         ]
-        research_results = await asyncio.gather(*research_tasks, return_exceptions=True)
+    else:
+        async with make_async_client(timeout=25.0) as client:
+            research_tasks = [
+                research_gene_complete(g, gene_details.get(g, {}), req.years, client)
+                for g in sorted_common[:5]
+            ]
+            research_results = await asyncio.gather(*research_tasks, return_exceptions=True)
 
     for g, res in zip(sorted_common[:5], research_results):
         if isinstance(res, Exception):
@@ -1349,6 +1443,10 @@ async def analyze(req: AnalysisRequest):
         found_names, sorted_common, gene_research_data,
         local_by_mirna, remote_by_mirna, load_local_versions())
 
+    export_data = build_export(
+        found_names, sorted_common, gene_details, enrichment_results,
+        validation_report, gene_sets)
+
     # Persistir descubrimientos (Traducciones, PubMed, Enriquecimiento)
     save_persistent_cache()
 
@@ -1357,6 +1455,9 @@ async def analyze(req: AnalysisRequest):
         "found_mirnas": found_names,
         "gene_details": gene_details,
         "validation": validation_report,
+        "export": export_data,
+        "heatmap_plot": create_heatmap(found_names, sorted_common, gene_sets),
+        "offline": req.offline,
         "scientific_synthesis": synthesis_obj["academic"],
         "functional_context": synthesis_obj["functional"],
         "references_text": synthesis_obj["references"],

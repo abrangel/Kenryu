@@ -1,0 +1,599 @@
+{
+  "trans": {
+    "Enables phospholipid scramblase activity": "Activa la actividad de la fosfolípido scramblasa",
+    "engulfment of apoptotic cell": "fagocitosis de células apoptóticas",
+    "phosphatidylserine exposure on apoptotic cell surface": "exposición de la fosfatidilserina en la superficie celular apoptótica",
+    "apoptotic process involved in development": "proceso apoptótico implicado en el desarrollo",
+    "positive regulation of apoptotic process": "Regulación positiva del proceso apoptótico"
+  },
+  "pubmed": {
+    "esum_39655875": {
+      "title": "Exosomes derived from umbilical cord mesenchymal stem cells ameliorate ischemic brain injury in mice by regulating AAK1 via miR-664a-5p",
+      "authors": "Shen B, Liu N, Dai Y",
+      "year": "2026",
+      "journal": "Int J Neurosci"
+    },
+    "esum_39107843": {
+      "title": "Circular RNA ACVR2A promotes the progression of hepatocellular carcinoma through mir-511-5p targeting PI3K-Akt signaling pathway",
+      "authors": "Fei D et al.",
+      "year": "2024",
+      "journal": "Mol Cancer"
+    },
+    "esum_27412786": {
+      "title": "An miRNA-mediated therapy for SCA6 blocks IRES-driven translation of the CACNA1A second cistron",
+      "authors": "Miyazaki Y et al.",
+      "year": "2016",
+      "journal": "Sci Transl Med"
+    },
+    "esum_37377048": {
+      "title": "The role and mechanism of circ-BNC2 on the malignant progression of oral squamous cell carcinoma",
+      "authors": "Xia Y et al.",
+      "year": "2023",
+      "journal": "Head Neck"
+    },
+    "esum_36017582": {
+      "title": "Whole-genome sequencing identifies new candidate genes for nonobstructive azoospermia",
+      "authors": "Malcher A et al.",
+      "year": "2022",
+      "journal": "Andrology"
+    },
+    "Developmental Biology_10": [
+      {
+        "title": "",
+        "id": "43027330"
+      }
+    ],
+    "Signaling by TGFBR3_10": [
+      {
+        "title": "",
+        "id": "42692183"
+      }
+    ],
+    "Regulation Of Chemokine Production (GO:0032642)_10": [
+      {
+        "title": "",
+        "id": "43027708"
+      }
+    ],
+    "Regulation Of Myeloid Cell Differentiation (GO:0045637)_10": [
+      {
+        "title": "",
+        "id": "42926078"
+      }
+    ],
+    "Positive Regulation Of Osteoblast Differentiation (GO:0045669)_10": [
+      {
+        "title": "",
+        "id": "32133801"
+      }
+    ],
+    "Positive Regulation Of Smooth Muscle Cell Proliferation (GO:0048661)_10": [
+      {
+        "title": "",
+        "id": "39227669"
+      }
+    ],
+    "Regulation Of Smooth Muscle Cell Proliferation (GO:0048660)_10": [
+      {
+        "title": "",
+        "id": "41117048"
+      }
+    ],
+    "Sensory Organ Development (GO:0007423)_10": [
+      {
+        "title": "",
+        "id": "41496659"
+      }
+    ],
+    "Central Nervous System Development (GO:0007417)_10": [
+      {
+        "title": "",
+        "id": "42956527"
+      }
+    ],
+    "L1CAM Interactions_10": [
+      {
+        "title": "",
+        "id": "42480943"
+      }
+    ],
+    "CREB Phosphorylation_10": [
+      {
+        "title": "",
+        "id": "43018607"
+      }
+    ],
+    "RSK Activation_10": [
+      {
+        "title": "",
+        "id": "41338458"
+      }
+    ],
+    "Post-transcriptional Silencing by Small RNAs_10": [
+      {
+        "title": "",
+        "id": "42812821"
+      }
+    ],
+    "miRNA regulation of p53 pathway in prostate cancer WP3982_10": [
+      {
+        "title": "",
+        "id": "42695671"
+      }
+    ],
+    "Hepatitis C and Hepatocellular Carcinoma WP3646_10": [
+      {
+        "title": "",
+        "id": "42944086"
+      }
+    ],
+    "ncRNAs involved in STAT3 signaling in hepatocellular carcinoma WP4337_10": [
+      {
+        "title": "",
+        "id": "42905371"
+      }
+    ],
+    "TP53 Regulates Metabolic Genes_10": [
+      {
+        "title": "",
+        "id": "42902383"
+      }
+    ],
+    "IL-6 signaling pathway WP364_10": [
+      {
+        "title": "",
+        "id": "43051691"
+      }
+    ],
+    "Kit receptor signaling pathway WP304_10": [
+      {
+        "title": "",
+        "id": "43022184"
+      }
+    ],
+    "Differentiation Pathway WP2848_10": [
+      {
+        "title": "",
+        "id": "43052049"
+      }
+    ],
+    "Recycling Pathway of L1_10": [
+      {
+        "title": "",
+        "id": "42856641"
+      }
+    ],
+    "Angiopoietin Like Protein 8 Regulatory Pathway WP3915_10": [
+      {
+        "title": "",
+        "id": "41162844"
+      }
+    ],
+    "Response To Molecule Of Bacterial Origin (GO:0002237)_10": [
+      {
+        "title": "",
+        "id": "43045810"
+      }
+    ],
+    "Mesodermal Commitment Pathway WP2857_10": [
+      {
+        "title": "",
+        "id": "42817957"
+      }
+    ],
+    "esum_42692183": {
+      "title": "Three-dimensional primary myofibroblast culture reveals morphological alterations in CPAMD8 deficiency",
+      "authors": "Liu H et al.",
+      "year": "2026",
+      "journal": "Exp Eye Res"
+    },
+    "esum_43027330": {
+      "title": "Modeling the Human Stomach In Vitro: Gastric Organoids in Development, Disease, and Therapy",
+      "authors": "Enteshari Najafabadi Z et al.",
+      "year": "2026",
+      "journal": "Cells"
+    },
+    "esum_42856641": {
+      "title": "Epithelial to mesenchymal transition and M2 macrophages drive aggressiveness in murine and human sarcomatoid urothelial carcinoma",
+      "authors": "Hayashi Y et al.",
+      "year": "2026",
+      "journal": "bioRxiv"
+    },
+    "esum_43027708": {
+      "title": "STAT3 Signaling Contributes to Chemokine Production in E2-Induced Dermal Inflammation",
+      "authors": "Ancona N et al.",
+      "year": "2026",
+      "journal": "Int J Mol Sci"
+    },
+    "esum_42926078": {
+      "title": "GABARAPL1 drives therapeutic differentiation of cancer cells by targeting epigenetic changes regulated by SFPQ",
+      "authors": "Zhou L et al.",
+      "year": "2026",
+      "journal": "Pharmacol Res"
+    },
+    "esum_32133801": {
+      "title": "Identification of PTPRR and JAG1 as key genes in castration-resistant prostate cancer by integrated bioinformatics methods()",
+      "authors": "Wang JL, Wang Y, Ren GP",
+      "year": "2020",
+      "journal": "J Zhejiang Univ Sci B"
+    },
+    "esum_41117048": {
+      "title": "Endothelial-smooth muscle microgauges for modeling pulmonary arterial vasoregulation",
+      "authors": "Sawhney A et al.",
+      "year": "2025",
+      "journal": "Lab Chip"
+    },
+    "esum_43045810": {
+      "title": "Microbial targeting of inhibitory immune receptors in human disease",
+      "authors": "McCarthy AJ, Mandelboim O, Arase H",
+      "year": "2026",
+      "journal": "Nat Rev Immunol"
+    },
+    "esum_39227669": {
+      "title": "Exploration and validation of ceRNA regulatory networks in colorectal cancer based on associations whole transcriptome sequencing",
+      "authors": "Zhang L et al.",
+      "year": "2024",
+      "journal": "Sci Rep"
+    },
+    "esum_41496659": {
+      "title": "Altered Functional Specialization and Interhemispheric Coordination in Rhegmatogenous Retinal Detachment: Associations With Gene Expression, Neurotransmitter Receptor Distribution, and SVM-SHAP Classification",
+      "authors": "Ji Y, Wang YY, Wu XR",
+      "year": "2026",
+      "journal": "CNS Neurosci Ther"
+    },
+    "esum_42956527": {
+      "title": "Wnt/β-catenin signaling dysregulation in Alzheimer's disease and therapeutic opportunities",
+      "authors": "Alkhalifa AE et al.",
+      "year": "2026",
+      "journal": "Biomed Pharmacother"
+    },
+    "esum_41162844": {
+      "title": "ANGPTL8 is upregulated in subcutaneous adipose tissue at early term after bariatric surgery in patients living with obesity",
+      "authors": "Negro EM et al.",
+      "year": "2026",
+      "journal": "Eur J Clin Invest"
+    },
+    "esum_42817957": {
+      "title": "Micro- and nanoplastics alter electrophysiological brain patterns and reshape human neurodevelopmental trajectories",
+      "authors": "Poynter CL et al.",
+      "year": "2026",
+      "journal": "bioRxiv"
+    },
+    "esum_42905371": {
+      "title": "Macrophage polarization and non-coding RNAs in colorectal cancer progression and metastasis",
+      "authors": "Nami MT et al.",
+      "year": "2026",
+      "journal": "Med Oncol"
+    },
+    "esum_42902383": {
+      "title": "Metabolic plasticity underlies ferroptosis resistance driven by mutant p53 in pancreatic ductal adenocarcinoma",
+      "authors": "Celesia A et al.",
+      "year": "2026",
+      "journal": "Mol Cancer"
+    },
+    "esum_42480943": {
+      "title": "PHOX2B polyalanine repeat mutation alters the transcriptome of neuronal progenitor cells in congenital central hypoventilation syndrome",
+      "authors": "Stobdan T et al.",
+      "year": "2026",
+      "journal": "Neurobiol Dis"
+    },
+    "esum_41338458": {
+      "title": "Phosphorylation at S1288 of leukemia associated RhoGEF (LARG/ARHGEF12) induces plasma membrane localization and promotes binding and activation of RhoA",
+      "authors": "Yang WS et al.",
+      "year": "2026",
+      "journal": "J Biol Chem"
+    },
+    "esum_43018607": {
+      "title": "Imidazo[1,2-a]pyrazine Derivatives as Dual A2A/A2B Adenosine Receptor Antagonists Enhancing Anti-PD-1 Antibody Therapy in Colorectal Cancer",
+      "authors": "Kim C et al.",
+      "year": "2026",
+      "journal": "J Med Chem"
+    },
+    "esum_42812821": {
+      "title": "Cross-kingdom RNA interference in the dysbiosis-mediated network of vocal fold fibrosis: a pathogenic hypothesis and molecular intervention targets",
+      "authors": "Ren Q et al.",
+      "year": "2026",
+      "journal": "Front Immunol"
+    },
+    "esum_42695671": {
+      "title": "microRNA-27a-3p influences hepatocellular carcinoma cell migration and invasion via the TET1/p53 pathway",
+      "authors": "Di Y et al.",
+      "year": "2026",
+      "journal": "Per Med"
+    },
+    "esum_43051691": {
+      "title": "[Electroacupuncture inhibits astrocyte activation and alleviates neuroinflammation in rats with ischemic stroke based on JAK2/STAT3 signaling pathway]",
+      "authors": "Hua W et al.",
+      "year": "2026",
+      "journal": "Zhen Ci Yan Jiu"
+    },
+    "esum_43052049": {
+      "title": "Identification of immune- and cellular senescence-related genes in keloids through integrated transcriptomic and single-cell analysis",
+      "authors": "Tian T et al.",
+      "year": "2026",
+      "journal": "J Int Med Res"
+    },
+    "esum_42944086": {
+      "title": "Transcriptome Analysis of Hepatitis C Virus-Infected Hepatoma Cells Following Stringent Removal of Genomic DNA",
+      "authors": "Khajouei M et al.",
+      "year": "2026",
+      "journal": "Viruses"
+    },
+    "esum_43022184": {
+      "title": "Stem cell factor in allergic diseases: mechanisms of type 2 immunity and therapeutic opportunities",
+      "authors": "Ocadiz-Ruiz R et al.",
+      "year": "2026",
+      "journal": "Front Immunol"
+    }
+  },
+  "enrichr": {
+    "AAK1,ACVR2A,AGO4,BNC2,BRWD3,CHD7,DCUN1D3,FOXP1,IL6R,KPNA4,MEIS1,PURB,RDX,RPS6KA3,SESN3,UBN2,WNK3,XKR4": [
+      {
+        "Term": "Developmental Biology",
+        "Source": "Reactome",
+        "Pval": 0.017590916944553777,
+        "RawTerm": "Developmental Biology"
+      },
+      {
+        "Term": "Recycling Pathway of L1",
+        "Source": "Reactome",
+        "Pval": 0.04240760854539665,
+        "RawTerm": "Recycling Pathway of L1"
+      },
+      {
+        "Term": "Signaling by TGFBR3",
+        "Source": "Reactome",
+        "Pval": 0.04240760854539665,
+        "RawTerm": "Signaling by TGFBR3"
+      },
+      {
+        "Term": "Regulation Of Myeloid Cell Differentiation (GO:0045637)",
+        "Source": "GO",
+        "Pval": 0.05218725623417997,
+        "RawTerm": "Regulation Of Myeloid Cell Differentiation (GO:0045637)"
+      },
+      {
+        "Term": "Regulation Of Chemokine Production (GO:0032642)",
+        "Source": "GO",
+        "Pval": 0.05218725623417997,
+        "RawTerm": "Regulation Of Chemokine Production (GO:0032642)"
+      },
+      {
+        "Term": "Positive Regulation Of Osteoblast Differentiation (GO:0045669)",
+        "Source": "GO",
+        "Pval": 0.05218725623417997,
+        "RawTerm": "Positive Regulation Of Osteoblast Differentiation (GO:0045669)"
+      },
+      {
+        "Term": "Positive Regulation Of Smooth Muscle Cell Proliferation (GO:0048661)",
+        "Source": "GO",
+        "Pval": 0.05218725623417997,
+        "RawTerm": "Positive Regulation Of Smooth Muscle Cell Proliferation (GO:0048661)"
+      },
+      {
+        "Term": "Regulation Of Smooth Muscle Cell Proliferation (GO:0048660)",
+        "Source": "GO",
+        "Pval": 0.05218725623417997,
+        "RawTerm": "Regulation Of Smooth Muscle Cell Proliferation (GO:0048660)"
+      },
+      {
+        "Term": "Response To Molecule Of Bacterial Origin (GO:0002237)",
+        "Source": "GO",
+        "Pval": 0.05218725623417997,
+        "RawTerm": "Response To Molecule Of Bacterial Origin (GO:0002237)"
+      },
+      {
+        "Term": "Sensory Organ Development (GO:0007423)",
+        "Source": "GO",
+        "Pval": 0.05218725623417997,
+        "RawTerm": "Sensory Organ Development (GO:0007423)"
+      },
+      {
+        "Term": "Central Nervous System Development (GO:0007417)",
+        "Source": "GO",
+        "Pval": 0.05218725623417997,
+        "RawTerm": "Central Nervous System Development (GO:0007417)"
+      },
+      {
+        "Term": "Angiopoietin Like Protein 8 Regulatory Pathway WP3915",
+        "Source": "WikiPathways",
+        "Pval": 0.07979617515440178,
+        "RawTerm": "Angiopoietin Like Protein 8 Regulatory Pathway WP3915"
+      },
+      {
+        "Term": "Mesodermal Commitment Pathway WP2857",
+        "Source": "WikiPathways",
+        "Pval": 0.07979617515440178,
+        "RawTerm": "Mesodermal Commitment Pathway WP2857"
+      },
+      {
+        "Term": "ncRNAs involved in STAT3 signaling in hepatocellular carcinoma WP4337",
+        "Source": "WikiPathways",
+        "Pval": 0.08148272500571739,
+        "RawTerm": "ncRNAs involved in STAT3 signaling in hepatocellular carcinoma WP4337"
+      },
+      {
+        "Term": "TP53 Regulates Metabolic Genes",
+        "Source": "Reactome",
+        "Pval": 0.08933741481552449,
+        "RawTerm": "TP53 Regulates Metabolic Genes"
+      },
+      {
+        "Term": "L1CAM Interactions",
+        "Source": "Reactome",
+        "Pval": 0.08933741481552449,
+        "RawTerm": "L1CAM Interactions"
+      },
+      {
+        "Term": "RSK Activation",
+        "Source": "Reactome",
+        "Pval": 0.08933741481552449,
+        "RawTerm": "RSK Activation"
+      },
+      {
+        "Term": "CREB Phosphorylation",
+        "Source": "Reactome",
+        "Pval": 0.08933741481552449,
+        "RawTerm": "CREB Phosphorylation"
+      },
+      {
+        "Term": "Post-transcriptional Silencing by Small RNAs",
+        "Source": "Reactome",
+        "Pval": 0.08933741481552449,
+        "RawTerm": "Post-transcriptional Silencing by Small RNAs"
+      },
+      {
+        "Term": "miRNA regulation of p53 pathway in prostate cancer WP3982",
+        "Source": "WikiPathways",
+        "Pval": 0.11229711232811672,
+        "RawTerm": "miRNA regulation of p53 pathway in prostate cancer WP3982"
+      },
+      {
+        "Term": "IL-6 signaling pathway WP364",
+        "Source": "WikiPathways",
+        "Pval": 0.12963381733325663,
+        "RawTerm": "IL-6 signaling pathway WP364"
+      },
+      {
+        "Term": "Differentiation Pathway WP2848",
+        "Source": "WikiPathways",
+        "Pval": 0.12963381733325663,
+        "RawTerm": "Differentiation Pathway WP2848"
+      },
+      {
+        "Term": "Hepatitis C and Hepatocellular Carcinoma WP3646",
+        "Source": "WikiPathways",
+        "Pval": 0.12963381733325663,
+        "RawTerm": "Hepatitis C and Hepatocellular Carcinoma WP3646"
+      },
+      {
+        "Term": "Kit receptor signaling pathway WP304",
+        "Source": "WikiPathways",
+        "Pval": 0.13600247904330431,
+        "RawTerm": "Kit receptor signaling pathway WP304"
+      }
+    ]
+  },
+  "gene_research": {
+    "v2|ACVR2A|10": {
+      "pubmed": [
+        {
+          "pmid": "39107843",
+          "term": "Función biológica",
+          "source": "PubMed",
+          "desc": "",
+          "year_window": "10y"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "102581",
+          "title": "ACTIVIN A RECEPTOR, TYPE IIA; ACVR2A",
+          "url": "https://www.omim.org/entry/102581"
+        }
+      ],
+      "clinvar": {
+        "count": 38,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=ACVR2A%5BGene+Name%5D"
+      },
+      "trials": [],
+      "year_window_used": "10y"
+    },
+    "v2|AAK1|10": {
+      "pubmed": [
+        {
+          "pmid": "39655875",
+          "term": "Función biológica",
+          "source": "PubMed",
+          "desc": "",
+          "year_window": "10y"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "616405",
+          "title": "ADAPTOR PROTEIN 2-ASSOCIATED KINASE 1; AAK1",
+          "url": "https://www.omim.org/entry/616405"
+        }
+      ],
+      "clinvar": {
+        "count": 13,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=AAK1%5BGene+Name%5D"
+      },
+      "trials": [],
+      "year_window_used": "10y"
+    },
+    "v2|AGO4|10": {
+      "pubmed": [
+        {
+          "pmid": "27412786",
+          "term": "Función biológica",
+          "source": "PubMed",
+          "desc": "",
+          "year_window": "10y"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "607356",
+          "title": "ARGONAUTE RISC COMPONENT 4; AGO4",
+          "url": "https://www.omim.org/entry/607356"
+        }
+      ],
+      "clinvar": {
+        "count": 14,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=AGO4%5BGene+Name%5D"
+      },
+      "trials": [],
+      "year_window_used": "10y"
+    },
+    "v2|BRWD3|10": {
+      "pubmed": [
+        {
+          "pmid": "36017582",
+          "term": "Función biológica",
+          "source": "PubMed",
+          "desc": "",
+          "year_window": "any"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "300553",
+          "title": "BROMODOMAIN- AND WD REPEAT-CONTAINING PROTEIN 3; BRWD3",
+          "url": "https://www.omim.org/entry/300553"
+        }
+      ],
+      "clinvar": {
+        "count": 418,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=BRWD3%5BGene+Name%5D"
+      },
+      "trials": [],
+      "year_window_used": "10y_ampliado"
+    },
+    "v2|BNC2|10": {
+      "pubmed": [
+        {
+          "pmid": "37377048",
+          "term": "Función biológica",
+          "source": "PubMed",
+          "desc": "",
+          "year_window": "10y"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "608669",
+          "title": "BASONUCLIN 2; BNC2",
+          "url": "https://www.omim.org/entry/608669"
+        }
+      ],
+      "clinvar": {
+        "count": 110,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=BNC2%5BGene+Name%5D"
+      },
+      "trials": [],
+      "year_window_used": "10y"
+    }
+  }
+}

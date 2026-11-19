@@ -275,8 +275,9 @@ def test_install_source_update_end_to_end(tmp_path):
 
 
 def test_install_refuses_without_files_or_unknown_source(tmp_path):
+    # enrichr has no downloadable files (live API only).
     with pytest.raises(ValueError, match="no downloadable files"):
-        ku.install_source_update("targetscan", client=_mock_client(_install_handler),
+        ku.install_source_update("enrichr", client=_mock_client(_install_handler),
                                  base_dir=tmp_path)
     with pytest.raises(ValueError, match="unknown source"):
         ku.install_source_update("nope", client=_mock_client(_install_handler),
@@ -315,3 +316,49 @@ def test_install_endpoint(monkeypatch):
     with TestClient(ke.app) as client:
         r = client.post("/api/v1/updates/x/install")
     assert r.status_code == 400
+
+
+def test_reverse_endpoint():
+    import kenryu_engine as ke
+    from fastapi.testclient import TestClient
+
+    with TestClient(ke.app) as client:
+        r = client.get("/api/v1/reverse", params={"gene": "abca1"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["gene"] == "ABCA1"
+    # DB keys are TargetScan family names; the miR-33 family is mir-33-5p.
+    assert "mir-33-5p" in body["mirnas"]
+    assert body["n"] == len(body["mirnas"]) > 0
+    assert body["n"] == len(body["mirnas"])
+    with TestClient(ke.app) as client:
+        r = client.get("/api/v1/reverse", params={"gene": "ZZZZNOTAGENE"})
+    assert r.json()["mirnas"] == []
+
+
+def test_analyze_offline_end_to_end():
+    """The full pipeline with offline=true makes NO network calls and
+    still returns genes, local enrichment, validation, export, heatmap."""
+    import kenryu_engine as ke
+    from fastapi.testclient import TestClient
+
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-375", "hsa-miR-29a-3p", "hsa-miR-21-5p"],
+            "mode": "strict", "years": 10, "offline": True})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["offline"] is True
+    assert len(body["common_genes"]) == 6  # same core as the live run
+    assert body["common_genes"] == ["GMFB", "KLF12", "NFIA", "PDE3A", "SKI", "SOX6"]
+    assert body["enrichment"]  # local GMT enrichment
+    assert body["validation"]["summary"]["n_genes"] == 6
+    assert body["validation"]["data_sources"]["mirbase"] == "23.1"
+    assert body["export"]["schema_version"] == "1.0"
+    assert len(body["export"]["edges"]) > 0
+    assert body["heatmap_plot"]
+    assert body["venn_plot"] and body["volcano_plot"] and body["ppi_plot"]
+    # No live research in offline mode.
+    for res in body["gene_research"].values():
+        assert res["year_window_used"] == "offline"
+        assert res["pubmed"] == []

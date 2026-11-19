@@ -425,6 +425,218 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
         "references": references_text
     }
 
+def load_mirtarbase_gmt(path):
+    """Load the local miRTarBase gene-set library (Harmonizome GMT:
+    one row per miRNA: ``miRNA \\t MIRT-id \\t gene1 \\t gene2 ...``).
+    Returns {miRNA name: set(genes)}. Pure, no network."""
+    import gzip
+    db = {}
+    opener = gzip.open if str(path).endswith(".gz") else open
+    with opener(path, "rt", encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 3:
+                continue
+            name = parts[0].strip()
+            genes = {g.strip() for g in parts[2:] if g.strip()}
+            if name and genes:
+                db.setdefault(name, set()).update(genes)
+    return db
+
+
+def get_validated_local(mirna, db):
+    """Validated targets for one miRNA from the local miRTarBase library.
+    Tries the cleaned name and the name without the -5p/-3p suffix."""
+    if not db:
+        return set()
+    name = clean_mirna_name_cloud(mirna)
+    if name in db:
+        return set(db[name])
+    base = re.sub(r"-(5p|3p)$", "", name, flags=re.IGNORECASE)
+    if base in db:
+        return set(db[base])
+    return set()
+
+
+def load_gmt_library(path):
+    """Parse one GMT gene-set library (Enrichr format: one row per term:
+    ``Term \\t description \\t gene1 \\t gene2 ...``).
+    Returns {term: set(genes)}."""
+    lib = {}
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 3:
+                continue
+            term = parts[0].strip()
+            genes = {g.strip() for g in parts[2:] if g.strip()}
+            if term and genes:
+                lib[term] = genes
+    return lib
+
+
+def benjamini_hochberg(pvalues):
+    """Benjamini-Hochberg adjusted p-values. Returns a list aligned with
+    the input order. Pure stdlib."""
+    n = len(pvalues)
+    if n == 0:
+        return []
+    order = sorted(range(n), key=lambda i: pvalues[i])
+    adj = [0.0] * n
+    prev = 1.0
+    for rank in range(n - 1, -1, -1):
+        i = order[rank]
+        prev = min(prev, pvalues[i] * n / (rank + 1))
+        adj[i] = min(1.0, prev)
+    return adj
+
+
+def fisher_enrichment(genes, library, background=None, top_n=8, p_adj_max=0.3):
+    """Over-representation analysis of `genes` against one GMT library.
+    Fisher's exact test (scipy) + Benjamini-Hochberg. Returns up to
+    `top_n` terms with adjusted p < `p_adj_max`, sorted by adjusted p.
+    Each entry: {Term, Pval (adjusted), RawPval, Overlap, TermSize}."""
+    from scipy.stats import fisher_exact
+    genes = set(genes)
+    if not genes or not library:
+        return []
+    universe = background or set().union(*library.values())
+    n_bg = len(universe)
+    if n_bg == 0:
+        return []
+    rows = []
+    for term, term_genes in library.items():
+        term_genes = term_genes & universe
+        if not term_genes:
+            continue
+        overlap = len(genes & term_genes)
+        if overlap == 0:
+            continue
+        a = overlap
+        b = len(genes - term_genes)
+        c = len(term_genes - genes)
+        d = n_bg - a - b - c
+        if d < 0:
+            continue
+        _, p = fisher_exact([[a, b], [c, d]], alternative="greater")
+        rows.append({"Term": term, "Pval": p, "RawPval": p,
+                     "Overlap": overlap, "TermSize": len(term_genes)})
+    if not rows:
+        return []
+    adj = benjamini_hochberg([r["Pval"] for r in rows])
+    for r, p_adj in zip(rows, adj):
+        r["Pval"] = p_adj
+    rows = [r for r in rows if r["Pval"] < p_adj_max]
+    rows.sort(key=lambda r: r["Pval"])
+    return rows[:top_n]
+
+
+def local_enrichment(genes, libraries, top_total=24):
+    """Enrichment against several local GMT libraries (offline).
+    `libraries` maps a label (KEGG/Reactome/WikiPathways/GO) to a
+    {term: set(genes)} library. Returns the combined top terms in the
+    same shape the live Enrichr path produces."""
+    out = []
+    for label, library in libraries.items():
+        for row in fisher_enrichment(genes, library):
+            out.append({"Term": row["Term"], "Source": label,
+                        "Pval": row["Pval"], "RawTerm": row["Term"]})
+    out.sort(key=lambda r: r["Pval"])
+    return out[:top_total]
+
+
+def build_export(mirnas, common_genes, gene_details, enrichment,
+                 validation, gene_sets=None, schema_version="1.0"):
+    """Structured export of one analysis: a stable, documented schema
+    (genes table, miRNA->gene edges, enrichment table, validation table)
+    for downstream tools, Cytoscape and notebooks. Pure."""
+    import datetime
+    genes = []
+    for g in common_genes:
+        d = gene_details.get(g, {}) if gene_details else {}
+        v = (validation or {}).get("genes", {}).get(g, {})
+        genes.append({
+            "gene": g,
+            "full_name": d.get("full_name", g),
+            "validation_score": v.get("score"),
+            "validation_level": v.get("level"),
+            "validation_layers": v.get("layers", []),
+        })
+    edges = []
+    if gene_sets and mirnas:
+        for m, targets in zip(mirnas, gene_sets):
+            for g in sorted(set(targets) & set(common_genes)):
+                edges.append({"mirna": m, "gene": g, "evidence": "TargetScan"})
+    return {
+        "schema_version": schema_version,
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "panel": list(mirnas),
+        "data_sources": (validation or {}).get("data_sources", {}),
+        "genes": genes,
+        "edges": edges,
+        "enrichment": [
+            {"term": e.get("Term"), "source": e.get("Source"),
+             "p_adj": e.get("Pval")} for e in (enrichment or [])
+        ],
+        "validation_summary": (validation or {}).get("summary", {}),
+    }
+
+
+def heatmap_matrix(mirnas, common_genes, target_sets):
+    """Genes x miRNAs binary matrix: 1 when the gene is a target of the
+    miRNA. Returns (genes, mirnas, matrix) with genes sorted."""
+    genes = sorted(common_genes)
+    matrix = [[1 if g in s else 0 for s in target_sets] for g in genes]
+    return genes, list(mirnas), matrix
+
+
+def create_heatmap(mirnas, common_genes, target_sets):
+    """Heatmap PNG (base64) of the genes x miRNAs target matrix. Pure."""
+    import io as _io
+    genes, mirnas, matrix = heatmap_matrix(mirnas, common_genes, target_sets)
+    if not genes or not mirnas:
+        return None
+    arr = np.array(matrix, dtype=float)
+    fig, ax = plt.subplots(figsize=(max(4, len(mirnas) * 1.2),
+                                    max(3, len(genes) * 0.45)))
+    sns.heatmap(arr, ax=ax, cmap="YlGnBu", cbar=True, linewidths=0.5,
+                xticklabels=mirnas, yticklabels=genes)
+    ax.set_title("Genes diana por miRNA (1 = diana)")
+    plt.tight_layout()
+    buf = _io.BytesIO()
+    fig.savefig(buf, format="png", dpi=100)
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode()
+
+
+def reverse_lookup(gene, targetscan_db):
+    """miRNAs (families) whose local TargetScan set contains `gene`.
+    Pure scan of the local database. Returns a sorted list of miRNA names."""
+    gene = (gene or "").strip().upper()
+    if not gene:
+        return []
+    hits = []
+    for mirna, targets in (targetscan_db or {}).items():
+        if gene in targets:
+            hits.append(mirna)
+    return sorted(hits)
+
+
+def normalize_isomir(name):
+    """Map an isomiR notation to its canonical miRNA name.
+    Strips 3' trimming/extension marks (+N/-N) ONLY when they follow the
+    -5p/-3p arm suffix (e.g. hsa-miR-21-5p+2), shift annotations (|...),
+    and sequence suffixes, then applies the canonical cleaner.
+    Bare numbers are part of the name (hsa-miR-375 stays hsa-miR-375).
+    Quantifying isomiRs from FASTQ is out of scope; this only normalizes
+    the name so an isomiR label resolves to its canonical miRNA."""
+    n = (name or "").strip()
+    n = n.split("|")[0]
+    n = re.sub(r"(-[53]p)[+-]\d+$", r"\1", n)
+    n = re.sub(r"[^A-Za-z0-9\-]+$", "", n)
+    return clean_mirna_name_cloud(n)
+
+
 # ── VALIDATION OF EVERYTHING ──────────────────────────────────────────────
 # Every gene in the core gets a validation score from independent evidence
 # layers, each one verifiable on its own: predicted (TargetScan), experimentally
