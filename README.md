@@ -468,7 +468,7 @@ Kenryu/
 │   └── style.css                 # Dark mode · gold/teal accents
 │
 ├── data/
-│   ├── targetscan_full.json.zip  # TargetScan v8.0 indexed DB (Git LFS, ~8 MB)
+│   ├── targetscan_full.json.zip  # TargetScan v8.0 indexed DB (~8 MB, stored directly in the repo)
 │   └── hsa-miR-*.txt             # Pre-processed per-miRNA example files
 │
 └── local_db/                     # Runtime cache (auto-created, not in repo)

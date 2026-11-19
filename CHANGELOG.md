@@ -23,6 +23,12 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   converted to `hsa-miR-7a-5p`, so the remote miRTarBase lookup queried a
   name that does not exist. Now returns `hsa-let-7a-5p` (regression tests
   added).
+- The TargetScan database (`data/targetscan_full.json.zip`, 8.3 MB) was
+  only a Git LFS pointer in the repository: a fresh clone without
+  `git lfs pull` silently fell back to the 5 example files instead of the
+  285 families. The file is now stored directly in git (SHA-256 verified
+  against the LFS object) and `.gitattributes` / the CI `lfs: true` step
+  are gone, so any clone reproduces the full local analysis.
 
 ### Changed
 - CI: removed the dead Rust toolchain step (gseapy is gone) and added
