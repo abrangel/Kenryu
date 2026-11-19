@@ -796,3 +796,56 @@ def test_analyze_response_carries_engine_version():
             "years": 10, "mode": "strict", "offline": True})
     assert r.status_code == 200
     assert r.json()["engine_version"] == ke.APP_VERSION
+
+
+# ── Ronda 2, Commit B (v1.47) — H-08, H-14 ────────────────────────────────
+# Método: cada prueba se escribió primero y se confirmó que FALLA con el
+# código de v1.47-Commit-A; luego se corrige.
+
+
+def test_cors_rejects_other_hf_spaces():
+    """H-14: un Space ajeno (https://evil.hf.space) no recibe
+    access-control-allow-origin ni allow-credentials."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.options("/api/v1/analyze", headers={
+            "Origin": "https://evil.hf.space",
+            "Access-Control-Request-Method": "POST"})
+    assert r.headers.get("access-control-allow-origin") != "https://evil.hf.space"
+    assert r.headers.get("access-control-allow-credentials") != "true"
+
+
+def test_cors_allows_exact_space_origin():
+    """H-14: el origen exacto del Space sí recibe allow-origin (sin
+    credenciales: la app no usa cookies de sesión)."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.options("/api/v1/analyze", headers={
+            "Origin": "https://kenryu007-bioinformatica.hf.space",
+            "Access-Control-Request-Method": "POST"})
+    assert r.headers.get("access-control-allow-origin") == "https://kenryu007-bioinformatica.hf.space"
+    assert r.headers.get("access-control-allow-credentials") != "true"
+
+
+def test_security_headers_present():
+    """H-14: la respuesta lleva cabeceras de seguridad básicas
+    (X-Content-Type-Options: nosniff como mínimo)."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.get("/health")
+    assert r.headers.get("x-content-type-options") == "nosniff"
+
+
+def test_script_js_escapes_external_data_in_innerhtml():
+    """H-08: los datos externos y de usuario (gen buscado, genes del
+    consenso, términos de enriquecimiento, texto de síntesis) se escapan
+    antes de insertarse con innerHTML."""
+    from pathlib import Path
+    js = (Path(__file__).parent.parent / "static" / "script.js").read_text()
+    assert "function escapeHtml" in js
+    # Búsqueda inversa: el gen que escribe el usuario se refleja en la página.
+    assert "escapeHtml(data.gene)" in js
+    # Genes del consenso y tabla de validación.
+    assert "escapeHtml(g)" in js
+    # Términos de enriquecimiento (vienen de Enrichr).
+    assert "escapeHtml" in js and js.count("escapeHtml(") >= 6

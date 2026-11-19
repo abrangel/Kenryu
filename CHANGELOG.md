@@ -70,12 +70,40 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   investigados AGO4, MEIS1, PURB, RPS6KA3, WNK3 (80 alta), 13 "no
   evaluado". La versión de la caché no sube: ningún resultado cambia.
 
+### Ronda 2, Commit B: seguridad del Space (H-08, H-14)
+
+### XSS (H-08)
+- Nueva función `escapeHtml` en `static/script.js` y aplicada a todos
+  los datos externos y de usuario antes de `innerHTML`: gen buscado en
+  la búsqueda inversa (reflejaba la entrada del usuario), genes del
+  consenso (ahora en `data-gene`, no en un `onclick` interpolado),
+  tabla de validación, tabla de proteínas, términos de enriquecimiento,
+  mensajes de error, ficha del gen (nombre, sistema, patología,
+  proteína, rutas, PMID), esquema del informe, párrafos de síntesis y
+  contexto funcional, referencias (se escapa antes de enlazar las URLs)
+  y tabla de genes del informe.
+- Los PMID solo enlazan si son numéricos; la URL de UniProt solo se
+  renderiza si es `https://rest.uniprot.org/`; las imágenes solo se
+  insertan si el base64 es válido.
+
+### CORS y cabeceras (H-14)
+- CORS: solo el origen exacto del Space
+  (`https://kenryu007-bioinformatica.hf.space`); eliminado el regex
+  `https://.*\.hf\.space` y `allow_credentials=True` (la app no usa
+  cookies de sesión: `allow_credentials=False`).
+- Middleware de cabeceras: `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin` y
+  `Content-Security-Policy` (permite los CDN que usa la interfaz —
+  cdnjs, Google Fonts — y `frame-ancestors` solo para Hugging Face, de
+  modo que la vista del Space sigue funcionando). La CSP lleva
+  `'unsafe-inline'` en scripts y estilos porque la UI usa manejadores
+  `onclick` y estilos en línea; la defensa contra XSS es `escapeHtml`,
+  no el bloqueo de scripts.
+
 ### Tests
-- 116/116 (13 nuevos en v1.47: consenso vacío, duplicados, missing_mirnas,
-  advertencia de 1 miRNA, mode 422, sin confidence, barra de rigor,
-  síntesis sin causalidad, etiqueta de significancia, conclusión como
-  hipótesis, sin versión fija, engine_version en la respuesta, búsqueda
-  inversa insensible a mayúsculas).
+- 120/120 (4 nuevos en Commit B: CORS rechaza otro Space, CORS acepta
+  el origen exacto sin credenciales, cabeceras de seguridad presentes,
+  escape en innerHTML).
 
 ## [1.46] — 2026-11-19
 

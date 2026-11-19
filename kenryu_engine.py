@@ -1247,25 +1247,50 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 APP_VERSION = "1.47"
 app = FastAPI(title="KENRYU Bioinformatics Engine", version=APP_VERSION)
 
-# Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
+# Seguridad CORS (H-14, v1.47): solo el origen exacto del Space. Antes el
+# regex https://.*\.hf\.space con allow_credentials=True confiaba en
+# cualquier Space de terceros. La app no usa cookies de sesión, así que
+# allow_credentials=False.
+SPACE_ORIGIN = "https://kenryu007-bioinformatica.hf.space"
 origins = [
     "http://localhost",
     "http://localhost:3001",
     "http://127.0.0.1",
     "http://127.0.0.1:3001",
     "https://huggingface.co",
-    "https://*.hf.space",
+    SPACE_ORIGIN,
     "https://abrangel.github.io",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.hf\.space", # Soporte dinámico para subdominios de Hugging Face
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["GET", "POST", "HEAD", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    """Cabeceras de seguridad básicas (H-14, v1.47).
+    La CSP permite los CDN que usa la interfaz (cdnjs, Google Fonts) y
+    'unsafe-inline' en scripts y estilos porque la UI usa manejadores
+    onclick y estilos en línea; la defensa contra XSS es escapeHtml en
+    el frontend, no el bloqueo de scripts. frame-ancestors permite el
+    iframe de Hugging Face Spaces (la vista del Space) y nada más."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        "img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; "
+        "frame-ancestors 'self' https://huggingface.co https://*.hf.space;"
+    )
+    return response
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

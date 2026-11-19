@@ -6,6 +6,18 @@ const API_URL = (window.location.hostname === 'localhost' || window.location.hos
     : ''; // En HuggingFace: rutas relativas (el mismo servidor sirve el frontend)
 
 let lastData = null;
+
+// H-08 (v1.47): escapar datos externos y de usuario antes de insertarlos
+// con innerHTML. Sin esto, un gen, un término de Enrichr o un mensaje de
+// error con HTML se ejecuta como código en la página.
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 let pageCount = 1;
 let sectionCount = 4;
 let isPreview = false;
@@ -45,7 +57,7 @@ function addLog(msg, type = '') {
   d.className = 'log-line';
   const ts = new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const cls = type === 'ok' ? 'ok' : (type === 'err' ? 'err' : '');
-  d.innerHTML = `<span class="log-ts">${ts}</span><span class="log-msg ${cls}">${msg}</span>`;
+  d.innerHTML = `<span class="log-ts">${ts}</span><span class="log-msg ${cls}">${escapeHtml(msg)}</span>`;
   log.appendChild(d);
   log.scrollTop = log.scrollHeight;
 }
@@ -104,14 +116,18 @@ function renderDashboard(data) {
       genesEl.innerHTML = data.common_genes.map(g => {
         const d = data.gene_details && data.gene_details[g];
         const dot = sysColor(d && d.system);
-        return `<span class="gene-pill" onclick="openGenePanel('${g}')"><i class="fas fa-circle" style="font-size:5px;color:${dot};margin-right:5px;"></i>${g}</span>`;
+        // H-08: el gen va en data-gene (escapado), no en un onclick con
+        // interpolación — una comilla en el símbolo rompería el handler.
+        return `<span class="gene-pill" data-gene="${escapeHtml(g)}" onclick="openGenePanel(this.dataset.gene)"><i class="fas fa-circle" style="font-size:5px;color:${dot};margin-right:5px;"></i>${escapeHtml(g)}</span>`;
       }).join('');
     }
 
     const setImg = (id, b64) => {
       const el = document.getElementById(id);
       if (el) {
-        if (b64) el.innerHTML = `<img src="data:image/png;base64,${b64}">`;
+        // H-08: solo base64 válido llega al src; cualquier otra cosa es
+        // "Imagen no disponible".
+        if (b64 && /^[A-Za-z0-9+/=]+$/.test(b64)) el.innerHTML = `<img src="data:image/png;base64,${b64}">`;
         else el.innerHTML = '<div style="color:var(--text-faint); font-size:11px; padding:40px;">Imagen no disponible.</div>';
       }
     };
@@ -134,7 +150,7 @@ function renderDashboard(data) {
           const levelColor = gv.level === 'alta' ? 'var(--teal)' : gv.level === 'media' ? 'var(--gold)' : gv.level === 'not_evaluated' ? 'var(--text-dim)' : 'var(--red)';
           const levelLabel = gv.level === 'not_evaluated' ? 'no evaluado' : gv.level;
           const scoreText = gv.score === null || gv.score === undefined ? '—' : `${gv.score}/100`;
-          html += `<tr><td><b>${gene}</b></td><td><span style="font-family:var(--font-mono);">${scoreText}</span></td><td><span style="color:${levelColor}; font-weight:600;">${levelLabel}</span></td><td style="font-size:11px;">${(gv.layers || []).join('<br>') || '—'}</td><td style="font-size:11px; color:var(--text-dim);">${(gv.missing || []).join('<br>') || '—'}</td></tr>`;
+          html += `<tr><td><b>${escapeHtml(gene)}</b></td><td><span style="font-family:var(--font-mono);">${scoreText}</span></td><td><span style="color:${levelColor}; font-weight:600;">${escapeHtml(levelLabel)}</span></td><td style="font-size:11px;">${(gv.layers || []).map(escapeHtml).join('<br>') || '—'}</td><td style="font-size:11px; color:var(--text-dim);">${(gv.missing || []).map(escapeHtml).join('<br>') || '—'}</td></tr>`;
         }
         html += '</tbody></table>';
         const ds = v.data_sources || {};
@@ -153,10 +169,10 @@ function renderDashboard(data) {
         // H-17 (v1.47): avisar en la interfaz de los miRNAs sin datos y
         // del panel de un solo miRNA (sin convergencia multi-miRNA).
         if (data.missing_mirnas && data.missing_mirnas.length) {
-          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">miRNAs sin datos en ninguna fuente (no entraron al consenso): ${data.missing_mirnas.join(', ')}</div>`;
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">miRNAs sin datos en ninguna fuente (no entraron al consenso): ${data.missing_mirnas.map(escapeHtml).join(', ')}</div>`;
         }
         if (data.single_mirna_warning) {
-          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">${data.single_mirna_warning}</div>`;
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">${escapeHtml(data.single_mirna_warning)}</div>`;
         }
         if (data.enrichment_note) {
           html += `<div style="margin-top:4px; color:var(--text-dim); font-size:11px;">${data.enrichment_note}</div>`;
@@ -175,12 +191,14 @@ function renderDashboard(data) {
       const rows = (data.common_genes || []).map(g => {
         const d = gd[g] || {};
         const p = d.protein;
-        if (!p) return `<tr><td><b>${g}</b></td><td colspan="3" style="color:var(--text-faint); font-size:11px;">Sin datos de UniProt (sin internet o sin entrada revisada).</td></tr>`;
+        if (!p) return `<tr><td><b>${escapeHtml(g)}</b></td><td colspan="3" style="color:var(--text-faint); font-size:11px;">Sin datos de UniProt (sin internet o sin entrada revisada).</td></tr>`;
         const func = (p.function || '—').slice(0, 220);
         const dis = (p.diseases || []).join('; ') || '—';
         const loc = (p.locations || []).join(', ') || '—';
-        const link = p.url ? `<br><a href="${p.url}" target="_blank" style="color:var(--gold); font-size:10px;">UniProt ${p.uniprot_id}</a>` : '';
-        return `<tr><td><b>${g}</b><br><span style="color:var(--text-dim); font-size:11px;">${p.protein_name || ''}</span>${link}</td><td style="font-size:11px;">${func}</td><td style="font-size:11px;">${loc}</td><td style="font-size:11px;">${dis}</td></tr>`;
+        // H-08: el enlace solo se renderiza si es una URL https de UniProt.
+        const link = (p.url && p.url.startsWith('https://rest.uniprot.org/'))
+          ? `<br><a href="${escapeHtml(p.url)}" target="_blank" style="color:var(--gold); font-size:10px;">UniProt ${escapeHtml(p.uniprot_id || '')}</a>` : '';
+        return `<tr><td><b>${escapeHtml(g)}</b><br><span style="color:var(--text-dim); font-size:11px;">${escapeHtml(p.protein_name || '')}</span>${link}</td><td style="font-size:11px;">${escapeHtml(func)}</td><td style="font-size:11px;">${escapeHtml(loc)}</td><td style="font-size:11px;">${escapeHtml(dis)}</td></tr>`;
       }).join('');
       prEl.innerHTML = rows
         ? `<table class="sci-table"><thead><tr><th>Gen / Proteína</th><th>Qué hace</th><th>Dónde trabaja</th><th>Enfermedad asociada</th></tr></thead><tbody>${rows}</tbody></table>`
@@ -202,11 +220,12 @@ function renderDashboard(data) {
             if (Array.isArray(item.Evidence) && item.Evidence.length > 0) pmid = item.Evidence[0].id || item.Evidence[0];
             else pmid = item.Evidence.id || item.Evidence;
           }
-          
-          const pLink = pmid ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${pmid}" target="_blank" style="color:var(--gold); font-family:var(--font-mono); font-size:10px; font-weight:600; text-decoration:none; border-bottom:1px solid var(--gold-dim);">PMID: ${pmid}</a>` : '<span style="color:var(--text-faint); font-size:10px;">Sin evidencia</span>';
-          
-          html += `<tr><td><span style="font-weight:500;">${item.Term || '—'}</span><br><small style="color:var(--text-dim);">${item.ScientificDesc || ''}</small></td>
-            <td><span class="source-tag">${item.Source || '—'}</span></td>
+          // H-08: el PMID debe ser numérico; cualquier otra cosa no enlaza.
+          const pmidOk = pmid !== null && pmid !== undefined && /^[0-9]+$/.test(String(pmid));
+          const pLink = pmidOk ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${pmid}" target="_blank" style="color:var(--gold); font-family:var(--font-mono); font-size:10px; font-weight:600; text-decoration:none; border-bottom:1px solid var(--gold-dim);">PMID: ${pmid}</a>` : '<span style="color:var(--text-faint); font-size:10px;">Sin evidencia</span>';
+
+          html += `<tr><td><span style="font-weight:500;">${escapeHtml(item.Term || '—')}</span><br><small style="color:var(--text-dim);">${escapeHtml(item.ScientificDesc || '')}</small></td>
+            <td><span class="source-tag">${escapeHtml(item.Source || '—')}</span></td>
             <td><span style="font-family:var(--font-mono); font-size:11px;">${pvalVal}</span></td>
             <td>${pLink}</td></tr>`;
         });
@@ -263,14 +282,14 @@ async function reverseLookup() {
     const pills = data.mirnas.map(m => {
       const inPanel = panelFams.some(f => m.split('/').includes(f));
       const style = inPanel ? 'background:var(--gold-dim); border-color:var(--gold); color:var(--gold);' : '';
-      return `<span class="gene-pill" style="${style}">${m}</span>`;
+      return `<span class="gene-pill" style="${style}">${escapeHtml(m)}</span>`;
     }).join('');
-    out.innerHTML = `<div style="margin-bottom:8px; font-size:13px;"><b>${data.gene}</b> es diana de <b>${data.n}</b> familias de miRNAs.</div>` +
+    out.innerHTML = `<div style="margin-bottom:8px; font-size:13px;"><b>${escapeHtml(data.gene)}</b> es diana de <b>${data.n}</b> familias de miRNAs.</div>` +
       (data.n
         ? `<div style="color:var(--text-dim); font-size:11px; margin-bottom:6px;">Las doradas son de tu panel actual.</div><div class="genes-wrap">${pills}</div>`
         : '<div style="color:var(--text-dim); font-size:12px;">Ningún miRNA de la base lo regula (o el gen no está en TargetScan).</div>');
   } catch (e) {
-    out.innerHTML = `<div style="color:var(--red); font-size:12px;">Error: ${e.message}</div>`;
+    out.innerHTML = `<div style="color:var(--red); font-size:12px;">Error: ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -286,11 +305,11 @@ async function openGenePanel(gene) {
   document.getElementById('gene-panel-body').innerHTML = `
     <div style="margin-bottom:20px;">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase;">Identificación Genómica</small>
-      <div style="font-family:var(--font-serif); font-size:16px; color:var(--text-main); margin-top:4px;">${d.full_name}</div>
+      <div style="font-family:var(--font-serif); font-size:16px; color:var(--text-main); margin-top:4px;">${escapeHtml(d.full_name)}</div>
     </div>
     <div style="margin-bottom:20px;">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase;">Sistema Fisiológico</small>
-      <div style="color:var(--gold); font-weight:600; font-size:13.5px; margin-top:4px;">${d.system}</div>
+      <div style="color:var(--gold); font-weight:600; font-size:13.5px; margin-top:4px;">${escapeHtml(d.system)}</div>
     </div>
     <div style="margin-bottom:20px;">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase;">Rigor Científico</small>
@@ -305,22 +324,22 @@ async function openGenePanel(gene) {
     </div>
     <div style="margin-bottom:20px; padding:15px; background:rgba(200,169,110,0.03); border-radius:8px; border-left:4px solid var(--gold);">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Relevancia Patológica Detallada</small>
-      <div style="font-family:'Spectral', serif; font-size:13.5px; text-align:justify; color:var(--text); line-height:1.7;">${d.pathology}</div>
+      <div style="font-family:'Spectral', serif; font-size:13.5px; text-align:justify; color:var(--text); line-height:1.7;">${escapeHtml(d.pathology)}</div>
     </div>
     ${d.protein ? `<div style="margin-bottom:20px; padding:15px; background:rgba(79,195,161,0.05); border-radius:8px; border-left:4px solid var(--teal);">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Proteína (UniProt)</small>
-      <div style="font-size:13.5px; font-weight:600; color:var(--text);">${d.protein.protein_name} <a href="${d.protein.url}" target="_blank" style="color:var(--gold); font-size:11px; font-family:var(--font-mono);">${d.protein.uniprot_id}</a></div>
-      <div style="font-size:12px; color:var(--text-dim); line-height:1.6; margin-top:6px;">${d.protein.function || 'Sin descripción en UniProt.'}</div>
-      ${d.protein.locations && d.protein.locations.length ? `<div style="font-size:11px; color:var(--text-dim); margin-top:6px;">Dónde: ${d.protein.locations.join(', ')}</div>` : ''}
-      ${d.protein.diseases && d.protein.diseases.length ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Enfermedad: ${d.protein.diseases.join('; ')}</div>` : ''}
+      <div style="font-size:13.5px; font-weight:600; color:var(--text);">${escapeHtml(d.protein.protein_name)} ${(d.protein.url && d.protein.url.startsWith('https://rest.uniprot.org/')) ? `<a href="${escapeHtml(d.protein.url)}" target="_blank" style="color:var(--gold); font-size:11px; font-family:var(--font-mono);">${escapeHtml(d.protein.uniprot_id || '')}</a>` : escapeHtml(d.protein.uniprot_id || '')}</div>
+      <div style="font-size:12px; color:var(--text-dim); line-height:1.6; margin-top:6px;">${escapeHtml(d.protein.function || 'Sin descripción en UniProt.')}</div>
+      ${d.protein.locations && d.protein.locations.length ? `<div style="font-size:11px; color:var(--text-dim); margin-top:6px;">Dónde: ${d.protein.locations.map(escapeHtml).join(', ')}</div>` : ''}
+      ${d.protein.diseases && d.protein.diseases.length ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Enfermedad: ${d.protein.diseases.map(escapeHtml).join('; ')}</div>` : ''}
     </div>` : ''}
     <div style="margin-bottom:10px;">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase;">Rutas Metabólicas de Consenso</small>
       <div style="font-size:11.5px; color:var(--text-dim); line-height:1.7; margin-top:8px; font-style:italic;">
-        ${(d.associated_routes||[]).map(r => `<i class="fas fa-microscope" style="font-size:10px; margin-right:8px; color:var(--teal);"></i>${r}`).join('<br>')}
+        ${(d.associated_routes||[]).map(r => `<i class="fas fa-microscope" style="font-size:10px; margin-right:8px; color:var(--teal);"></i>${escapeHtml(r)}`).join('<br>')}
       </div>
     </div>
-    ${d.pmid ? `<div style="margin-top:25px; padding-top:15px; border-top:1px solid var(--border);"><a href="https://pubmed.ncbi.nlm.nih.gov/${d.pmid}" target="_blank" style="color:var(--teal); font-family:var(--font-mono); font-size:11px; text-decoration:none; display:flex; align-items:center; gap:8px; font-weight:600;"><i class="fas fa-book-medical"></i> VERIFICAR EVIDENCIA (PMID: ${d.pmid})</a></div>` : ''}
+    ${d.pmid && /^[0-9]+$/.test(String(d.pmid)) ? `<div style="margin-top:25px; padding-top:15px; border-top:1px solid var(--border);"><a href="https://pubmed.ncbi.nlm.nih.gov/${d.pmid}" target="_blank" style="color:var(--teal); font-family:var(--font-mono); font-size:11px; text-decoration:none; display:flex; align-items:center; gap:8px; font-weight:600;"><i class="fas fa-book-medical"></i> VERIFICAR EVIDENCIA (PMID: ${d.pmid})</a></div>` : ''}
   `;
 }
 function closeGenePanel() { document.getElementById('gene-panel').classList.remove('open'); }
@@ -394,7 +413,7 @@ function updateOutline() {
     let text = heading ? heading.innerText.replace(/^\w+\.\s*/, '').trim() : ('Sección '+(i+1));
     const div = document.createElement('div');
     div.className = 'outline-item';
-    div.innerHTML = `<span style="margin-right:6px;color:#888;">${romanize(i+1)}</span> ${text}`;
+    div.innerHTML = `<span style="margin-right:6px;color:#888;">${romanize(i+1)}</span> ${escapeHtml(text)}`;
     div.onclick = () => sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
     list.appendChild(div);
   });
@@ -767,7 +786,7 @@ function initReportWithData(data) {
         <div class="meta-id" style="font-size:18px;">${repId}</div>
         <div class="meta-date-val">${dateStr}</div>
         <div class="meta-inst-val">Análisis Genómico Avanzado</div>
-        <div class="meta-ver-val">v${data.engine_version || '—'} (Stable)</div>
+        <div class="meta-ver-val">v${escapeHtml(data.engine_version || '—')} (Stable)</div>
       </div>
     </div>
     <div style="margin-top:60mm; text-align:center;">
@@ -788,7 +807,7 @@ function initReportWithData(data) {
     pTag.className = 'editable-block';
     pTag.contentEditable = 'true';
     pTag.style.cssText = "width:100%; font-family:'Spectral', serif; line-height:1.75; font-size:14px; text-align:justify; margin-bottom:18px;";
-    pTag.innerHTML = p.replace(/\n/g, '<br>');
+    pTag.innerHTML = escapeHtml(p).replace(/\n/g, '<br>');
     tempContainer.appendChild(pTag);
   });
 
@@ -801,7 +820,7 @@ function initReportWithData(data) {
       pTag.className = 'editable-block';
       pTag.contentEditable = 'true';
       pTag.style.cssText = "width:100%; font-family:'Spectral', serif; line-height:1.75; font-size:13px; text-align:justify; margin-bottom:15px;";
-      pTag.innerHTML = p.replace(/\n/g, '<br>');
+      pTag.innerHTML = escapeHtml(p).replace(/\n/g, '<br>');
       tempContainer.appendChild(pTag);
     });
   }
@@ -821,8 +840,9 @@ function initReportWithData(data) {
       pTag.contentEditable = 'true';
       pTag.style.cssText = "width:100%; font-family:'Spectral', serif; line-height:1.45; font-size:11.5px; text-align:justify; margin-bottom:12px;";
       
-      // Asegurar que las URLs sean hipervínculos reales
-      const linkedText = p.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:#1a3a6b; text-decoration:underline;">$1</a>');
+      // Asegurar que las URLs sean hipervínculos reales (H-08: primero se
+      // escapa el texto y luego se enlazan las URLs ya escapadas).
+      const linkedText = escapeHtml(p).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:#1a3a6b; text-decoration:underline;">$1</a>');
       pTag.innerHTML = linkedText.replace(/\n/g, '<br>');
       tempContainer.appendChild(pTag);
     });
@@ -853,7 +873,7 @@ function initReportWithData(data) {
     const block = document.createElement('div');
     block.className = 'report-section gene-block';
     block.style.cssText = "margin-bottom:15px; padding:10px; border-left:3px solid #1a3a6b; background:#f9fbfc;";
-    block.innerHTML = `<div class="gene-block-name" style="font-weight:bold; color:#1a3a6b; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:6px;">${g} — ${d.system||'—'}</div><div class="gene-block-text" contenteditable="true" style="font-size:12px; line-height:1.4; text-align:justify;">${(d.pathology||'—').replace(/\n/g, '<br>')}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#1a3a6b; margin-top:6px;">Rutas: <i>${(d.associated_routes||[]).join(', ')||'—'}</i></div>`;
+    block.innerHTML = `<div class="gene-block-name" style="font-weight:bold; color:#1a3a6b; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:6px;">${escapeHtml(g)} — ${escapeHtml(d.system||'—')}</div><div class="gene-block-text" contenteditable="true" style="font-size:12px; line-height:1.4; text-align:justify;">${escapeHtml(d.pathology||'—').replace(/\n/g, '<br>')}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#1a3a6b; margin-top:6px;">Rutas: <i>${(d.associated_routes||[]).map(escapeHtml).join(', ')||'—'}</i></div>`;
     tempContainer.appendChild(block);
   });
 
