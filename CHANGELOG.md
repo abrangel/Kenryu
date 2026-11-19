@@ -2,6 +2,81 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.47] — 2026-11-19
+
+### Ronda 2, Commit A: afirmaciones y consistencia (H-12, H-18, H-11, H-17, H-16, H-21)
+### H-04 NO está aquí: es decisión del usuario (corregir el texto o cambiar el código a evidencia dual), pendiente.
+
+### Consenso (H-17)
+- `consensus_genes` ya no lanza `TypeError` con lista vacía (devuelve `set()`).
+- Los miRNAs duplicados en el panel no sesgan el umbral de N-1/N-2: se
+  deduplican preservando el orden, en `analyze()` y en `consensus_genes`.
+- La respuesta lleva `missing_mirnas` (miRNAs sin datos en ninguna fuente,
+  antes descartados en silencio) y `single_mirna_warning` cuando el panel
+  tiene un solo miRNA con datos (no hay convergencia multi-miRNA). Ambos
+  se muestran en la interfaz.
+- `mode` fuera de {strict, n-1, n-2} ya devolvía 422 desde v1.45 (test de
+  regresión añadido).
+
+### Puntaje de confianza fijo (H-18)
+- Eliminado el campo `confidence` (85/88/92/95) de `get_gene_details`.
+  La barra "Rigor Científico" usa solo el puntaje real del dossier de
+  validación; si el gen es "no evaluado" muestra "Sin evaluar", sin barra.
+
+### Síntesis académica (H-12)
+- Sin `clinical_evidence`, la síntesis ya no afirma "consecuencias
+  directas en la estabilidad tisular" ni cita con un índice `[i+1]` que
+  no corresponde a nada: es una predicción computacional, pendiente de
+  validación experimental.
+- La etiqueta de significancia dice solo significancia estadística:
+  nunca "significancia funcional" ni "equilibrio fisiológico".
+- La conclusión genérica de un gen sin preset ya no lo llama "punto
+  crítico de intervención": lo presenta como candidato para validación
+  experimental.
+- NO se tocó la frase de la introducción ("intersección de TargetScan y
+  miRTarBase"): es parte de H-04, pendiente de la decisión del usuario.
+
+### Bibliografía (H-11)
+- `paper.bib` corregido contra Crossref (y PubMed para Sayers): Lewis
+  2005 (título y autor — "Benjamin P.", no "Christopher B." — clave
+  renombrada a `lewis2005conserved`), Huang 2022 (35 autores completos,
+  clave `huang2022mirtarbase`), Sayers 2022 (páginas D20-D26, no
+  D11-D18; 25 autores), Ru 2014 (autor "Yuanbin", no "Yi"; "Katerina",
+  no "Katherina"; número 17, no 21), Sticht 2018 (De La Torre
+  "Carolina", no "Cecilia"). Añadido McGeary et al. 2019 (TargetScan v8,
+  Science 366:eaav1741) y citado en `paper.md`. Las claves renombradas
+  se actualizaron en `paper.md`. Las entradas no marcadas por la
+  auditoría no se tocaron (no verificadas en esta ronda).
+- El DOI de Zenodo (10.5281/zenodo.20564689) SÍ resuelve (la auditoría
+  solo consultó Crossref, que no indexa DOIs de DataCite).
+
+### Símbolos génicos (H-16)
+- `reverse_lookup` ya no distingue mayúsculas: `C8orf58` se encuentra
+  aunque TargetScan lo guarde con minúsculas.
+- Documentado en ambos README (Limitaciones conocidas): no hay mapeo de
+  alias HGNC, y los FASTA locales de miRBase (14 MB) los descarga el
+  actualizador pero no se usan para validar nombres.
+
+### Exportación Markdown (H-21)
+- Los miRNAs del frontmatter YAML se serializan con `JSON.stringify`
+  (una comilla o un salto de línea ya no rompe el YAML).
+- La versión ya no es un literal fijo `v1.38`: la respuesta de `/analyze`
+  lleva `engine_version` (constante única `APP_VERSION`) y la
+  exportación y la portada la leen de ahí.
+
+### Regresión
+- Panel de la tesis, sin cambio: ABCA1 100 alta, SCN1A 60 media,
+  KPNA3/SNTB2/TSC22D2 50 media. Panel de cáncer, sin cambio:
+  investigados AGO4, MEIS1, PURB, RPS6KA3, WNK3 (80 alta), 13 "no
+  evaluado". La versión de la caché no sube: ningún resultado cambia.
+
+### Tests
+- 116/116 (13 nuevos en v1.47: consenso vacío, duplicados, missing_mirnas,
+  advertencia de 1 miRNA, mode 422, sin confidence, barra de rigor,
+  síntesis sin causalidad, etiqueta de significancia, conclusión como
+  hipótesis, sin versión fija, engine_version en la respuesta, búsqueda
+  inversa insensible a mayúsculas).
+
 ## [1.46] — 2026-11-19
 
 ### Ronda 1, último hallazgo: H-06 (sesgo alfabético)

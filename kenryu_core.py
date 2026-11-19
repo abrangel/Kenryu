@@ -58,6 +58,17 @@ def consensus_genes(gene_sets: list, mode: str) -> set:
     n-2: genes in at least n-2 sets. Unknown modes behave like n-2.
     Extracted verbatim from analyze() so the logic is unit-testable.
     """
+    if not gene_sets:  # H-17 (v1.47): lista vacía → conjunto vacío, no TypeError.
+        return set()
+    # H-17 (v1.47): deduplicar los conjuntos (los sets no son hashables,
+    # se comparan por igualdad) — los duplicados sesgaban el umbral de
+    # N-1/N-2 al contar como miRNAs distintos. analyze() también deduplica
+    # los nombres de miRNA antes de llamar aquí.
+    unique_sets = []
+    for s in gene_sets:
+        if s not in unique_sets:
+            unique_sets.append(s)
+    gene_sets = unique_sets
     if mode == "strict" or len(gene_sets) == 1:
         return set.intersection(*gene_sets)
     n = len(gene_sets)
@@ -310,7 +321,11 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
                 para += ("\n\nPrimeros resultados en PubMed (búsqueda por gen + término; "
                          "no se verificó que respalden la nota anterior):\n" + "\n".join(live_lines))
         else:
-            para += f" Su regulación por el panel de miRNAs analizado tiene consecuencias directas en la estabilidad tisular [{i+1}].\n"
+            # H-12 (v1.47): sin clinical_evidence no se afirma causalidad
+            # ni se cita un índice [i+1] que no corresponde a nada: es una
+            # predicción computacional, pendiente de validación experimental.
+            para += (" Su regulación por el panel de miRNAs analizado es una "
+                     "predicción computacional, pendiente de validación experimental.\n")
 
         # Evidencia genómica multi-fuente (OMIM / ClinVar / ClinicalTrials)
         # Se construye un párrafo narrativo continuo, omitiendo silenciosamente
@@ -404,17 +419,20 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
         evidence = item.get('Evidence')
 
         # Cualificador de significancia según p-adj
+        # H-12 (v1.47): la etiqueta dice significancia estadística y nada
+        # más — nunca "significancia funcional" ni equilibrio fisiológico,
+        # que el dato no sostiene.
         if pval < 0.001:
             significance = "alta significancia estadística"
         elif pval < 0.01:
             significance = "significancia robusta"
         else:
-            significance = "significancia funcional"
+            significance = "significancia estadística"
 
         para = (
             f"La vía de {term} ({source}, p-adj={pval:.4f}) destaca por su {significance}. "
-            f"Las investigaciones asocian esta ruta con la respuesta adaptativa celular, "
-            f"integrando las señales de los genes core para mantener el equilibrio fisiológico."
+            f"El enriquecimiento indica que los genes del panel se concentran en esta ruta "
+            f"más de lo esperado por azar."
         )
         # Si el enriquecimiento devolvió evidencia PubMed, anclar la cita aquí
         if evidence and evidence.get("id"):
@@ -703,9 +721,12 @@ def reverse_lookup(gene, targetscan_db):
     gene = (gene or "").strip().upper()
     if not gene:
         return []
+    # H-16 (v1.47): TargetScan guarda símbolos con minúsculas
+    # (p. ej. 'C8orf58'); la comparación es insensible a mayúsculas.
     hits = []
     for mirna, targets in (targetscan_db or {}).items():
-        if gene in targets:
+        upper_targets = {t.upper() for t in targets}
+        if gene in upper_targets:
             hits.append(mirna)
     return sorted(hits)
 

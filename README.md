@@ -458,6 +458,7 @@ KENRYU has been validated live against the deployed Space (`POST /api/v1/analyze
 - **miRTarBase is a local snapshot (Harmonizome, 2026-11-18), not the official database.** Coverage varies per miRNA: for example, `hsa-miR-758-3p` has no entry in the snapshot although the literature reports validated targets (ABCA1, MDM2, MTOR, NOTCH2). A gene whose miRNA lacks a snapshot entry can score at most "medium" — that is honest about what the file knows, not about the biology. Replacing the snapshot with the official miRTarBase (strong/weak evidence + PMID per interaction) is the next planned change.
 - **Enrichment background is the union of each GMT library**, not a curated reference universe; treat cross-library comparisons with care (fix planned).
 - **KEGG is not redistributed in this repository** (license: Kanehisa Labs prohibits repackaging KEGG without an agreement — see `DATA_LICENSES.md`). KEGG enrichment is available through the live Enrichr path; the offline path uses Reactome, WikiPathways and GO only.
+- **No HGNC alias mapping.** Gene symbols are compared as stored: TargetScan (~2021), the GMT libraries (2019–2024) and the live APIs can spell the same gene differently, and an alias will not match. Reverse lookup is case-insensitive since v1.47, but an old alias (e.g. a renamed gene) still needs the current symbol. The local miRBase FASTA files (`local_db/mirbase_*.fa`, 14 MB) are downloaded by the updater but are not used for name validation; they stay in the repository as updater-managed data.
 
 ---
 

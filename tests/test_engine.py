@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.46"
+    assert body["version"] == "1.47"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -620,3 +620,179 @@ def test_analyze_offline_reports_source_per_mirna():
         "years": 10, "mode": "strict", "offline": True})
     assert r2.status_code == 200
     assert all(v.startswith("TargetScan") for v in r2.json()["source_by_mirna"].values())
+
+
+# ── Ronda 2, Commit A (v1.47) — H-17, H-18, H-12, H-21 ─────────────────────
+# Método: cada prueba se escribió primero y se confirmó que FALLA con el
+# código de v1.46; luego se corrige. H-04 (paper.md / caso de estudio /
+# core:265-266) NO está aquí: es decisión del usuario, pendiente.
+
+
+def test_consensus_genes_empty_returns_empty_set():
+    """H-17: consensus_genes([], ...) no debe lanzar TypeError."""
+    assert ke.consensus_genes([], "strict") == set()
+    assert ke.consensus_genes([], "n-1") == set()
+    assert ke.consensus_genes([], "n-2") == set()
+
+
+def test_consensus_dedupes_duplicate_mirnas():
+    """H-17: los duplicados no deben sesgar el umbral de N-1/N-2.
+    [21,21,21,155] en n-1 debe dar lo mismo que [21,155]."""
+    s21 = {"A", "B", "C", "D"}
+    s155 = {"C", "D", "E"}
+    assert ke.consensus_genes([s21, s21, s21, s155], "n-1") == ke.consensus_genes([s21, s155], "n-1")
+
+
+def test_analyze_reports_missing_mirnas():
+    """H-17: un miRNA sin datos en ninguna fuente aparece en
+    'missing_mirnas' en vez de descartarse en silencio."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-21-5p", "hsa-miR-9999-5p", "hsa-miR-155-5p"],
+            "years": 10, "mode": "strict", "offline": True})
+    assert r.status_code == 200
+    d = r.json()
+    assert "hsa-miR-9999-5p" in d["missing_mirnas"]
+    assert "hsa-miR-21-5p" not in d["missing_mirnas"]
+    assert "hsa-miR-155-5p" not in d["missing_mirnas"]
+
+
+def test_analyze_single_mirna_warns_no_convergence():
+    """H-17: un panel de 1 miRNA no tiene convergencia multi-miRNA;
+    la respuesta debe advertirlo en 'single_mirna_warning'."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-21-5p"], "years": 10, "mode": "strict", "offline": True})
+    assert r.status_code == 200
+    assert r.json()["single_mirna_warning"]
+    assert "convergencia" in r.json()["single_mirna_warning"]
+    # Un panel de varios miRNAs no lleva la advertencia.
+    r2 = client.post("/api/v1/analyze", json={
+        "mirnas": ["hsa-miR-375", "hsa-miR-29a-3p", "hsa-miR-21-5p"],
+        "years": 10, "mode": "strict", "offline": True})
+    assert r2.json()["single_mirna_warning"] is None
+
+
+def test_analyze_invalid_mode_returns_422():
+    """H-17 (regresión, ya en v1.45): mode fuera de {strict, n-1, n-2}
+    devuelve 422, no cae en silencio a n-2."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-21-5p"], "years": 10, "mode": "foo", "offline": True})
+    assert r.status_code == 422
+
+
+def test_gene_details_has_no_fixed_confidence():
+    """H-18: get_gene_details no asigna un 'confidence' fijo (85/88/92/95).
+    El único puntaje que existe es el del dossier de validación."""
+    import asyncio
+    import httpx
+
+    def _mock(request):
+        return httpx.Response(200, json={"results": []})
+
+    async def _run(gene):
+        transport = httpx.MockTransport(_mock)
+        async with httpx.AsyncClient(transport=transport) as client:
+            return await ke.get_gene_details(gene, client)
+
+    for gene in ["ABCA1", "KPNA3", "SCN1A", "SNTB2", "TSC22D2", "GMFB", "KLF12", "AGO4"]:
+        info = asyncio.run(_run(gene))
+        assert "confidence" not in info, gene
+
+
+def test_script_js_rigor_bar_uses_validation_score_only():
+    """H-18: la barra 'Rigor Científico' usa solo el puntaje real del
+    dossier; sin él muestra 'Sin evaluar', nunca un 85 fijo."""
+    from pathlib import Path
+    js = (Path(__file__).parent.parent / "static" / "script.js").read_text()
+    assert "confidence?.score" not in js
+    assert "|| 85" not in js
+    assert "Sin evaluar" in js
+
+
+def test_build_synthesis_no_unsupported_causal_claim():
+    """H-12: sin clinical_evidence, la síntesis no afirma consecuencias
+    causales ni cita con un índice [i+1] que no corresponde a nada."""
+    syn = ke.build_synthesis(
+        mirnas=["hsa-miR-21-5p", "hsa-miR-155-5p"],
+        common=["GENE1"],
+        gene_details={"GENE1": {"full_name": "Gene 1", "pathology": "Nodo regulador."}},
+        enrichment=[],
+        references=[],
+        gene_research={})
+    text = syn["academic"]
+    assert "consecuencias directas en la estabilidad tisular" not in text
+    assert "[1]" not in text
+    assert "[2]" not in text
+
+
+def test_build_synthesis_significance_label_only_below_005():
+    """H-12: un término con p_adj 0,04 no es 'significancia funcional'
+    ni 'equilibrio fisiológico'; la etiqueta dice significancia
+    estadística y nada más."""
+    syn = ke.build_synthesis(
+        mirnas=["hsa-miR-21-5p"],
+        common=["GENE1"],
+        gene_details={"GENE1": {"full_name": "Gene 1", "pathology": "Nodo."}},
+        enrichment=[{"Term": "Ruta X", "Source": "Reactome", "Pval": 0.04}],
+        references=[],
+        gene_research={})
+    text = syn["functional"]
+    assert "significancia funcional" not in text
+    assert "mantener el equilibrio fisiológico" not in text
+    assert "significancia estadística" in text
+
+
+def test_gene_details_conclusion_is_hypothesis_not_intervention():
+    """H-12: la conclusión genérica de un gen sin preset no afirma que
+    el eje sea 'un punto crítico de intervención'; lo presenta como
+    candidato para validación experimental."""
+    import asyncio
+    import httpx
+
+    def _mock(request):
+        # MyGene devuelve un hit para que se llegue a la conclusión
+        # genérica; el resto (UniProt, traducción) devuelve vacío.
+        if "mygene.info" in str(request.url):
+            return httpx.Response(200, json={"hits": [
+                {"name": "Argonaute 4", "summary": "involved in RNA silencing",
+                 "pathway": {}, "go": {}}]})
+        return httpx.Response(200, json={"results": []})
+
+    async def _run(gene):
+        transport = httpx.MockTransport(_mock)
+        async with httpx.AsyncClient(transport=transport) as client:
+            return await ke.get_gene_details(gene, client)
+
+    info = asyncio.run(_run("AGO4"))
+    conclusion = info.get("conclusion", "")
+    assert "punto crítico de intervención" not in conclusion
+    assert "candidato" in conclusion
+    assert "validación experimental" in conclusion
+
+
+def test_script_js_no_hardcoded_version():
+    """H-21: la versión no está fija como 'v1.38' en el frontend; la
+    exportación usa JSON.stringify para el YAML y lee la versión del
+    backend."""
+    from pathlib import Path
+    js = (Path(__file__).parent.parent / "static" / "script.js").read_text()
+    assert "v1.38" not in js
+    assert "JSON.stringify(m)" in js
+    assert "engine_version" in js
+
+
+def test_analyze_response_carries_engine_version():
+    """H-21: la respuesta de /analyze lleva la versión del motor para
+    que la exportación no dependa de un literal fijo."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-375", "hsa-miR-29a-3p", "hsa-miR-21-5p"],
+            "years": 10, "mode": "strict", "offline": True})
+    assert r.status_code == 200
+    assert r.json()["engine_version"] == ke.APP_VERSION

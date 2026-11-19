@@ -267,3 +267,13 @@ def test_build_validation_report_labels_mean_as_evaluated_only():
     assert rep["summary"]["mean_score_label"] == "Media de los genes evaluados (1 de 2)"
     assert "priorizados" in rep["method"] or "prioridad" in rep["method"]
     assert "miRTarBase" in rep["method"]
+
+
+def test_reverse_lookup_is_case_insensitive():
+    """H-16: 'C8orf58' debe encontrarse aunque TargetScan lo guarde con
+    minúsculas en 'orf'; la comparación no depende de mayúsculas."""
+    db = {"hsa-miR-21-5p": {"C8orf58", "PTEN"}, "hsa-miR-155-5p": {"PTEN"}}
+    assert kc.reverse_lookup("C8orf58", db) == ["hsa-miR-21-5p"]
+    assert kc.reverse_lookup("c8orf58", db) == ["hsa-miR-21-5p"]
+    assert kc.reverse_lookup("C8ORF58", db) == ["hsa-miR-21-5p"]
+    assert kc.reverse_lookup("PTEN", db) == ["hsa-miR-155-5p", "hsa-miR-21-5p"]

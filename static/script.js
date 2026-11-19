@@ -150,6 +150,14 @@ function renderDashboard(data) {
           const srcText = Object.entries(data.source_by_mirna).map(([m, src]) => `${m} — ${src}`).join('<br>');
           html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">Fuente por miRNA (un consenso puede mezclar predicción y validación experimental):<br>${srcText}</div>`;
         }
+        // H-17 (v1.47): avisar en la interfaz de los miRNAs sin datos y
+        // del panel de un solo miRNA (sin convergencia multi-miRNA).
+        if (data.missing_mirnas && data.missing_mirnas.length) {
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">miRNAs sin datos en ninguna fuente (no entraron al consenso): ${data.missing_mirnas.join(', ')}</div>`;
+        }
+        if (data.single_mirna_warning) {
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">${data.single_mirna_warning}</div>`;
+        }
         if (data.enrichment_note) {
           html += `<div style="margin-top:4px; color:var(--text-dim); font-size:11px;">${data.enrichment_note}</div>`;
         }
@@ -271,8 +279,9 @@ async function openGenePanel(gene) {
   document.getElementById('gene-panel').classList.add('open');
   const d = lastData?.gene_details?.[gene] || {full_name: gene, system:'Multisistémico', pathology:'Diana de alta confianza.', associated_routes:[]};
   // Puntaje REAL del dossier de validación (no un número fijo).
+  // H-18 (v1.47): sin puntaje no hay barra — "Sin evaluar", nunca un 85 fijo.
   const vScore = lastData?.validation?.genes?.[gene]?.score;
-  const score = (vScore !== undefined && vScore !== null) ? vScore : (d.confidence?.score || 85);
+  const score = (vScore !== undefined && vScore !== null) ? vScore : null;
   
   document.getElementById('gene-panel-body').innerHTML = `
     <div style="margin-bottom:20px;">
@@ -285,12 +294,14 @@ async function openGenePanel(gene) {
     </div>
     <div style="margin-bottom:20px;">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase;">Rigor Científico</small>
-      <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
+      ${score === null
+        ? `<div style="margin-top:8px; font-size:12px; color:var(--text-dim);">Sin evaluar</div>`
+        : `<div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
         <div style="flex:1; height:7px; background:rgba(255,255,255,0.06); border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,0.04);">
           <div style="width:${score}%; height:100%; background:linear-gradient(90deg, #c8a96e, #f2d295); border-radius:10px; box-shadow:0 0 10px rgba(200,169,110,0.3);"></div>
         </div>
         <span style="font-family:var(--font-mono); font-size:11px; color:var(--gold); font-weight:800;">${score}%</span>
-      </div>
+      </div>`}
     </div>
     <div style="margin-bottom:20px; padding:15px; background:rgba(200,169,110,0.03); border-radius:8px; border-left:4px solid var(--gold);">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Relevancia Patológica Detallada</small>
@@ -612,8 +623,11 @@ async function exportMarkdown() {
     'title: "Reporte Bioinformático KENRYU"',
     'subtitle: "Convergencia Molecular y Silenciamiento Génico"',
     'date: "' + today + '"',
-    'generator: "KENRYU Bioinformatics Engine v1.38"',
-    mirnasList.length ? 'mirnas:\n' + mirnasList.map(m => '  - "' + m + '"').join('\n') : '',
+    // H-21 (v1.47): la versión viene del backend (lastData.engine_version),
+    // nunca de un literal fijo; los miRNAs se serializan con JSON.stringify
+    // para que una comilla o un salto de línea no rompa el YAML.
+    'generator: "KENRYU Bioinformatics Engine v' + (lastData?.engine_version || '') + '"',
+    mirnasList.length ? 'mirnas:\n' + mirnasList.map(m => '  - ' + JSON.stringify(m)).join('\n') : '',
     'lang: es',
     '---',
     '',
@@ -753,7 +767,7 @@ function initReportWithData(data) {
         <div class="meta-id" style="font-size:18px;">${repId}</div>
         <div class="meta-date-val">${dateStr}</div>
         <div class="meta-inst-val">Análisis Genómico Avanzado</div>
-        <div class="meta-ver-val">v1.38 (Stable)</div>
+        <div class="meta-ver-val">v${data.engine_version || '—'} (Stable)</div>
       </div>
     </div>
     <div style="margin-top:60mm; text-align:center;">

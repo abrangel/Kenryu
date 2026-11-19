@@ -1032,7 +1032,7 @@ SYSTEM_MAP = {
 async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     info = {"full_name": gene, "system": "Multisistémico",
             "pathology": "Nodo regulador crítico identificado en convergencia de miRNAs.",
-            "associated_routes": [], "pmid": None, "confidence": {"score": 85},
+            "associated_routes": [], "pmid": None,
             "protein": None}
     
     # Descripciones de ÉLITE con EVIDENCIA ESTRUCTURADA
@@ -1157,7 +1157,6 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
             "clinical_evidence": p["clinical_evidence"],
             "conclusion": p.get("conclusion", ""),
             "pmid": p["clinical_evidence"][0]["pmid"] if p["clinical_evidence"] else None,
-            "confidence": {"score": 95}
         })
         # Relevancia de la proteína (UniProt): qué hace, dónde trabaja,
         # con qué enfermedad se asocia.
@@ -1220,11 +1219,11 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 
                 info["associated_routes"] = routes_with_sources
                 
-                # Crear conclusión genérica profesional para nuevos genes
-                info["conclusion"] = f"La convergencia de miRNAs sobre {gene} sugiere que este eje regulador es un punto crítico de intervención para modular procesos de {info['system'].lower()}."
-
-                if gene not in PRESETS:
-                    info["confidence"]["score"] = 92 if len(routes_with_sources) >= 2 else 88
+                # Crear conclusión genérica para nuevos genes: lenguaje de
+                # hipótesis computacional (H-12, v1.47) — candidato para
+                # validación experimental, nunca "punto crítico de intervención".
+                info["conclusion"] = (f"La convergencia de miRNAs sobre {gene} lo señala "
+                    f"como candidato para validación experimental en procesos de {info['system'].lower()}.")
     except:
         pass
         
@@ -1242,7 +1241,11 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     return info
 
 # ── GRÁFICOS ──────────────────────────────────────────────────────────────────
-app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.46")
+# H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
+# la respuesta de /analyze (engine_version), para que la exportación no
+# dependa de un literal fijo en el frontend.
+APP_VERSION = "1.47"
+app = FastAPI(title="KENRYU Bioinformatics Engine", version=APP_VERSION)
 
 # Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
 origins = [
@@ -1281,7 +1284,7 @@ async def serve_style():
 
 @app.get("/health")
 async def health():
-    return {"status": "OK", "version": "1.46",
+    return {"status": "OK", "version": APP_VERSION,
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": load_local_versions()}
@@ -1475,6 +1478,9 @@ async def analyze(req: AnalysisRequest):
 
     mirnas = [normalize_isomir(m.strip(), "mmu" if req.species == "mouse" else "hsa")
               for m in req.mirnas if m.strip()]
+    # H-17 (v1.47): deduplicar preservando el orden — los duplicados
+    # sesgaban el umbral de N-1/N-2 (contaban como miRNAs distintos).
+    mirnas = list(dict.fromkeys(mirnas))
     if not mirnas:
         raise HTTPException(400, "Debe ingresar al menos un miRNA.")
     if req.species not in ("human", "mouse"):
@@ -1482,6 +1488,7 @@ async def analyze(req: AnalysisRequest):
 
     # ── RECOLECCIÓN DE GENES POR miRNA ───────────────────────────────────────────
     gene_sets, found_names = [], []
+    missing_mirnas = []  # H-17 (v1.47): miRNAs sin datos en ninguna fuente.
     local_by_mirna, remote_by_mirna = {}, {}
     source_by_mirna = {}  # por miRNA, qué fuente se usó (v1.46): un consenso
     # strict puede mezclar predicción de TargetScan con validación
@@ -1527,6 +1534,7 @@ async def analyze(req: AnalysisRequest):
             gene_sets.append(combined)
             found_names.append(m)
         else:
+            missing_mirnas.append(m)
             logger.warning(f"⚠️ {m}: sin datos en ninguna fuente")
 
     if not gene_sets:
@@ -1551,8 +1559,15 @@ async def analyze(req: AnalysisRequest):
             found_names, [], {}, local_by_mirna, remote_by_mirna,
             load_local_versions())
         return {
+            "engine_version": APP_VERSION,
             "common_genes": [],
             "found_mirnas": found_names,
+            "missing_mirnas": missing_mirnas,
+            "single_mirna_warning": (
+                "El panel tiene un solo miRNA con datos: no hay convergencia "
+                "entre miRNAs; el resultado son todas sus dianas."
+                if len(found_names) == 1 else None
+            ),
             "source_by_mirna": source_by_mirna,
             "gene_details": {},
             "validation": empty_validation,
@@ -1869,8 +1884,15 @@ async def analyze(req: AnalysisRequest):
     save_persistent_cache()
 
     return {
+        "engine_version": APP_VERSION,
         "common_genes": prioritized_common,
         "found_mirnas": found_names,
+        "missing_mirnas": missing_mirnas,
+        "single_mirna_warning": (
+            "El panel tiene un solo miRNA con datos: no hay convergencia "
+            "entre miRNAs; el resultado son todas sus dianas."
+            if len(found_names) == 1 else None
+        ),
         "source_by_mirna": source_by_mirna,
         "gene_details": gene_details,
         "validation": validation_report,
