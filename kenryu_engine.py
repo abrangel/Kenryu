@@ -273,6 +273,7 @@ from kenryu_core import (
     normalize_isomir,
     prioritize_genes,
     reverse_lookup,
+    term_specificity,
 )
 from kenryu_updater import (
     DATA_SOURCES,
@@ -519,6 +520,37 @@ async def safe_pubmed_request(client: httpx.AsyncClient, url: str, params: dict,
             if attempt == retries - 1: logger.error(f"❌ Fallo persistente en PubMed: {e}")
             await asyncio.sleep(1)
     return None
+
+def annotate_enrichment_specificity(enrichment, gene_list, n_panels=100):
+    """Add a 'specificity' field to each enrichment term (v1.54): the
+    fraction of random gene lists of the same size, drawn from the
+    TargetScan universe, whose overlap with the term is >= the observed
+    overlap. 1.0 = the term appears by chance as often as observed
+    (generic, e.g. "regulation of transcription"); 0.0 = it never
+    appears by chance (specific). Terms not found in the local GMT
+    libraries get None. Mutates the items in place and returns them."""
+    if not enrichment or not gene_list:
+        return enrichment
+    ts_universe = (set().union(*TARGETSCAN_DB.values())
+                   if TARGETSCAN_DB else set())
+    if not ts_universe:
+        return enrichment
+    gene_set = set(gene_list)
+    for item in enrichment:
+        lib = GMT_LIBRARIES.get(item.get("Source"))
+        # The live path translates Term to Spanish; the English name
+        # survives in RawTerm (local path: RawTerm is the GMT key).
+        term_name = item.get("RawTerm") or item.get("Term")
+        term_genes = lib.get(term_name) if lib else None
+        if not term_genes:
+            item["specificity"] = None
+            continue
+        bg = ts_universe & set().union(*lib.values())
+        observed = len(gene_set & term_genes)
+        item["specificity"] = term_specificity(
+            term_genes, bg, len(gene_list), observed, n_panels=n_panels)
+    return enrichment
+
 
 # ── ENRIQUECIMIENTO DIRECTO (BYPASS GSEApy) ──────────────────────────────────
 async def enrich_genes_direct(gene_list: list, client: httpx.AsyncClient):
@@ -1428,7 +1460,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.53"
+APP_VERSION = "1.54"
 
 
 @asynccontextmanager
@@ -1582,12 +1614,29 @@ async def serve_script():
 async def serve_style():
     return FileResponse('static/style.css')
 
+def mirtarbase_mode():
+    """How miRTarBase evidence is sourced in this process (v1.54):
+    "official" (index 9.0, verified levels), "legacy" (Harmonizome GMT
+    snapshot, no verified level) or "none" (no local miRTarBase)."""
+    return {"official": "official", "gmt": "legacy"}.get(MIRTARBASE_FORMAT, "none")
+
+
+LEGACY_MODE_WARNING = (
+    "Modo legacy: miRTarBase procede del snapshot de Harmonizome (sin nivel "
+    "de evidencia verificado); los genes con evidencia legacy quedan en "
+    "'media' como máximo y no pueden llegar a 'alta'. Para reproducir los "
+    "resultados del artículo, construye el índice oficial: descarga "
+    "hsa_MTI.xlsx desde miRTarBase y ejecuta `python "
+    "build_mirtarbase_official.py` (ver DATA_LICENSES.md).")
+
+
 @app.get("/health")
 async def health():
     return {"status": "OK", "version": APP_VERSION,
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
-            "data_sources": loaded_data_versions()}
+            "data_sources": loaded_data_versions(),
+            "mirtarbase_mode": mirtarbase_mode()}
 
 
 @app.get("/api/v1/updates")
@@ -1892,6 +1941,8 @@ async def analyze(req: AnalysisRequest):
         return {
             "engine_version": APP_VERSION,
             "data_versions": loaded_data_versions(),
+            "mirtarbase_mode": mirtarbase_mode(),
+            "warnings": ([LEGACY_MODE_WARNING] if mirtarbase_mode() == "legacy" else []),
             "common_genes": [],
             "found_mirnas": found_names,
             "missing_mirnas": missing_mirnas,
@@ -1942,25 +1993,28 @@ async def analyze(req: AnalysisRequest):
     
     if len(gene_list_enr) >= 3:
         load_gmt_libraries()
-        # Fondo del enriquecimiento local (v1.49): el universo predicho —
-        # la unión de las dianas de los miRNAs del panel. Es la población
-        # que el análisis probó; la unión de cada GMT (~20k genes) es la
-        # población equivocada y diluye todos los términos. La ruta viva
-        # de Enrichr usa el fondo propio de Enrichr (su API no admite un
-        # fondo personalizado); el local es el que controlamos.
-        predicted_universe = set().union(*gene_sets) if gene_sets else None
+        # Fondo del enriquecimiento local (v1.54): el universo de
+        # TargetScan — todos los genes con algún sitio predicho (13.035
+        # humanos), no la unión del panel (v1.49, fondo dependiente del
+        # panel y sin potencia: 0 términos para el panel de cáncer N-1)
+        # ni la unión de cada GMT (~20k genes que el análisis nunca
+        # probó, que infla la significancia). local_enrichment lo
+        # interseca por biblioteca con los genes de cada GMT. La ruta
+        # viva de Enrichr usa el fondo propio de Enrichr (su API no
+        # admite un fondo personalizado); el local es el que controlamos.
+        targetscan_universe = set().union(*db.values()) if db else None
         async with make_async_client(timeout=45.0) as client:
             try:
                 logger.info(f"🧪 Iniciando Enriquecimiento para {len(gene_list_enr)} genes...")
                 if req.offline:
                     enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES,
-                                                      background=predicted_universe)
+                                                      background=targetscan_universe)
                     logger.info(f"📚 Enriquecimiento local (offline): {len(enrichr_terms)} rutas")
                 else:
                     enrichr_terms = await enrich_genes_direct(gene_list_enr, client)
                     if not enrichr_terms:
                         enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES,
-                                                          background=predicted_universe)
+                                                          background=targetscan_universe)
                         logger.info(f"📚 Enrichr vacío; usando enriquecimiento local: {len(enrichr_terms)} rutas")
 
                 if enrichr_terms:
@@ -1983,6 +2037,7 @@ async def analyze(req: AnalysisRequest):
                         
                         return {
                             "Term": trans_term, "Source": gs_label, "Pval": float(pval),
+                            "RawTerm": term,
                             "ScientificDesc": f"Ruta identificada con p-adj={pval:.4f}",
                             "Evidence": pubmed[0] if pubmed else None,
                             "Evidences": [a['id'] for a in pubmed]
@@ -1995,6 +2050,11 @@ async def analyze(req: AnalysisRequest):
                     logger.warning("🔬 No se encontraron rutas significativas.")
             except Exception as e:
                 logger.error(f"❌ Error crítico enriquecimiento: {e}")
+
+    # v1.54: columna de especificidad — en qué fracción de paneles
+    # aleatorios del mismo tamaño aparece cada término.
+    if enrichment_results:
+        annotate_enrichment_specificity(enrichment_results, gene_list_enr)
 
     # ── DATOS REALES PARA LOS GRÁFICOS ────────────────────────────────────────
     # Volcán: conteos de PubMed (top 25 genes de la unión por nº de miRNAs).
@@ -2228,6 +2288,8 @@ async def analyze(req: AnalysisRequest):
     return {
         "engine_version": APP_VERSION,
         "data_versions": loaded_data_versions(),
+        "mirtarbase_mode": mirtarbase_mode(),
+        "warnings": ([LEGACY_MODE_WARNING] if mirtarbase_mode() == "legacy" else []),
         "common_genes": prioritized_common,
         "found_mirnas": found_names,
         "missing_mirnas": missing_mirnas,

@@ -62,13 +62,18 @@ def test_build_validation_report():
                          "hsa-miR-144-3p": {"ABCA1"}},
         data_versions={"mirbase": "22", "targetscan": "8.0"},
     )
+    # v1.54: ABCA1's evidence here comes from plain miRNA->gene sets
+    # (the legacy GMT, no verified level), so the score stays 100 but
+    # the level caps at "media" — "alta" needs strong evidence.
     assert report["genes"]["ABCA1"]["score"] == 100
-    assert report["genes"]["ABCA1"]["level"] == "alta"
+    assert report["genes"]["ABCA1"]["level"] == "media"
+    assert report["genes"]["ABCA1"]["evidence_level"] == "legacy"
     # GENE2 is predicted (in a local set) but not validated, no research.
     assert report["genes"]["GENE2"]["score"] == 25
     assert report["genes"]["GENE2"]["level"] == "baja"
     assert report["summary"]["n_genes"] == 2
-    assert report["summary"]["high"] == 1
+    assert report["summary"]["high"] == 0
+    assert report["summary"]["medium"] == 1
     assert report["summary"]["low"] == 1
     assert report["summary"]["mean_score"] == 62.5
     assert report["summary"]["not_validated"] == ["GENE2"]
@@ -192,11 +197,23 @@ def test_alta_requires_strong_evidence_weak_is_capped_at_media():
     assert "evidencia fuerte" in s["explanation"]
 
 
-def test_alta_still_reachable_with_strong_and_legacy_evidence():
-    for validated in ("strong", True, "legacy"):
+def test_alta_reachable_with_strong_but_not_legacy():
+    for validated in ("strong", True):
         s = kc.validation_score("ABCA1", FULL_RESEARCH, predicted=True,
                                 validated=validated)
         assert s["level"] == "alta", validated
+
+
+def test_legacy_capped_at_media():
+    # v1.54: el snapshot legacy no trae nivel verificado, así que suma
+    # puntos (+30) pero NO desbloquea "alta": quien reproduzca sin el
+    # índice oficial no puede obtener "alta" con evidencia sin verificar.
+    s = kc.validation_score("ABCA1", FULL_RESEARCH, predicted=True,
+                            validated="legacy")
+    assert s["score"] == 100                     # el puntaje no cambia
+    assert s["evidence_level"] == "legacy"
+    assert s["level"] == "media"                 # el nivel sí: tope en media
+    assert "legacy" in s["explanation"]
 
 
 def test_no_experimental_evidence_still_capped_at_media():

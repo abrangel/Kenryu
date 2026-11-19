@@ -70,3 +70,12 @@ def test_report_images_validate_base64():
     assert "data:image/png;base64,${data.volcano_plot}" not in text
     assert "data:image/png;base64,${data.ppi_plot}" not in text
     assert "b64Img(" in text
+
+
+def test_legacy_warnings_render_escaped():
+    """v1.54: the visible legacy-mode warning banner renders data.warnings
+    through escapeHtml, never raw (the warning text comes from the server,
+    but the same rule applies to every interpolated value)."""
+    text = _script_text()
+    line = next(l for l in text.splitlines() if "data.warnings" in l)
+    assert "escapeHtml(w)" in line

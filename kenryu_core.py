@@ -662,6 +662,32 @@ def fisher_enrichment(genes, library, background=None, top_n=8, p_adj_max=0.05):
     return rows[:top_n]
 
 
+def term_specificity(term_genes, background, list_size, observed_overlap,
+                     n_panels=100, seed=7):
+    """Fraction of random gene lists of `list_size`, drawn from
+    `background`, whose overlap with the term is >= `observed_overlap`.
+
+    1.0 = the term appears by chance as often as observed (a generic
+    term such as "regulation of transcription" that shows up in most
+    random panels); 0.0 = it never appears by chance (specific).
+    Deterministic given the seed, so the value is reproducible. Returns
+    None when there is no background or no term genes to test. Pure."""
+    import random
+    bg = sorted(background) if background else []
+    if not bg or list_size <= 0 or n_panels <= 0:
+        return None
+    term = set(term_genes) & set(bg)
+    if not term:
+        return None
+    rng = random.Random(seed)
+    k = min(list_size, len(bg))
+    hits = 0
+    for _ in range(n_panels):
+        if len(set(rng.sample(bg, k)) & term) >= observed_overlap:
+            hits += 1
+    return round(hits / n_panels, 2)
+
+
 def local_enrichment(genes, libraries, background=None, top_total=24):
     """Enrichment against several local GMT libraries (offline).
     `libraries` maps a label (KEGG/Reactome/WikiPathways/GO) to a
@@ -669,13 +695,25 @@ def local_enrichment(genes, libraries, background=None, top_total=24):
     same shape the live Enrichr path produces.
 
     `background` is the population the genes were drawn from: the
-    predicted universe (the union of the panel's predicted targets).
-    Without it, each library falls back to its own GMT union — the
-    wrong population, ~20k genes the analysis never tested (v1.49:
-    the engine now passes the predicted universe)."""
+    TargetScan universe (all genes with any predicted TargetScan site).
+    The effective population for each library is that universe
+    intersected with the library's own genes — a gene that is neither
+    predicted nor annotated in the library can never appear in a term,
+    so counting it in n_bg would inflate significance. Without it,
+    each library falls back to its own GMT union — the wrong population
+    (v1.54: the engine now passes the TargetScan universe; before, it
+    passed the panel's own union, a panel-dependent background with
+    almost no power for small panels)."""
     out = []
     for label, library in libraries.items():
-        for row in fisher_enrichment(genes, library, background=background):
+        # v1.54: the background is the TargetScan universe; the effective
+        # population for this library is the universe intersected with
+        # the library's genes (see the docstring). An empty background
+        # stays empty — it is a population of zero, not "no background".
+        bg = None
+        if background is not None:
+            bg = set(background) & set().union(*library.values())
+        for row in fisher_enrichment(genes, library, background=bg):
             out.append({"Term": row["Term"], "Source": label,
                         "Pval": row["Pval"], "RawTerm": row["Term"]})
     out.sort(key=lambda r: r["Pval"])
@@ -883,13 +921,16 @@ def validation_score(gene, research, predicted, validated):
     """Score one gene 0-100 from its evidence layers. Pure and
     deterministic. `research` is the gene_research entry for the gene
     ({pubmed: [...], omim: [...], clinvar: {count}, trials: [...]}).
-    `validated` is the miRTarBase evidence level: True/"strong"/"legacy"
-    (functional assay or the legacy snapshot) scores +30, "weak"
-    (CLIP-seq, microarray, proteomics) scores +15, False/None/"none"
-    scores +0. Weak evidence is high-throughput support, not proof of
-    direct binding: it adds points but does not unlock "alta", which
-    requires strong evidence (or the legacy snapshot, which carries no
-    evidence level)."""
+    `validated` is the miRTarBase evidence level: True/"strong"
+    (functional assay) scores +30, "legacy" (the Harmonizome snapshot,
+    which carries no evidence level) also scores +30 but does NOT unlock
+    "alta", "weak" (CLIP-seq, microarray, proteomics) scores +15,
+    False/None/"none" scores +0. Weak evidence is high-throughput
+    support, not proof of direct binding: it adds points but does not
+    unlock "alta", which requires strong evidence (v1.53). Legacy
+    evidence is unverified-level support: it adds points but does not
+    unlock "alta" either (v1.54), so a reproduction without the official
+    index can never reach "alta" on unverified evidence."""
     research = research or {}
     layers, missing = [], []
     score = 0
@@ -898,13 +939,17 @@ def validation_score(gene, research, predicted, validated):
         score += _VALIDATION_WEIGHTS["predicted"]
     else:
         missing.append("TargetScan (predicho)")
-    if validated is True or validated in ("strong", "legacy"):
-        layers.append(
-            "miRTarBase (validado experimentalmente"
-            + (", evidencia fuerte" if validated == "strong" else "")
-            + ")")
+    if validated is True or validated == "strong":
+        layers.append("miRTarBase (validado experimentalmente, evidencia fuerte)")
         score += _VALIDATION_WEIGHTS["validated"]
         validated_level = "strong"
+    elif validated == "legacy":
+        # v1.54: el snapshot legacy no trae nivel verificado: suma +30
+        # como antes, pero ya NO se normaliza a "strong" — no desbloquea
+        # "alta". Quien reproduzca sin el índice oficial ve "media".
+        layers.append("miRTarBase (validado, snapshot legacy sin nivel verificado)")
+        score += _VALIDATION_WEIGHTS["validated"]
+        validated_level = "legacy"
     elif validated == "weak":
         layers.append("miRTarBase (apoyo de alto rendimiento, evidencia débil)")
         score += _VALIDATION_WEIGHTS["validated_weak"]
@@ -960,6 +1005,9 @@ def validation_score(gene, research, predicted, validated):
             + (("; nivel limitado a media: solo evidencia débil (apoyo de alto "
                 "rendimiento); \"alta\" exige evidencia fuerte de la interacción"
                 if validated_level == "weak" else
+                "; nivel limitado a media: solo evidencia legacy (snapshot sin "
+                "nivel verificado); \"alta\" exige evidencia fuerte de la interacción"
+                if validated_level == "legacy" else
                 "; nivel limitado a media: sin validación experimental de la interacción")
                if gated else "")
         ),
@@ -1100,6 +1148,8 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "OMIM, ClinVar y ClinicalTrials.gov. La puntuación resume las "
             "capas; las capas son la prueba. El nivel alta exige evidencia "
             "experimental fuerte de la interacción; sin ella, el máximo es media. "
+            "La evidencia legacy (snapshot de Harmonizome, sin nivel verificado) "
+            "suma puntos pero tampoco desbloquea 'alta'. "
             "Las referencias de PubMed se deduplican por PMID antes de puntuar. "
             "La validación experimental se comprueba contra el índice local "
             "de miRTarBase 9.0 (oficial, construido desde hsa_MTI.xlsx; "

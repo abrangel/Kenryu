@@ -1,12 +1,15 @@
-"""Enrichment background: the predicted universe.
+"""Enrichment background: the TargetScan universe.
 
 The Fisher test's background must be the set of genes that could have
-been found: the union of the panel's predicted targets (TargetScan
-local, or the miRTarBase fallback when TargetScan has no data for a
-miRNA). Using the union of each GMT library as the background is the
-wrong population: it is ~20k genes the analysis never tested, so it
-dilutes every term and makes the offline enrichment return nothing
-for small panels (the thesis panel returned 0 terms offline).
+been found: all genes with any predicted TargetScan site (13,035 human
+genes), intersected per library with that library's genes. Using the
+union of each GMT library as the background is the wrong population:
+it is ~20k genes the analysis never tested, so it inflates
+significance (the random-panel protocol: 13-29% false positives with
+the library union vs 7-17% with the TargetScan universe). The panel's
+own union (v1.49) was the opposite failure: a panel-dependent
+background with almost no power (0 terms for the 188-gene N-1 cancer
+panel, vs 43 with the TargetScan universe).
 """
 from kenryu_core import fisher_enrichment, local_enrichment
 
@@ -32,6 +35,9 @@ def test_fisher_background_excludes_genes_outside_it():
 
 
 def test_local_enrichment_passes_background_through():
+    # v1.54: the background reaches each library intersected with that
+    # library's genes (the effective population). KEGG's union is
+    # {A..E}, GO's is {A,F,G,H}; the 8-gene background becomes 5 and 4.
     libs = {
         "KEGG": {"Term A": {"A", "B", "C", "D", "E"}},
         "GO": {"Term B": {"A", "F", "G", "H"}},
@@ -40,7 +46,8 @@ def test_local_enrichment_passes_background_through():
     got = local_enrichment({"A", "B"}, libs, background=bg)
     expected = []
     for label, lib in libs.items():
-        for row in fisher_enrichment({"A", "B"}, lib, background=bg):
+        lib_bg = bg & set().union(*lib.values())
+        for row in fisher_enrichment({"A", "B"}, lib, background=lib_bg):
             expected.append({"Term": row["Term"], "Source": label,
                              "Pval": row["Pval"], "RawTerm": row["Term"]})
     expected.sort(key=lambda r: r["Pval"])
@@ -68,3 +75,48 @@ def test_predicted_background_makes_real_overlap_significant():
     # rows carry Term/Source/Pval only).
     direct = fisher_enrichment(genes, libs["KEGG"], background=predicted)
     assert direct[0]["Term"] == "Term A" and direct[0]["Overlap"] == 3
+
+
+def test_local_enrichment_uses_targetscan_universe_per_library():
+    """v1.54: the enrichment background is the TargetScan universe (all
+    genes with any predicted TargetScan site), intersected per library
+    with that library's genes — NOT the panel's own union and NOT the
+    library union. Synthetic case: 5 genes all inside an 8-gene term.
+    With the 16-gene library union as background the term is significant
+    (p_adj 0.026); with the 10-gene TargetScan universe it is not
+    (p_adj 0.44), because the term is a large share of the small
+    universe. local_enrichment must match the direct per-library
+    computation with the intersected background."""
+    lib = {"T1": {f"{c}" for c in "abcdefgh"},
+           "T2": {f"{c}" for c in "ijklmnop"}}
+    genes = {"a", "b", "c", "d", "e"}
+    universe = {f"{c}" for c in "abcdefghij"}  # 10 genes
+    with_union = local_enrichment(genes, {"L": lib}, background=None)
+    assert [r["Term"] for r in with_union] == ["T1"]
+    with_ts = local_enrichment(genes, {"L": lib}, background=universe)
+    assert with_ts == []
+    # And it equals the direct per-library computation with the
+    # intersected background (universe ∩ library genes).
+    expected = []
+    for label, l in {"L": lib}.items():
+        bg = universe & set().union(*l.values())
+        for row in fisher_enrichment(genes, l, background=bg):
+            expected.append({"Term": row["Term"], "Source": label,
+                             "Pval": row["Pval"], "RawTerm": row["Term"]})
+    expected.sort(key=lambda r: r["Pval"])
+    assert with_ts == expected[:24]
+
+
+def test_term_specificity_generic_vs_specific():
+    """v1.54: a term covering the whole background appears in every
+    random panel (specificity 1.0); a term with one gene in 10,000
+    never does (0.0); a 100-in-1000 term with 3-of-10 observed is
+    rare by chance (0.04 with the fixed seed)."""
+    from kenryu_core import term_specificity
+    assert term_specificity(set(range(100)), set(range(100)), 5, 5) == 1.0
+    assert term_specificity({"g0"}, {f"g{i}" for i in range(10000)}, 5, 1) == 0.0
+    assert term_specificity({f"t{i}" for i in range(100)},
+                            {f"t{i}" for i in range(100)} | {f"f{i}" for i in range(900)},
+                            10, 3) == 0.04
+    assert term_specificity({"A"}, set(), 5, 1) is None
+    assert term_specificity(set(), {"A", "B"}, 5, 1) is None

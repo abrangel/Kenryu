@@ -2,13 +2,110 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.54] — 2026-11-19
+
+### Legacy cap, fondo TargetScan, especificidad, declaración y calibración
+
+Revisión del autor y de Claude sobre el diff de v1.53. (Nota: el diff
+leído era el anterior a las enmiendas — los tres pendientes de la
+declaración — modelos de ChatGPT y de Claude, autor de audit_v150.py —
+ya estaban resueltos en v1.53; lo nuevo aquí es el papel completo de
+Claude, abajo.)
+
+**Modo legacy: tope en "media" + aviso visible.** Quien clone y arranque
+sin el índice oficial de miRTarBase caía en el modo legacy (snapshot de
+Harmonizome), donde "legacy" contaba como evidencia fuerte y
+desbloqueaba "alta" sin nivel verificado: sus resultados no coincidirían
+con el artículo. Ahora la evidencia legacy suma +30 puntos como antes,
+pero NO desbloquea "alta" (el nivel queda en "media" con la explicación
+"legacy"); la respuesta del análisis trae `"mirtarbase_mode": "legacy"`
+y un aviso visible con el paso exacto para construir el índice, y la UI
+lo muestra sobre la tabla de validación. `/health` también expone
+`"mirtarbase_mode"`. El puntaje no cambia; solo el nivel. El panel de
+la tesis no cambia (usa el índice oficial). Método test-first: el test
+de tope y el test de modo/aviso fallaron primero contra v1.53.
+
+**Construir el índice oficial, paso exacto (DATA_LICENSES.md).**
+`python build_mirtarbase_official.py hsa_MTI.xlsx local_db/mirtarbase_official.json.gz`
+con el `hsa_MTI.xlsx` (miRTarBase 9.0) descargado de la página oficial;
+después, `GET /health` debe mostrar `"mirtarbase_mode": "official"`.
+
+**Fondo de enriquecimiento: universo de TargetScan.** La ruta local
+pasaba la unión del panel (v1.49): fondo dependiente del panel, casi
+sin potencia (0 términos para el panel de cáncer N-1, 188 genes). Ahora
+pasa el universo de TargetScan — todos los genes con algún sitio
+predicho (13.035 humanos) — intersecado por biblioteca con los genes
+de cada GMT (`local_enrichment`). El panel de cáncer N-1 pasa de 0 a
+43 términos locales (14 GO + 29 Reactome). La ruta viva de Enrichr no
+cambia (su API no admite fondo personalizado). Método test-first: el
+test de integración (cáncer N-1 offline) falló primero contra v1.53.
+
+**Columna de especificidad.** Cada término de enriquecimiento trae
+`"specificity"`: la fracción de 100 paneles aleatorios del mismo
+tamaño en los que el término aparece por azar (1,0 = genérico; 0,0 =
+específico; `null` si el término no está en los GMT locales). La ruta
+viva traduce el término al español, así que la búsqueda usa `RawTerm`
+(el nombre en inglés, ahora preservado en la respuesta). Los 3
+términos del panel de cáncer tienen especificidad 0,0 / 0,0 / 0,01.
+
+**Calibración con paneles aleatorios (paper.md, docs/validation/).**
+El protocolo del autor (`validate_random_panels.py`, 300 paneles N-1,
+300 estrictos de 2 miRNAs, 65 tipo tesis; semillas 7, 11 y 3) se
+reprodujo EXACTO con v1.53 (mismas cifras, mismos controles
+positivos). Con el fondo de unión de GMT: 13,3%/16,3%/5,7% (N-1) y
+28,7%/20,0%/12,7% (estricto) de falsos positivos; con el universo
+TargetScan: 7,3%/11,7%/3,3% y 17,0%/12,7%/7,3%; con la unión del
+panel: 2,3%/4,7%/1,0% y 2,0%/4,0%/1,3%. La unión del panel es la más
+conservadora pero sin potencia; el universo TargetScan es el
+compromiso con fundamento (población fija e independiente del panel).
+Para paneles tipo tesis (4–6 genes) no hay inflación en ningún fondo.
+Los controles positivos fueron débiles y NO se presentan como
+validación (miR-17 recupera "ciclo celular"/E2F/TGF con términos
+genéricos; let-7 solo "MAPK"; miR-34 no devuelve términos).
+
+**Declaración de uso de IA.** Papel completo de Claude (Sonnet 5.5):
+además de la auditoría independiente, la revisión de las correcciones
+y la recomendación de prioridades, escribió el parche y las pruebas
+del cambio "alta" y redactó los borradores de la entrada del
+CHANGELOG y de la declaración; Muse los revisó y adaptó.
+
+**H-12 verificado cerrado.** Las descripciones escritas a mano y el
+primer resultado de PubMed van en bloques separados desde v1.44
+("Notas editoriales sobre las rutas (contexto del equipo, sin cita)"
+vs "Primeros resultados en PubMed (búsqueda por gen + término; no se
+verificó que respalden la nota anterior)") y sin evidencia clínica el
+texto dice "predicción computacional, pendiente de validación
+experimental" (v1.47); la etiqueta es "significancia estadística",
+nunca "funcional".
+
+**Caché: sin cambio de versión (verificado).** La caché persistente
+guarda traducciones, resultados de PubMed, resultados de Enrichr y
+la investigación por gen (`v5|GENE|YEARS`); ningún nivel ni puntaje
+de validación se cachea, y el enriquecimiento local se calcula en
+fresco cada vez. Ni el cambio de "alta" (v1.53) ni el cambio de fondo
+(v1.54) alteran ningún valor cacheado, así que `enr-v2` y `v5` no se
+tocan.
+
+**Casos de estudio recalculados con v1.54 (en vivo, 2026-11-19).**
+Panel de la tesis: mismos 5 genes y puntajes (ABCA1 100 alta strong;
+SNTB2/TSC22D2 65 media weak; KPNA3 50 media none; SCN1A 60 media
+none; media 68,0; conteos 1/2/0/2), 19 términos. Panel de cáncer:
+mismos 18 genes, niveles y 3 términos Reactome con los mismos p-adj
+(0,0176/0,0424/0,0424); CHD7 sigue en "media" (75, débil).
+
+**Suite: 206 tests** (198 + 8 nuevos: tope legacy, modo/aviso legacy,
+fondo TargetScan — unidad e integración —, especificidad — unidad e
+integración — y RawTerm).
+
 ## [1.53] — 2026-11-19
 
 ### Bloque 2 (resto) + "alta" exige evidencia fuerte + declaración de IA
 
 Revisión del autor y de Claude sobre los diffs de v1.51/v1.52 (2026-11-19).
 El puntaje no cambia en ningún gen; solo cambia la etiqueta de nivel
-cuando la evidencia es débil. El panel de la tesis no cambia.
+cuando la evidencia es débil. El parche y las pruebas del cambio "alta"
+los escribió Claude (Sonnet 5.5); Muse los revisó, los adaptó a v1.52
+y los verificó en vivo. El panel de la tesis no cambia.
 
 **"Alta" exige evidencia fuerte.** La evidencia débil (CLIP-seq,
 microarray, proteómica) es apoyo de alto rendimiento: suma +15 puntos

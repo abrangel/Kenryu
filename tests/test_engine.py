@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.53"
+    assert body["version"] == "1.54"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -961,6 +961,35 @@ def test_analyze_default_keeps_all_thesis_genes():
         "ABCA1", "KPNA3", "SCN1A", "SNTB2", "TSC22D2"]
 
 
+def test_analyze_legacy_mode_warns_and_caps_at_media(tmp_path, monkeypatch):
+    """v1.54: sin el índice oficial (solo el GMT legacy), la respuesta
+    dice mirtarbase_mode="legacy" y trae un aviso visible; la evidencia
+    de ABCA1 es "legacy" (sin nivel verificado), así que nunca llega a
+    "alta" aunque el puntaje lo permitiría (ver test_legacy_capped_at_media)."""
+    import gzip
+    gmt = tmp_path / "mirtarbase_gene_set_library.gmt.gz"
+    gmt.write_bytes(gzip.compress(
+        b"hsa-miR-33a-5p\tMIRT000001\tABCA1\tSNTB2\n"
+        b"hsa-miR-33b-5p\tMIRT000002\tABCA1\n"))
+    monkeypatch.setattr(ke, "MIRTARBASE_OFFICIAL", str(tmp_path / "nope.json.gz"))
+    monkeypatch.setattr(ke, "MIRTARBASE_GMT", str(gmt))
+    monkeypatch.setattr(ke, "MIRTARBASE_DB", {})
+    monkeypatch.setattr(ke, "MIRTARBASE_FORMAT", None)
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": _THESIS, "years": 10, "mode": "strict",
+            "offline": True})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["mirtarbase_mode"] == "legacy"
+    assert d["warnings"], "el modo legacy debe traer un aviso visible"
+    assert "legacy" in d["warnings"][0].lower()
+    assert "oficial" in d["warnings"][0].lower()
+    assert d["validation"]["genes"]["ABCA1"]["evidence_level"] == "legacy"
+    assert d["validation"]["summary"]["high"] == 0
+
+
 @_pytest.mark.skipif(not _OFFICIAL.exists(),
                      reason="official miRTarBase index not built")
 def test_analyze_validation_report_has_evidence_levels():
@@ -1022,3 +1051,78 @@ def test_analyze_offline_enrichment_uses_predicted_universe():
     # la unión de GMTs era un artefacto del fondo equivocado.
     assert len(direct_u) == 1 and direct_u[0]["Source"] == "GO"
     assert direct_p != direct_u
+
+
+def test_analyze_offline_enrichment_uses_targetscan_universe():
+    """v1.54: the offline/local enrichment background is the full
+    TargetScan universe (all genes with any predicted site), not the
+    panel's own union. Discriminating case: the cancer panel in N-1
+    mode (188 genes) gives 0 local terms with the panel-union
+    background (v1.49) and 16 with the TargetScan universe. The
+    response must match the direct per-library computation with the
+    intersected background."""
+    import kenryu_core as kc
+    from fastapi.testclient import TestClient
+    cancer = ["hsa-miR-21-5p", "hsa-miR-155-5p", "hsa-let-7a-5p"]
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": cancer, "years": 10, "mode": "n-1", "offline": True})
+    assert r.status_code == 200
+    d = r.json()
+    genes = set(d["common_genes"][:300])
+    ts_universe = set().union(*[set(g) for g in ke.TARGETSCAN_DB.values()])
+    expected = []
+    for label, lib in ke.GMT_LIBRARIES.items():
+        bg = ts_universe & set().union(*lib.values())
+        for row in kc.fisher_enrichment(genes, lib, background=bg):
+            expected.append({"Term": row["Term"], "Source": label,
+                             "Pval": row["Pval"]})
+    expected.sort(key=lambda x: x["Pval"])
+    expected = expected[:24]
+    got = [(e["Term"], e["Source"], e["Pval"]) for e in d["enrichment"]]
+    assert got == [(e["Term"], e["Source"], e["Pval"]) for e in expected]
+    assert len(got) > 0, "the TargetScan background must return terms here"
+
+
+def test_analyze_offline_enrichment_has_specificity():
+    """v1.54: cada término de enriquecimiento trae 'specificity' — la
+    fracción de paneles aleatorios del mismo tamaño en los que el
+    término aparece por azar. El panel de cáncer N-1 (188 genes) da 16
+    términos locales; todos llevan el campo, entre 0 y 1."""
+    from fastapi.testclient import TestClient
+    cancer = ["hsa-miR-21-5p", "hsa-miR-155-5p", "hsa-let-7a-5p"]
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": cancer, "years": 10, "mode": "n-1", "offline": True})
+    assert r.status_code == 200
+    terms = r.json()["enrichment"]
+    assert len(terms) > 0
+    for t in terms:
+        assert "specificity" in t
+        assert t["specificity"] is None or 0.0 <= t["specificity"] <= 1.0
+
+
+def test_annotate_specificity_uses_raw_term_for_translated_terms():
+    """v1.54: the live path translates Term to Spanish; the English name
+    survives in RawTerm, and that is what the GMT lookup must use.
+    The 3 Reactome terms of the cancer case study are specific
+    (0.0, 0.0, 0.01): they essentially never appear in random panels
+    of the same size."""
+    import kenryu_engine as ke
+    # load_local_data() returns the dict but does not assign
+    # TARGETSCAN_DB (the app startup does that); assign it here.
+    ke.TARGETSCAN_DB = ke.load_local_data()
+    ke.load_gmt_libraries()
+    cancer = ["AAK1", "ACVR2A", "AGO4", "BNC2", "BRWD3", "CHD7", "DCUN1D3",
+              "FOXP1", "IL6R", "KPNA4", "MEIS1", "PURB", "RDX", "RPS6KA3",
+              "SESN3", "UBN2", "WNK3", "XKR4"]
+    terms = [
+        {"Term": "Biología del desarrollo", "RawTerm": "Developmental Biology",
+         "Source": "Reactome", "Pval": 0.0176},
+        {"Term": "Vía de reciclaje de L1", "RawTerm": "Recycling Pathway of L1",
+         "Source": "Reactome", "Pval": 0.0424},
+        {"Term": "Señalización mediante TGFBR3", "RawTerm": "Signaling by TGFBR3",
+         "Source": "Reactome", "Pval": 0.0424},
+    ]
+    ke.annotate_enrichment_specificity(terms, cancer)
+    assert [t["specificity"] for t in terms] == [0.0, 0.0, 0.01]

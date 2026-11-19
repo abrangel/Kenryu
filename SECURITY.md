@@ -6,7 +6,9 @@ The following versions of this project are currently being actively monitored an
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.53    | :white_check_mark: |
+| 1.54    | :white_check_mark: |
+| 1.53    | :x: |
+| 1.52    | :x: |
 
 ## Reporting a Vulnerability
 

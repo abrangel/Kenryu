@@ -1,0 +1,80 @@
+{
+  "params": {
+    "panels": 300,
+    "size": 2,
+    "mode": "strict",
+    "min_genes": 10,
+    "max_genes": 300,
+    "alpha": 0.05,
+    "seed": 11,
+    "out": "/home/hatch/workspace/defensa-kenryu/validation-panels/bgB-strict-K2.json"
+  },
+  "panels_used": 300,
+  "panels_tried": 326,
+  "genes_per_panel": {
+    "min": 10,
+    "median": 46,
+    "max": 298
+  },
+  "false_positive_rate": {
+    "GO_BP": {
+      "actual": 0.287,
+      "targetscan": 0.17,
+      "panel": 0.02
+    },
+    "Reactome": {
+      "actual": 0.2,
+      "targetscan": 0.127,
+      "panel": 0.04
+    },
+    "WikiPathways": {
+      "actual": 0.127,
+      "targetscan": 0.073,
+      "panel": 0.013
+    }
+  },
+  "positive_controls": {
+    "let-7 (RAS / ciclo celular)": {
+      "n_genes": 1207,
+      "n_terms": 12,
+      "keywords_found": [
+        "mapk"
+      ],
+      "top_terms": [
+        "GO_BP: Extracellular Structure Organization (GO:0043062) (p_adj=0.011)",
+        "GO_BP: pre-miRNA Processing (GO:0031054) (p_adj=0.011)",
+        "GO_BP: External Encapsulating Structure Organization (GO:0045229) (p_adj=0.026)",
+        "GO_BP: Extracellular Matrix Organization (GO:0030198) (p_adj=0.046)",
+        "Reactome: Assembly of Collagen Fibrils and Other Multimeric Structures (p_adj=0.0035)",
+        "Reactome: Collagen Chain Trimerization (p_adj=0.0035)",
+        "Reactome: Collagen Biosynthesis and Modifying Enzymes (p_adj=0.0044)",
+        "Reactome: Collagen Formation (p_adj=0.0047)"
+      ]
+    },
+    "miR-34 (p53 / apoptosis)": {
+      "n_genes": 755,
+      "n_terms": 0,
+      "keywords_found": [],
+      "top_terms": []
+    },
+    "miR-17 (E2F / ciclo celular)": {
+      "n_genes": 1385,
+      "n_terms": 64,
+      "keywords_found": [
+        "cell cycle",
+        "e2f",
+        "tgf"
+      ],
+      "top_terms": [
+        "GO_BP: Regulation Of DNA-templated Transcription (GO:0006355) (p_adj=1.8e-09)",
+        "GO_BP: Regulation Of Transcription By RNA Polymerase II (GO:0006357) (p_adj=3e-08)",
+        "GO_BP: Negative Regulation Of DNA-templated Transcription (GO:0045892) (p_adj=0.00028)",
+        "GO_BP: Negative Regulation Of Transcription By RNA Polymerase II (GO:0000122) (p_adj=0.0015)",
+        "GO_BP: Positive Regulation Of Cell Cycle (GO:0045787) (p_adj=0.0048)",
+        "GO_BP: Positive Regulation Of DNA-templated Transcription (GO:0045893) (p_adj=0.01)",
+        "GO_BP: Ephrin Receptor Signaling Pathway (GO:0048013) (p_adj=0.041)",
+        "GO_BP: Negative Regulation Of miRNA Metabolic Process (GO:2000629) (p_adj=0.041)"
+      ]
+    }
+  }
+}

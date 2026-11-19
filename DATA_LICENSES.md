@@ -39,9 +39,22 @@ fetches it from Enrichr at runtime, so the platform keeps KEGG
 enrichment without redistributing KEGG data.
 
 **miRTarBase 9.0 (official)** is not in the repository either: the raw
-`hsa_MTI.xlsx` and the derived index are runtime data. The repository
-ships the builder script (`build_mirtarbase_official.py`) and the loader,
-so anyone can rebuild the index from their own official download.
+`hsa_MTI.xlsx` and the derived index are runtime data. To reproduce the
+results in the paper, build the index yourself:
+
+1. Download `hsa_MTI.xlsx` (miRTarBase 9.0, Homo sapiens) from the
+   official miRTarBase download page and place it in the repository root.
+   (The site returned 404 on every page when last checked, November
+   2026; the file is the one the authors distribute as `hsa_MTI.xlsx`.)
+2. Run `python build_mirtarbase_official.py hsa_MTI.xlsx local_db/mirtarbase_official.json.gz`
+   — it writes the compact index (957,040 rows, 2,947 miRNAs, 396,758
+   unique pairs; 1,863 gene symbols recovered from Excel date-mangling).
+   Do NOT commit the raw xlsx or the derived index.
+3. Restart the service and check `GET /health`: `mirtarbase_mode` must
+   read `"official"` and `data_sources.mirtarbase` must name the 9.0
+   official index. Without it the service runs in legacy mode (below):
+   "legacy" evidence never reaches "alta", and the analysis response
+   carries a visible warning saying so.
 
 **miRTarBase snapshot (Harmonizome)** was removed from the repository
 on 2026-11-19 (v1.52) and restored as a **download-on-demand** dataset:

@@ -146,7 +146,9 @@ function renderDashboard(data) {
         const s = v.summary || {};
         const badge = document.getElementById('validation-badge');
         if (badge) badge.textContent = `${s.high || 0} alta · ${s.medium || 0} media · ${s.low || 0} baja` + (s.n_not_evaluated ? ` · ${s.n_not_evaluated} sin evaluar` : '') + (s.n_strong !== undefined ? ` · ${s.n_strong} fuerte · ${s.n_weak} débil · ${s.n_only_predicted} solo predicho` : '');
-        let html = `<table class="sci-table"><thead><tr><th>Gen</th><th>Puntaje</th><th>Nivel</th><th>Evidencia miRTarBase</th><th>Dossier (4 niveles)</th><th>Capas de evidencia</th><th>Qué falta</th></tr></thead><tbody>`;
+        // v1.54: aviso visible del modo legacy (sin índice oficial).
+        let html = (data.warnings || []).map(w => `<div style="border:1px solid var(--gold); border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:12px; line-height:1.5;">⚠️ ${escapeHtml(w)}</div>`).join('');
+        html += `<table class="sci-table"><thead><tr><th>Gen</th><th>Puntaje</th><th>Nivel</th><th>Evidencia miRTarBase</th><th>Dossier (4 niveles)</th><th>Capas de evidencia</th><th>Qué falta</th></tr></thead><tbody>`;
         for (const [gene, gv] of Object.entries(v.genes)) {
           const levelColor = gv.level === 'alta' ? 'var(--teal)' : gv.level === 'media' ? 'var(--gold)' : gv.level === 'not_evaluated' ? 'var(--text-dim)' : 'var(--red)';
           const levelLabel = gv.level === 'not_evaluated' ? 'no evaluado' : gv.level;
@@ -228,7 +230,7 @@ function renderDashboard(data) {
     const enEl = document.getElementById('enrich-container');
     if (enEl) {
       if (data.enrichment && data.enrichment.length) {
-        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p-valor</th><th>PubMed</th></tr></thead><tbody>`;
+        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p-valor</th><th title="Fracción de paneles aleatorios del mismo tamaño en los que este término aparece por azar. 100% = genérico; 0% = específico.">Especificidad</th><th>PubMed</th></tr></thead><tbody>`;
         data.enrichment.forEach(item => {
           const pvalVal = (item.Pval !== undefined && item.Pval !== null) 
             ? (typeof item.Pval === 'number' ? item.Pval.toExponential(2) : item.Pval)
@@ -244,9 +246,18 @@ function renderDashboard(data) {
           const pmidOk = pmid !== null && pmid !== undefined && /^[0-9]+$/.test(String(pmid));
           const pLink = pmidOk ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${pmid}" target="_blank" style="color:var(--gold); font-family:var(--font-mono); font-size:10px; font-weight:600; text-decoration:none; border-bottom:1px solid var(--gold-dim);">PMID: ${pmid}</a>` : '<span style="color:var(--text-faint); font-size:10px;">Sin evidencia</span>';
 
+          // v1.54: especificidad — fracción de paneles aleatorios del
+          // mismo tamaño en los que el término aparece por azar.
+          // Es un número del servidor, no texto libre: no necesita escape.
+          const spec = (item.specificity !== undefined && item.specificity !== null && typeof item.specificity === 'number')
+            ? `${Math.round(item.specificity * 100)}%`
+            : '—';
+          const specTitle = 'Fracción de paneles aleatorios del mismo tamaño en los que este término aparece por azar. 100% = genérico; 0% = específico.';
+
           html += `<tr><td><span style="font-weight:500;">${escapeHtml(item.Term || '—')}</span><br><small style="color:var(--text-dim);">${escapeHtml(item.ScientificDesc || '')}</small></td>
             <td><span class="source-tag">${escapeHtml(item.Source || '—')}</span></td>
             <td><span style="font-family:var(--font-mono); font-size:11px;">${pvalVal}</span></td>
+            <td><span style="font-family:var(--font-mono); font-size:11px;" title="${specTitle}">${spec}</span></td>
             <td>${pLink}</td></tr>`;
         });
         html += '</tbody></table>';
