@@ -5,7 +5,17 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 ## [1.47] — 2026-11-19
 
 ### Ronda 2, Commit A: afirmaciones y consistencia (H-12, H-18, H-11, H-17, H-16, H-21)
-### H-04 NO está aquí: es decisión del usuario (corregir el texto o cambiar el código a evidencia dual), pendiente.
+
+### H-04 (decisión del usuario, 2026-11-19): corregir el texto
+- El manuscrito describía evidencia dual obligatoria; el código no lo
+  hace. Decisión: el texto describe lo que el código hace de verdad.
+  `paper.md`: el consenso se construye sobre predicciones de TargetScan
+  y cada gen se verifica después contra miRTarBase y bases clínicas en
+  el dossier (miRTarBase también es respaldo cuando TargetScan no tiene
+  el miRNA). El caso de estudio y la introducción de la síntesis dicen
+  lo mismo. La evidencia dual se mostrará por niveles en una ronda
+  posterior (miRTarBase oficial + dossier de tres niveles), sin cambiar
+  el método de la tesis.
 
 ### Consenso (H-17)
 - `consensus_genes` ya no lanza `TypeError` con lista vacía (devuelve `set()`).
@@ -101,9 +111,11 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   no el bloqueo de scripts.
 
 ### Tests
-- 120/120 (4 nuevos en Commit B: CORS rechaza otro Space, CORS acepta
+- 123/123 (4 nuevos en Commit B: CORS rechaza otro Space, CORS acepta
   el origen exacto sin credenciales, cabeceras de seguridad presentes,
-  escape en innerHTML).
+  escape en innerHTML; 3 nuevos en H-04: paper.md sin evidencia dual
+  obligatoria, caso de estudio con el modo strict real, síntesis sin
+  intersección TargetScan+miRTarBase).
 
 ## [1.46] — 2026-11-19
 

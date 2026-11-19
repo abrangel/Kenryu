@@ -9,8 +9,7 @@ is kept with the project's API test records
 ## Panel
 
 - **miRNAs:** hsa-miR-21-5p, hsa-miR-155-5p, hsa-let-7a-5p
-- **Mode:** Strict (a gene must be predicted by TargetScan *and* validated
-  in miRTarBase for every miRNA in the panel)
+- **Mode:** Strict (a gene must be predicted by TargetScan for every miRNA in the panel; miRTarBase acts as a fallback when TargetScan has no data for a miRNA, and as a post-hoc validation layer in the dossier)
 - **Runtime:** 51 s (partial cache)
 
 ## Result
@@ -42,7 +41,7 @@ show beyond the count of genes:
   coherent with the choice of panel (miR-21-5p and miR-155-5p are
   well-known oncomiRs; let-7a-5p is a tumour suppressor).
 
-Each gene in the JSON carries its PubMed (PMID) and OMIM evidence.
+Only the genes investigated in the run carry PubMed (PMID) and OMIM evidence in the JSON; the remaining genes are reported without a literature dossier.
 
 ## Reproduce it
 

@@ -289,7 +289,9 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
           f"estadístico convencional, la integración de datos de PubMed y bases de datos biológicas revela una "
           f"interconexión funcional profunda entre los {n} genes identificados ({core_str}). "
           f"El análisis multiplataforma ejecutado sobre {len(mirnas)} microARN(s) ({', '.join(mirnas)}) "
-          f"identificó estos biomarcadores mediante intersección de TargetScan y miRTarBase.")
+          f"identificó estos biomarcadores mediante intersección de las predicciones de TargetScan "
+          f"(con respaldo a miRTarBase cuando TargetScan no tiene datos para un miRNA), y cada gen "
+          f"se verificó después contra miRTarBase y bases clínicas en el dossier de validación.")
 
     # 2. Detalles por Gen Core (Top 5) — enriquecido con evidencia multi-fuente
     gene_paragraphs = []

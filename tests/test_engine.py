@@ -849,3 +849,48 @@ def test_script_js_escapes_external_data_in_innerhtml():
     assert "escapeHtml(g)" in js
     # Términos de enriquecimiento (vienen de Enrichr).
     assert "escapeHtml" in js and js.count("escapeHtml(") >= 6
+
+
+# ── Ronda 2, H-04 (v1.47) — el texto describe lo que el código hace ────────
+# Decisión del usuario (2026-11-19, por recomendación externa): corregir el
+# texto, no cambiar el código. El consenso se construye sobre TargetScan;
+# miRTarBase es respaldo cuando TargetScan no tiene el miRNA, y verificación
+# posterior en el dossier. La evidencia dual se mostrará por niveles
+# (Ronda 3: miRTarBase oficial + dossier de tres niveles).
+
+
+def test_paper_md_describes_real_algorithm():
+    """H-04: paper.md no afirma evidencia dual obligatoria; describe la
+    intersección TargetScan + verificación posterior."""
+    from pathlib import Path
+    text = (Path(__file__).parent.parent / "paper.md").read_text()
+    assert "requires dual evidence" not in text
+    assert "dual-evidence convergence" not in text
+    assert "dual-evidence consensus" not in text
+    assert "post-hoc" in text
+
+
+def test_case_study_describes_real_strict_mode():
+    """H-04: el caso de estudio no dice que strict exija validación en
+    miRTarBase para cada miRNA, ni que cada gen lleve evidencia
+    PubMed/OMIM (solo los investigados)."""
+    from pathlib import Path
+    text = (Path(__file__).parent.parent / "docs" / "case-study-cancer-panel.md").read_text()
+    assert "validated in miRTarBase for every miRNA" not in text
+    assert "Each gene in the JSON carries its PubMed" not in text
+    assert "post-hoc" in text
+
+
+def test_build_synthesis_intro_describes_real_algorithm():
+    """H-04: la introducción de la síntesis no afirma intersección de
+    TargetScan y miRTarBase."""
+    syn = ke.build_synthesis(
+        mirnas=["hsa-miR-21-5p", "hsa-miR-155-5p"],
+        common=["GENE1"],
+        gene_details={"GENE1": {"full_name": "Gene 1", "pathology": "Nodo."}},
+        enrichment=[],
+        references=[],
+        gene_research={})
+    assert "intersección de TargetScan y miRTarBase" not in syn["academic"]
+    assert "TargetScan" in syn["academic"]
+    assert "miRTarBase" in syn["academic"]
