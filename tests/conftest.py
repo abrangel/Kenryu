@@ -15,6 +15,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 os.chdir(REPO_ROOT)
 
+# v1.50 (auditoría externa, H-10): el limitador de tasa está desactivado
+# dentro de la suite (KENRYU_RATE_LIMIT=0) para que los cientos de
+# peticiones de los tests nunca den 429. Los tests de tests/test_rate_limit.py
+# lo activan explícitamente con monkeypatch y resetean su estado.
+os.environ.setdefault("KENRYU_RATE_LIMIT", "0")
+
 # v1.45 (auditoría externa, H-15): a regression test once overwrote the
 # committed `local_db/analysis_cache.json` with a single TESTGENE entry.
 # Tests must never read from or write to the real cache file: the cache

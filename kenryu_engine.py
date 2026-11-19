@@ -1,7 +1,7 @@
-import os, json, zipfile, asyncio, logging, re, io, base64, datetime, hmac, threading
+import os, json, zipfile, asyncio, logging, re, io, base64, datetime, hmac, threading, time
 from pathlib import Path
 from typing import List, Literal, Optional
-from collections import Counter
+from collections import Counter, deque
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -14,7 +14,7 @@ import httpx
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 import uvicorn
 
@@ -1380,7 +1380,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.49"
+APP_VERSION = "1.50"
 app = FastAPI(title="KENRYU Bioinformatics Engine", version=APP_VERSION)
 
 # Seguridad CORS (H-14, v1.47): solo el origen exacto del Space. Antes el
@@ -1427,6 +1427,75 @@ async def security_headers(request, call_next):
         "frame-ancestors 'self' https://huggingface.co https://*.hf.space;"
     )
     return response
+
+
+# ── RATE LIMIT (H-10, v1.50) ─────────────────────────────────────────────────
+# La auditoría encontró que ningún endpoint tenía límite de tasa: un solo
+# cliente podía inundar /api/v1/analyze (cada llamada quema 30-90 s de
+# peticiones vivas a NCBI/Enrichr) y agotar la cuota de esas APIs para
+# todos. Ventana deslizante por IP, en memoria, sin dependencias nuevas.
+# /health queda fuera: los health checks de Hugging Face no deben fallar.
+# Detrás del proxy de HF todos los clientes llegan con la IP del proxy,
+# así que la clave es X-Forwarded-For (primer salto) cuando está
+# presente. La cabecera es falsificable, pero el objetivo es frenar
+# inundaciones, no un sistema anti-abuso perfecto.
+# Configuración por entorno: KENRYU_RATE_LIMIT=0 lo desactiva,
+# KENRYU_RATE_LIMIT_PER_MINUTE cambia el presupuesto (60 por defecto).
+RATE_LIMIT_PER_MINUTE = int(os.environ.get("KENRYU_RATE_LIMIT_PER_MINUTE", "60"))
+RATE_LIMIT_ENABLED = os.environ.get("KENRYU_RATE_LIMIT", "1") != "0"
+
+
+class _RateLimiter:
+    def __init__(self, per_minute=60, window=60.0):
+        self.per_minute = per_minute
+        self.window = window
+        self._hits = {}  # ip -> deque[timestamps]
+        self._lock = threading.Lock()
+
+    def _client_ip(self, request):
+        xff = request.headers.get("x-forwarded-for")
+        if xff:
+            return xff.split(",")[0].strip()
+        return request.client.host if request.client else "unknown"
+
+    def allowed(self, request):
+        if not RATE_LIMIT_ENABLED:
+            return True
+        ip = self._client_ip(request)
+        now = time.monotonic()
+        with self._lock:
+            q = self._hits.setdefault(ip, deque())
+            while q and q[0] <= now - self.window:
+                q.popleft()
+            if len(q) >= self.per_minute:
+                return False
+            q.append(now)
+            return True
+
+    def reset(self):
+        with self._lock:
+            self._hits.clear()
+
+
+RATE_LIMITER = _RateLimiter(RATE_LIMIT_PER_MINUTE)
+
+
+@app.middleware("http")
+async def rate_limit(request, call_next):
+    """429 con Retry-After cuando una IP supera el presupuesto en
+    /api/v1/*. /health y la UI estática quedan fuera, y también los
+    preflight OPTIONS (CORS, sin coste de cuota)."""
+    path = request.url.path
+    if (path.startswith("/api/v1/") and path != "/health"
+            and request.method != "OPTIONS"):
+        if not RATE_LIMITER.allowed(request):
+            return JSONResponse(
+                {"detail": "rate limit exceeded, try again later"},
+                status_code=429,
+                headers={"Retry-After": "60"},
+            )
+    return await call_next(request)
+
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

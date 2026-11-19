@@ -2,6 +2,73 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.50] — 2026-11-19
+
+### Lo que faltaba de la auditoría de Claude (H-10, H-20, H-19, H-22)
+
+Al releer la auditoría completa contra v1.49, casi todo estaba ya
+hecho (H-01 con su recarga de DB en memoria, H-03 con su test de
+regresión, H-06 con la frase corregida en el caso de estudio). Quedaba
+esto:
+
+**H-10: límite de tasa en la API pública.** Ningún endpoint lo tenía:
+un solo cliente podía inundar `/api/v1/analyze` (cada llamada quema
+30–90 s de peticiones vivas a NCBI/Enrichr) y agotar la cuota de esas
+APIs para todos. Middleware propio, sin dependencias nuevas: ventana
+deslizante por IP (60 peticiones/minuto en `/api/v1/*`), 429 con
+cabecera `Retry-After: 60`. `/health` queda fuera (los health checks
+de Hugging Face no deben fallar) y también los preflight OPTIONS.
+Detrás del proxy de HF todos los clientes llegan con la IP del proxy,
+así que la clave es `X-Forwarded-For` (primer salto). Configurable
+por entorno (`KENRYU_RATE_LIMIT=0` lo desactiva,
+`KENRYU_RATE_LIMIT_PER_MINUTE` cambia el presupuesto); la suite de
+tests lo desactiva por defecto en `tests/conftest.py`.
+
+**H-20: cobertura de errores de red.** El código ya devolvía
+vacíos en vez de lanzar, pero no había tests que lo probaran.
+`tests/test_live_fetchers.py` (11 tests, con transportes mock de
+httpx y `asyncio.sleep` falso): `safe_pubmed_request` reintenta los
+429 y devuelve el JSON al tercer intento, y devuelve `None` tras
+agotar reintentos, ante un 500 o ante un timeout; OMIM devuelve `[]`
+ante 429, ClinVar `{"count": 0}` ante timeout, ClinicalTrials `[]`
+ante 500 y timeout, y `enrich_genes_direct` devuelve `[]` cuando
+`addList` da 429 o timeout (y sin red cuando la lista tiene menos
+de 3 genes). `tests/test_frontend_safety.py` (3 tests): el `script.js`
+servido define `escapeHtml`, no contiene la interpolación cruda
+`openGenePanel('${...}')` y no tiene la versión vieja `v1.38`.
+
+**H-19 (resto):** la fila de TargetScan en `DATA_LICENSES.md` aclara
+ahora que el archivo es la lista de sitios conservados ya
+prefiltrada por conservación y que el código no aplica ningún
+umbral adicional de `context++` ni `PCT`.
+
+**H-22 — verificado (con matices de esta máquina).** Docker instalado
+en la máquina de desarrollo (docker.io 29.1.3; daemon con
+`--iptables=false --bridge=none --storage-driver=vfs`): los pulls
+funcionan, pero `docker run` y `docker build` NO pueden ejecutar
+contenedores aquí — el kernel de la VM deniega `setns` (runc:
+«operation not permitted») y el driver overlayfs no monta sobre el
+overlay de la VM. La imagen se construyó y verificó con **buildah
+`--isolation=chroot`** (sin namespaces): el `Dockerfile` del repo se
+construye tal cual, usando un `Dockerfile.local-test` temporal que
+solo añade el CA del proxy de la VM para que pip verifique pypi.org
+(ese archivo temporal NO se commitea; el `Dockerfile` del repo no
+cambia). Imagen `kenryu:1.50` verificada corriendo: /health 1.50, 285
+familias, y el panel de la tesis offline con los mismos 5 genes y
+puntajes que la corrida local (ABCA1 55, SNTB2/TSC22D2 40,
+KPNA3/SCN1A 25; media 37,0 offline). Nota: buildah avisa que
+HEALTHCHECK se ignora en formato OCI; el `Dockerfile` sigue siendo
+válido para Docker/BuildKit, donde sí se respeta.
+
+**Números antes/después (corrida en vivo local, 2026-11-19).**
+Panel de la tesis (mismos 5 genes, mismos puntajes): ABCA1 100 alta,
+SNTB2 65 media, TSC22D2 65 media, KPNA3 50 media, SCN1A 60 media;
+media 68,0. El limitador no cambia ningún resultado: solo frena
+ráfagas (verificado en vivo con `KENRYU_RATE_LIMIT_PER_MINUTE=3`:
+3 peticiones 200, la 4.ª 429 con `Retry-After`).
+
+**Tests: 162 → 180.**
+
 ## [1.49] — 2026-11-19
 
 ### Ronda 3 (resto): fondo del enriquecimiento, Open Targets + dossier de cuatro niveles, H-15 / H-19 / H-20 / H-22 / H-23
