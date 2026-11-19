@@ -1066,7 +1066,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     return info
 
 # ── GRÁFICOS ──────────────────────────────────────────────────────────────────
-app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.38")
+app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.39")
 
 # Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
 origins = [
@@ -1105,7 +1105,7 @@ async def serve_style():
 
 @app.get("/health")
 async def health():
-    return {"status": "OK", "version": "1.38",
+    return {"status": "OK", "version": "1.39",
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": load_local_versions()}
@@ -1247,7 +1247,7 @@ async def startup_event():
         TARGETSCAN_DB = load_local_data()
     load_mirtarbase_local()
     load_gmt_libraries()
-    logger.info(f"🚀 KENRYU v1.38 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+    logger.info(f"🚀 KENRYU v1.39 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
 
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):

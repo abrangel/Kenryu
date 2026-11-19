@@ -111,3 +111,19 @@ def test_mouse_db_loads_and_analyze_offline():
     assert d["species"] == "mouse"
     assert d["found_mirnas"] == ["mmu-miR-21-5p", "mmu-miR-155-5p", "mmu-let-7a-5p"]
     assert isinstance(d["common_genes"], list)
+
+
+def test_validation_ui_hooks():
+    """The web page must have a place to SHOW the validation dossier
+    (table + heatmap) and the gene panel must use the real score."""
+    import re
+    html = (Path(__file__).resolve().parent.parent / "static" / "index.html").read_text()
+    js = (Path(__file__).resolve().parent.parent / "static" / "script.js").read_text()
+    assert "validation-container" in html
+    assert "heatmap-container" in html
+    assert "validation-badge" in html
+    assert "data.validation" in js
+    assert "heatmap_plot" in js
+    assert "validation?.genes?.[gene]?.score" in js
+    # No hardcoded gene scores left in the panel.
+    assert "gene === 'ABCA1'" not in js

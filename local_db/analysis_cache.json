@@ -4,7 +4,11 @@
     "engulfment of apoptotic cell": "fagocitosis de células apoptóticas",
     "phosphatidylserine exposure on apoptotic cell surface": "exposición de la fosfatidilserina en la superficie celular apoptótica",
     "apoptotic process involved in development": "proceso apoptótico implicado en el desarrollo",
-    "positive regulation of apoptotic process": "Regulación positiva del proceso apoptótico"
+    "positive regulation of apoptotic process": "Regulación positiva del proceso apoptótico",
+    "ncRNAs involved in STAT3 signaling in hepatocellular carcinoma WP4337": "ARNnc implicados en la señalización de STAT3 en el carcinoma hepatocelular WP4337",
+    "Differentiation Pathway WP2848": "Vía de diferenciación WP2848",
+    "Regulation Of Smooth Muscle Cell Proliferation (GO:0048660)": "Regulación de la proliferación de células musculares lisas (GO:0048660)",
+    "Post-transcriptional Silencing by Small RNAs": "Silenciamiento postranscripcional mediante ARN pequeños"
   },
   "pubmed": {
     "esum_39655875": {
@@ -324,6 +328,288 @@
       "authors": "Ocadiz-Ruiz R et al.",
       "year": "2026",
       "journal": "Front Immunol"
+    },
+    "Detection Of Stimulus Involved In Sensory Perception Of Pain (GO:0062149)_10": [
+      {
+        "title": "",
+        "id": "42648066"
+      }
+    ],
+    "Detection Of Mechanical Stimulus Involved In Sensory Perception (GO:0050974)_10": [
+      {
+        "title": "",
+        "id": "40749615"
+      }
+    ],
+    "NLS-bearing Protein Import Into Nucleus (GO:0006607)_10": [
+      {
+        "title": "",
+        "id": "31072138"
+      }
+    ],
+    "Cardiac Muscle Cell Contraction (GO:0086003)_10": [
+      {
+        "title": "",
+        "id": "37753085"
+      }
+    ],
+    "Fat digestion and absorption_10": [
+      {
+        "title": "",
+        "id": "42536079"
+      }
+    ],
+    "ABC transporters_10": [
+      {
+        "title": "",
+        "id": "43028129"
+      }
+    ],
+    "Import Into Nucleus (GO:0051170)_10": [
+      {
+        "title": "",
+        "id": "31072138"
+      }
+    ],
+    "Cholesterol metabolism_10": [
+      {
+        "title": "",
+        "id": "43039917"
+      }
+    ],
+    "Dopaminergic synapse_10": [
+      {
+        "title": "",
+        "id": "42868736"
+      }
+    ],
+    "HDL Assembly_10": [
+      {
+        "title": "",
+        "id": "39519300"
+      }
+    ],
+    "Plasma Lipoprotein Assembly_10": [
+      {
+        "title": "",
+        "id": "39009924"
+      }
+    ],
+    "Interaction Between L1 and Ankyrins_10": [
+      {
+        "title": "",
+        "id": "36199823"
+      }
+    ],
+    "Nuclear Receptors in Lipid Metabolism and Toxicity WP299_10": [
+      {
+        "title": "",
+        "id": "43045099"
+      }
+    ],
+    "Rett syndrome causing genes WP4312_10": [
+      {
+        "title": "",
+        "id": "43000573"
+      }
+    ],
+    "Vitamin B12 Metabolism WP1533_10": [
+      {
+        "title": "",
+        "id": "43044974"
+      }
+    ],
+    "Folate Metabolism WP176_10": [
+      {
+        "title": "",
+        "id": "43050504"
+      }
+    ],
+    "Cardiac Muscle Cell Action Potential (GO:0086001)_10": [
+      {
+        "title": "",
+        "id": "41485322"
+      }
+    ],
+    "Cardiac Muscle Cell Action Potential Involved In Contraction (GO:0086002)_10": [
+      {
+        "title": "",
+        "id": "41485322"
+      }
+    ],
+    "Calcium Ion Import Across Plasma Membrane (GO:0098703)_10": [
+      {
+        "title": "",
+        "id": "33383579"
+      }
+    ],
+    "SREBF and miR33 in cholesterol and lipid homeostasis WP2011_10": [
+      {
+        "title": "",
+        "id": "41139499"
+      }
+    ],
+    "Statin Pathway WP430_10": [
+      {
+        "title": "",
+        "id": "43049828"
+      }
+    ],
+    "Metabolic pathway of LDL, HDL and TG, including diseases WP4522_10": [
+      {
+        "title": "",
+        "id": "43045099"
+      }
+    ],
+    "esum_40526435": {
+      "title": "E3 ubiquitin ligase Listerin regulates macrophage cholesterol efflux and atherosclerosis by targeting ABCA1",
+      "authors": "Cao L et al.",
+      "year": "2025",
+      "journal": "J Clin Invest"
+    },
+    "esum_24978143": {
+      "title": "microRNA regulation of lipoprotein metabolism",
+      "authors": "Goedeke L, Aranda JF, Fernández-Hernando C",
+      "year": "2014",
+      "journal": "Curr Opin Lipidol"
+    },
+    "esum_27659420": {
+      "title": "Hepatic aberrant glycosylation by N-acetylglucosaminyltransferase V accelerates HDL assembly",
+      "authors": "Kamada Y et al.",
+      "year": "2016",
+      "journal": "Am J Physiol Gastrointest Liver Physiol"
+    },
+    "esum_32492291": {
+      "title": "Down regulation of miR-218, miR-124, and miR-144 relates to Parkinson's disease via activating NF-κB signaling",
+      "authors": "Xing RX et al.",
+      "year": "2020",
+      "journal": "Kaohsiung J Med Sci"
+    },
+    "esum_36153432": {
+      "title": "The Promising Epigenetic Regulators for Refractory Epilepsy: An Adventurous Road Ahead",
+      "authors": "Suvekbala V et al.",
+      "year": "2023",
+      "journal": "Neuromolecular Med"
+    },
+    "esum_37762054": {
+      "title": "Development of a Macrophage-Related Risk Model for Metastatic Melanoma",
+      "authors": "Li Z et al.",
+      "year": "2023",
+      "journal": "Int J Mol Sci"
+    },
+    "esum_35100036": {
+      "title": "Specific Regulatory Motifs Network in SARS-CoV-2-Infected Caco-2 Cell Line, as a Model of Gastrointestinal Infections",
+      "authors": "Ghani S et al.",
+      "year": "2022",
+      "journal": "Cell Reprogram"
+    },
+    "esum_43045099": {
+      "title": "[Mechanism of Jingfang Granules improving metabolic associated fatty liver disease in mice via activation of PPARα pathway]",
+      "authors": "Li B et al.",
+      "year": "2026",
+      "journal": "Zhongguo Zhong Yao Za Zhi"
+    },
+    "esum_43049828": {
+      "title": "Astrocytes as a Convergence Point for Neuroprotection and Drug Repurposing in Long COVID Comorbidities",
+      "authors": "Bezerra CCR et al.",
+      "year": "2026",
+      "journal": "Mol Neurobiol"
+    },
+    "esum_43000573": {
+      "title": "Integrated Multi-omics Reveals Molecular Signatures of Rett Syndrome, Informing Future Biomarker Discovery",
+      "authors": "Issar JK et al.",
+      "year": "2026",
+      "journal": "Mol Neurobiol"
+    },
+    "esum_43044974": {
+      "title": "Pyrroloquinoline Quinone as a Candidate Vitamin-like Accessory Factor: Evidence Gaps and Research Priorities",
+      "authors": "Rucker RB et al.",
+      "year": "2026",
+      "journal": "Adv Nutr"
+    },
+    "esum_43050504": {
+      "title": "Targeting cancer immune evasion with anti-FOLR1 antibody-drug conjugate potentiates anti-PD-1 efficacy in colorectal cancer",
+      "authors": "Chen S et al.",
+      "year": "2026",
+      "journal": "Sci Transl Med"
+    },
+    "esum_42648066": {
+      "title": "Association between reliable measures of human reticular formation motor output",
+      "authors": "Kita K, Mooney RA",
+      "year": "2026",
+      "journal": "Clin Neurophysiol"
+    },
+    "esum_40749615": {
+      "title": "PIEZO2 channels: mediators of mechanotransduction and cell-cell communication as revealed by localized mechanical stimulation",
+      "authors": "Demontis G et al.",
+      "year": "2025",
+      "journal": "Biochem Biophys Res Commun"
+    },
+    "esum_37753085": {
+      "title": "Novel ceRNA network construction associated with programmed cell death in acute rejection of heart allograft in mice",
+      "authors": "Guo Y et al.",
+      "year": "2023",
+      "journal": "Front Immunol"
+    },
+    "esum_31072138": {
+      "title": "Identification of novel blood-based HCC-specific diagnostic biomarkers for human hepatocellular carcinoma",
+      "authors": "Yin L et al.",
+      "year": "2019",
+      "journal": "Artif Cells Nanomed Biotechnol"
+    },
+    "esum_41485322": {
+      "title": "Effects of overexpression of the human intestinal alkaline phosphatase gene on the expression of related genes in intestinal epithelium-like cells",
+      "authors": "Noda S et al.",
+      "year": "2026",
+      "journal": "Enzyme Microb Technol"
+    },
+    "esum_33383579": {
+      "title": "A single Na+-Pi cotransporter in Toxoplasma plays key roles in phosphate import and control of parasite osmoregulation",
+      "authors": "Asady B et al.",
+      "year": "2020",
+      "journal": "PLoS Pathog"
+    },
+    "esum_43028129": {
+      "title": "Comparison of Sonidegib and Vismodegib Efficiency in Drug-Sensitive and Resistant Ovarian Cancer Cell Lines-2D and 3D Model Study",
+      "authors": "Stasiak P et al.",
+      "year": "2026",
+      "journal": "Int J Mol Sci"
+    },
+    "esum_42536079": {
+      "title": "E3 Ubiquitin Ligase MDM2 Promotes Growth and CD8(+) T Cell Dysfunction in Gastric Cancer Through Degradation of SST",
+      "authors": "Yang F et al.",
+      "year": "2026",
+      "journal": "J Gastroenterol Hepatol"
+    },
+    "esum_39519300": {
+      "title": "Proteomic Analysis of Follicular Fluid in Polycystic Ovary Syndrome: Insights into Protein Composition and Metabolic Pathway Alterations",
+      "authors": "Przewocki J et al.",
+      "year": "2024",
+      "journal": "Int J Mol Sci"
+    },
+    "esum_42868736": {
+      "title": "Whole-exome sequencing of schizophrenia in an underrepresented indigenous population of Northeast India: Rare coding variant burden and clinical correlates",
+      "authors": "Ramdintluangi et al.",
+      "year": "2026",
+      "journal": "Asian J Psychiatr"
+    },
+    "esum_43039917": {
+      "title": "Autism-relevant oxysterol signaling regulates GABAergic neurogenesis and interneuron subtype specification",
+      "authors": "Cruz-Santos M et al.",
+      "year": "2026",
+      "journal": "Transl Psychiatry"
+    },
+    "esum_36199823": {
+      "title": "Integrative Functional Genomic Analysis in Multiplex Autism Families from Kazakhstan",
+      "authors": "Perfilyeva A et al.",
+      "year": "2022",
+      "journal": "Dis Markers"
+    },
+    "esum_39009924": {
+      "title": "Multi-biobank Mendelian randomization analyses identify opposing pathways in plasma low-density lipoprotein-cholesterol lowering and gallstone disease",
+      "authors": "Yang G et al.",
+      "year": "2024",
+      "journal": "Eur J Epidemiol"
     }
   },
   "enrichr": {
@@ -472,6 +758,152 @@
         "Pval": 0.13600247904330431,
         "RawTerm": "Kit receptor signaling pathway WP304"
       }
+    ],
+    "ABCA1,KPNA3,SCN1A,SNTB2,TSC22D2": [
+      {
+        "Term": "Metabolic pathway of LDL, HDL and TG, including diseases WP4522",
+        "Source": "WikiPathways",
+        "Pval": 0.015975781794622553,
+        "RawTerm": "Metabolic pathway of LDL, HDL and TG, including diseases WP4522"
+      },
+      {
+        "Term": "SREBF and miR33 in cholesterol and lipid homeostasis WP2011",
+        "Source": "WikiPathways",
+        "Pval": 0.015975781794622553,
+        "RawTerm": "SREBF and miR33 in cholesterol and lipid homeostasis WP2011"
+      },
+      {
+        "Term": "Statin Pathway WP430",
+        "Source": "WikiPathways",
+        "Pval": 0.016447095938252956,
+        "RawTerm": "Statin Pathway WP430"
+      },
+      {
+        "Term": "Nuclear Receptors in Lipid Metabolism and Toxicity WP299",
+        "Source": "WikiPathways",
+        "Pval": 0.016447095938252956,
+        "RawTerm": "Nuclear Receptors in Lipid Metabolism and Toxicity WP299"
+      },
+      {
+        "Term": "Rett syndrome causing genes WP4312",
+        "Source": "WikiPathways",
+        "Pval": 0.016585036257030044,
+        "RawTerm": "Rett syndrome causing genes WP4312"
+      },
+      {
+        "Term": "Vitamin B12 Metabolism WP1533",
+        "Source": "WikiPathways",
+        "Pval": 0.016585036257030044,
+        "RawTerm": "Vitamin B12 Metabolism WP1533"
+      },
+      {
+        "Term": "Folate Metabolism WP176",
+        "Source": "WikiPathways",
+        "Pval": 0.018734801614483192,
+        "RawTerm": "Folate Metabolism WP176"
+      },
+      {
+        "Term": "Selenium Micronutrient Network WP15",
+        "Source": "WikiPathways",
+        "Pval": 0.0213178505521487,
+        "RawTerm": "Selenium Micronutrient Network WP15"
+      },
+      {
+        "Term": "Detection Of Stimulus Involved In Sensory Perception Of Pain (GO:0062149)",
+        "Source": "GO",
+        "Pval": 0.021338390364866604,
+        "RawTerm": "Detection Of Stimulus Involved In Sensory Perception Of Pain (GO:0062149)"
+      },
+      {
+        "Term": "Detection Of Mechanical Stimulus Involved In Sensory Perception (GO:0050974)",
+        "Source": "GO",
+        "Pval": 0.021338390364866604,
+        "RawTerm": "Detection Of Mechanical Stimulus Involved In Sensory Perception (GO:0050974)"
+      },
+      {
+        "Term": "NLS-bearing Protein Import Into Nucleus (GO:0006607)",
+        "Source": "GO",
+        "Pval": 0.021338390364866604,
+        "RawTerm": "NLS-bearing Protein Import Into Nucleus (GO:0006607)"
+      },
+      {
+        "Term": "Cardiac Muscle Cell Contraction (GO:0086003)",
+        "Source": "GO",
+        "Pval": 0.021338390364866604,
+        "RawTerm": "Cardiac Muscle Cell Contraction (GO:0086003)"
+      },
+      {
+        "Term": "Cardiac Muscle Cell Action Potential (GO:0086001)",
+        "Source": "GO",
+        "Pval": 0.023680943957047316,
+        "RawTerm": "Cardiac Muscle Cell Action Potential (GO:0086001)"
+      },
+      {
+        "Term": "Cardiac Muscle Cell Action Potential Involved In Contraction (GO:0086002)",
+        "Source": "GO",
+        "Pval": 0.023680943957047316,
+        "RawTerm": "Cardiac Muscle Cell Action Potential Involved In Contraction (GO:0086002)"
+      },
+      {
+        "Term": "Calcium Ion Import Across Plasma Membrane (GO:0098703)",
+        "Source": "GO",
+        "Pval": 0.02501664462165847,
+        "RawTerm": "Calcium Ion Import Across Plasma Membrane (GO:0098703)"
+      },
+      {
+        "Term": "Fat digestion and absorption",
+        "Source": "KEGG",
+        "Pval": 0.02902381344980258,
+        "RawTerm": "Fat digestion and absorption"
+      },
+      {
+        "Term": "ABC transporters",
+        "Source": "KEGG",
+        "Pval": 0.02902381344980258,
+        "RawTerm": "ABC transporters"
+      },
+      {
+        "Term": "Cholesterol metabolism",
+        "Source": "KEGG",
+        "Pval": 0.02902381344980258,
+        "RawTerm": "Cholesterol metabolism"
+      },
+      {
+        "Term": "Import Into Nucleus (GO:0051170)",
+        "Source": "GO",
+        "Pval": 0.0349202283503877,
+        "RawTerm": "Import Into Nucleus (GO:0051170)"
+      },
+      {
+        "Term": "Dopaminergic synapse",
+        "Source": "KEGG",
+        "Pval": 0.05699800080118819,
+        "RawTerm": "Dopaminergic synapse"
+      },
+      {
+        "Term": "HDL Assembly",
+        "Source": "Reactome",
+        "Pval": 0.05841433850324097,
+        "RawTerm": "HDL Assembly"
+      },
+      {
+        "Term": "Plasma Lipoprotein Assembly",
+        "Source": "Reactome",
+        "Pval": 0.05841433850324097,
+        "RawTerm": "Plasma Lipoprotein Assembly"
+      },
+      {
+        "Term": "Interaction Between L1 and Ankyrins",
+        "Source": "Reactome",
+        "Pval": 0.05841433850324097,
+        "RawTerm": "Interaction Between L1 and Ankyrins"
+      },
+      {
+        "Term": "Phase 0 - Rapid Depolarisation",
+        "Source": "Reactome",
+        "Pval": 0.05841433850324097,
+        "RawTerm": "Phase 0 - Rapid Depolarisation"
+      }
     ]
   },
   "gene_research": {
@@ -594,6 +1026,199 @@
       },
       "trials": [],
       "year_window_used": "10y"
+    },
+    "v2|SCN1A|10": {
+      "pubmed": [
+        {
+          "pmid": "36153432",
+          "term": "Sistema Neuronal",
+          "source": "Reactome",
+          "desc": "Disfunción de interneuronas GABAérgicas por alteración del canal de sodio.",
+          "year_window": "any"
+        },
+        {
+          "pmid": "36153432",
+          "term": "Percepción sensorial del dolor",
+          "source": "GO",
+          "desc": "Implicado en la detección y procesamiento de estímulos nociceptivos.",
+          "year_window": "any"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "182389",
+          "title": "SODIUM VOLTAGE-GATED CHANNEL, ALPHA SUBUNIT 1; SCN1A",
+          "url": "https://www.omim.org/entry/182389"
+        }
+      ],
+      "clinvar": {
+        "count": 3098,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=SCN1A%5BGene+Name%5D"
+      },
+      "trials": [
+        {
+          "nct_id": "NCT06283212",
+          "title": "A Clinical Study to Evaluate the Safety and Efficacy of ETX101, an AAV9-Delivered Gene Therapy in Children With SCN1A-positive Dravet Syndrome",
+          "status": "ACTIVE_NOT_RECRUITING",
+          "url": "https://clinicaltrials.gov/study/NCT06283212"
+        },
+        {
+          "nct_id": "NCT06112275",
+          "title": "A Clinical Study to Evaluate the Safety and Efficacy of ETX101, an AAV9-Delivered Gene Therapy in Children With SCN1A-positive Dravet Syndrome (Australia Only)",
+          "status": "ACTIVE_NOT_RECRUITING",
+          "url": "https://clinicaltrials.gov/study/NCT06112275"
+        },
+        {
+          "nct_id": "NCT07251673",
+          "title": "Longitudinal Study of Phenotypic and Developmental Severity in Patients With Dravet Syndrome With SCN1A Gene Mutation",
+          "status": "RECRUITING",
+          "url": "https://clinicaltrials.gov/study/NCT07251673"
+        }
+      ],
+      "diseases": [],
+      "year_window_used": "10y_ampliado"
+    },
+    "v2|KPNA3|10": {
+      "pubmed": [
+        {
+          "pmid": "32492291",
+          "term": "Importación de proteínas al núcleo",
+          "source": "GO",
+          "desc": "Modulación de la importación de proteínas críticas para la respuesta al estrés.",
+          "year_window": "any"
+        },
+        {
+          "pmid": "32492291",
+          "term": "Efectos mediados por NS1",
+          "source": "WikiPathways",
+          "desc": "Interacción con rutas virales que afectan la estabilidad genómica.",
+          "year_window": "any"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "601892",
+          "title": "KARYOPHERIN ALPHA-3; KPNA3",
+          "url": "https://www.omim.org/entry/601892"
+        }
+      ],
+      "clinvar": {
+        "count": 83,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=KPNA3%5BGene+Name%5D"
+      },
+      "trials": [],
+      "diseases": [],
+      "year_window_used": "10y_ampliado"
+    },
+    "v2|TSC22D2|10": {
+      "pubmed": [
+        {
+          "pmid": "35100036",
+          "term": "Respuesta al estrés osmótico",
+          "source": "GO",
+          "desc": "Regulación de la homeostasis de aminoácidos bajo estrés osmótico renal.",
+          "year_window": "any"
+        },
+        {
+          "pmid": "35100036",
+          "term": "Actividad de factores de transcripción",
+          "source": "KEGG",
+          "desc": "Control transcripcional en rutas de supervivencia celular.",
+          "year_window": "any"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "617724",
+          "title": "TSC22 DOMAIN FAMILY, MEMBER 2; TSC22D2",
+          "url": "https://www.omim.org/entry/617724"
+        }
+      ],
+      "clinvar": {
+        "count": 23,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=TSC22D2%5BGene+Name%5D"
+      },
+      "trials": [],
+      "diseases": [],
+      "year_window_used": "10y_ampliado"
+    },
+    "v2|ABCA1|10": {
+      "pubmed": [
+        {
+          "pmid": "40526435",
+          "term": "Metabolismo del colesterol",
+          "source": "KEGG",
+          "desc": "miR-33 suprime ABCA1, reduciendo el eflujo de colesterol en macrófagos.",
+          "year_window": "10y"
+        },
+        {
+          "pmid": "24978143",
+          "term": "SREBF y miR33",
+          "source": "WikiPathways",
+          "desc": "La inhibición de miR-33 restaura ABCA1 y aumenta HDL en modelos animales.",
+          "year_window": "any"
+        },
+        {
+          "pmid": "27659420",
+          "term": "Ensamblaje de HDL",
+          "source": "Reactome",
+          "desc": "Ruta crítica para la formación de lipoproteínas mediada por ABCA1.",
+          "year_window": "10y"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "600046",
+          "title": "ATP-BINDING CASSETTE, SUBFAMILY A, MEMBER 1; ABCA1",
+          "url": "https://www.omim.org/entry/600046"
+        }
+      ],
+      "clinvar": {
+        "count": 214,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=ABCA1%5BGene+Name%5D"
+      },
+      "trials": [
+        {
+          "nct_id": "NCT01456650",
+          "title": "R230C and C230C Variants of ABCA1 and Glyburide Response",
+          "status": "COMPLETED",
+          "url": "https://clinicaltrials.gov/study/NCT01456650"
+        }
+      ],
+      "diseases": [],
+      "year_window_used": "10y_ampliado"
+    },
+    "v2|SNTB2|10": {
+      "pubmed": [
+        {
+          "pmid": "37762054",
+          "term": "Complejo asociado a distrofina",
+          "source": "Reactome",
+          "desc": "Afecta la integridad de la membrana celular en cardiomiocitos.",
+          "year_window": "any"
+        },
+        {
+          "pmid": "37762054",
+          "term": "Organización del citoesqueleto",
+          "source": "GO",
+          "desc": "Regula el anclaje de proteínas de membrana al citoesqueleto de actina.",
+          "year_window": "any"
+        }
+      ],
+      "omim": [
+        {
+          "omim_id": "600027",
+          "title": "SYNTROPHIN, BETA-2; SNTB2",
+          "url": "https://www.omim.org/entry/600027"
+        }
+      ],
+      "clinvar": {
+        "count": 24,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=SNTB2%5BGene+Name%5D"
+      },
+      "trials": [],
+      "diseases": [],
+      "year_window_used": "10y_ampliado"
     }
   }
 }

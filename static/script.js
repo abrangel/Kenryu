@@ -113,6 +113,31 @@ function renderDashboard(data) {
     setImg('venn-container', data.venn_plot);
     setImg('volcano-container', data.volcano_plot);
     setImg('ppi-container', data.ppi_plot);
+    setImg('heatmap-container', data.heatmap_plot);
+
+    // Validación de cada gen: puntaje 0-100 por capas de evidencia
+    // independientes + versiones exactas de las bases usadas.
+    const vEl = document.getElementById('validation-container');
+    if (vEl) {
+      const v = data.validation;
+      if (v && v.genes && Object.keys(v.genes).length) {
+        const s = v.summary || {};
+        const badge = document.getElementById('validation-badge');
+        if (badge) badge.textContent = `${s.high || 0} alta · ${s.medium || 0} media · ${s.low || 0} baja`;
+        let html = `<table class="sci-table"><thead><tr><th>Gen</th><th>Puntaje</th><th>Nivel</th><th>Capas de evidencia</th><th>Qué falta</th></tr></thead><tbody>`;
+        for (const [gene, gv] of Object.entries(v.genes)) {
+          const levelColor = gv.level === 'alta' ? 'var(--teal)' : gv.level === 'media' ? 'var(--gold)' : 'var(--red)';
+          html += `<tr><td><b>${gene}</b></td><td><span style="font-family:var(--font-mono);">${gv.score}/100</span></td><td><span style="color:${levelColor}; font-weight:600;">${gv.level}</span></td><td style="font-size:11px;">${(gv.layers || []).join('<br>') || '—'}</td><td style="font-size:11px; color:var(--text-dim);">${(gv.missing || []).join('<br>') || '—'}</td></tr>`;
+        }
+        html += '</tbody></table>';
+        const ds = v.data_sources || {};
+        const dsText = Object.entries(ds).map(([k, val]) => `${k} ${val}`).join(' · ');
+        html += `<div style="margin-top:12px; color:var(--text-dim); font-size:11px; font-family:var(--font-mono);">Bases de datos: ${dsText || '—'}</div>`;
+        vEl.innerHTML = html;
+      } else {
+        vEl.innerHTML = '<div style="color:var(--text-faint); padding:20px; text-align:center;">Sin dossier de validación en esta respuesta (versión anterior del motor).</div>';
+      }
+    }
 
     const enEl = document.getElementById('enrich-container');
     if (enEl) {
@@ -152,7 +177,9 @@ async function openGenePanel(gene) {
   document.getElementById('gp-name').textContent = gene;
   document.getElementById('gene-panel').classList.add('open');
   const d = lastData?.gene_details?.[gene] || {full_name: gene, system:'Multisistémico', pathology:'Diana de alta confianza.', associated_routes:[]};
-  const score = d.confidence?.score || (gene === 'ABCA1' || gene === 'SCN1A' ? 92 : 85);
+  // Puntaje REAL del dossier de validación (no un número fijo).
+  const vScore = lastData?.validation?.genes?.[gene]?.score;
+  const score = (vScore !== undefined && vScore !== null) ? vScore : (d.confidence?.score || 85);
   
   document.getElementById('gene-panel-body').innerHTML = `
     <div style="margin-bottom:20px;">

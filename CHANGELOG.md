@@ -2,6 +2,26 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.39] — 2026-11-18
+
+### Added
+- Self-updater: `GET /api/v1/updates` (version check) + `POST /api/v1/updates/{source}/install`
+  (download, verify, backup, install, record). miRBase 23.1 installed live.
+- Validation dossier in every `/analyze` response: per-gene 0–100 score from
+  independent layers (TargetScan, miRTarBase, PubMed, OMIM, ClinVar,
+  ClinicalTrials) + the exact database versions used.
+- miRTarBase served LOCALLY (Harmonizome GMT, 596 miRNAs); live API only a fallback.
+- Local enrichment (KEGG/Reactome/WikiPathways/GO GMTs + Fisher + Benjamini-Hochberg).
+- Offline mode (`offline=true`): zero network calls; same core genes as live.
+- Structured JSON export (schema 1.0) + genes × miRNAs heatmap in every response.
+- `GET /api/v1/reverse` (gene → miRNA families), isomiR normalization,
+  `kenryu` CLI, `POST /api/v1/compare` + `/api/v1/batch`, DisGeNET layer
+  (free API key), mouse species (`species=mouse`, TargetScanMouse 8.0).
+- Web UI: validation table + heatmap card on the dashboard; the gene panel
+  now shows the real validation score instead of a fixed number.
+- `pyproject.toml` (`pip install -e .` → `kenryu` command); Dockerfile fixed
+  (it copied only the engine before — the image could not import the core).
+
 ## [Unreleased]
 
 ### Added
