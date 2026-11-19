@@ -24,28 +24,31 @@ logger = logging.getLogger(__name__)
 
 def deep_clean_mirna(m: str) -> str:
     m = m.replace('\u2011', '-').replace('\u2013', '-').replace('\u2014', '-').strip()
-    m = re.sub(r'^(hsa-)+', '', m, flags=re.IGNORECASE)
+    # Strip species prefixes (hsa-, mmu-, rno-, ...), repeated if needed —
+    # only when a miR/let/mir name follows, so "mir-33a-5p" is never touched.
+    m = re.sub(r'^([a-z]{3}-)+(?=miR|let|mir)', '', m, flags=re.IGNORECASE)
     return m.lower()
 
-def clean_mirna_name_cloud(m: str) -> str:
+def clean_mirna_name_cloud(m: str, species: str = "hsa") -> str:
     c = deep_clean_mirna(m)
     parts = c.split('-')
-    # The let-7 family keeps its own name (hsa-let-7a-5p). The generic
-    # rule below would drop "let" and wrongly return hsa-miR-7a-5p,
-    # so the remote miRTarBase lookup queried a name that does not exist.
+    # The let-7 family keeps its own name (hsa-let-7a-5p / mmu-let-7a-5p).
+    # The generic rule below would drop "let" and wrongly return
+    # hsa-miR-7a-5p, so the remote miRTarBase lookup queried a name
+    # that does not exist.
     if "let" in parts[:2]:
         i = parts.index("let")
         rest = parts[i + 1:]
-        r = "hsa-let"
+        r = f"{species}-let"
         if rest:
             r += "-" + "-".join(rest)
         return r
     if len(parts) > 1:
         num = parts[1]; suf = '-'.join(parts[2:])
-        r = f"hsa-miR-{num}"
+        r = f"{species}-miR-{num}"
         if suf: r += f"-{suf}"
         return r
-    return f"hsa-miR-{c}"
+    return f"{species}-miR-{c}"
 
 # ── CARGA DE DATOS ────────────────────────────────────────────────────────────
 def consensus_genes(gene_sets: list, mode: str) -> set:
@@ -444,12 +447,14 @@ def load_mirtarbase_gmt(path):
     return db
 
 
-def get_validated_local(mirna, db):
+def get_validated_local(mirna, db, species="hsa"):
     """Validated targets for one miRNA from the local miRTarBase library.
-    Tries the cleaned name and the name without the -5p/-3p suffix."""
+    Tries the cleaned name and the name without the -5p/-3p suffix.
+    The library is human (hsa-); other species return empty here and
+    fall back to the live Harmonizome API."""
     if not db:
         return set()
-    name = clean_mirna_name_cloud(mirna)
+    name = clean_mirna_name_cloud(mirna, species)
     if name in db:
         return set(db[name])
     base = re.sub(r"-(5p|3p)$", "", name, flags=re.IGNORECASE)
@@ -622,7 +627,7 @@ def reverse_lookup(gene, targetscan_db):
     return sorted(hits)
 
 
-def normalize_isomir(name):
+def normalize_isomir(name, species="hsa"):
     """Map an isomiR notation to its canonical miRNA name.
     Strips 3' trimming/extension marks (+N/-N) ONLY when they follow the
     -5p/-3p arm suffix (e.g. hsa-miR-21-5p+2), shift annotations (|...),
@@ -634,7 +639,7 @@ def normalize_isomir(name):
     n = n.split("|")[0]
     n = re.sub(r"(-[53]p)[+-]\d+$", r"\1", n)
     n = re.sub(r"[^A-Za-z0-9\-]+$", "", n)
-    return clean_mirna_name_cloud(n)
+    return clean_mirna_name_cloud(n, species)
 
 
 # ── VALIDATION OF EVERYTHING ──────────────────────────────────────────────

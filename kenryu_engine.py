@@ -11,7 +11,7 @@ import matplotlib.patches as patches
 import seaborn as sns
 from matplotlib_venn import venn2, venn3
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -29,6 +29,7 @@ class AnalysisRequest(BaseModel):
     mode: str = "strict"
     month: Optional[str] = None
     offline: bool = False
+    species: str = "human"
 
 BASE_DIR = Path(__file__).resolve().parent
 # Directorio de datos: contiene targetscan_full.json.zip y los archivos
@@ -37,6 +38,27 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data" if (BASE_DIR / "data").exists() else BASE_DIR
 RAW_DATA_DIR = DATA_DIR
 TARGETSCAN_DB = {}
+# Ratón (TargetScanMouse 8.0, Species ID 10090). Las capas de validación
+# y enriquecimiento locales son humanas; para ratón el análisis corre
+# solo con TargetScan local + el respaldo vivo de Harmonizome.
+MOUSE_DB = {}
+MOUSE_ZIP = "data/mouse/Predicted_Targets_Info.default_predictions.txt.zip"
+
+
+def load_mouse_data():
+    """Carga la base local de ratón (una sola vez)."""
+    global MOUSE_DB
+    if not MOUSE_DB:
+        path = BASE_DIR / MOUSE_ZIP
+        if path.exists():
+            with zipfile.ZipFile(path) as zf:
+                internal = [f for f in zf.namelist() if f.endswith(".txt")][0]
+                with zf.open(internal) as fh:
+                    MOUSE_DB = _parse_targetscan_txt(fh, species_id="10090")
+            logger.info(f"🐭 TargetScanMouse local: {len(MOUSE_DB)} familias.")
+        else:
+            logger.warning(f"⚠️ Sin base de ratón ({path} no existe).")
+    return MOUSE_DB
 # miRTarBase validado (local, GMT de Harmonizome) y librerías GMT de
 # enriquecimiento (KEGG/Reactome/WikiPathways/GO, de Enrichr). Se cargan
 # bajo demanda y se cachean como TARGETSCAN_DB.
@@ -208,12 +230,13 @@ def load_local_data():
     logger.error("❌ No se encontró ninguna fuente de datos.")
     return {}
 
-def _parse_targetscan_txt(fileobj):
+def _parse_targetscan_txt(fileobj, species_id="9606"):
     """
     Parsea el archivo global TargetScan (multi-especie).
 
     CORRECCIONES vs versión original:
-    1. Filtra SOLO Species ID == '9606' (Homo sapiens) antes de indexar.
+    1. Filtra SOLO la Species ID pedida (9606 humano, 10090 ratón) antes
+       de indexar.
     2. Indexa por familia completa (clave exacta, lowercase).
     3. Indexa también por sub-partes del nombre compuesto separadas por '/'
        para que variantes como 'mir-106b-5p' sean encontrables dentro de
@@ -227,12 +250,12 @@ def _parse_targetscan_txt(fileobj):
         dtype=str, chunksize=400_000
     )
     for chunk in chunks:
-        # ── BUG 1 CORREGIDO: filtrar solo humano ANTES de indexar ──────────
-        human = chunk[chunk['Species ID'].str.strip() == '9606'].copy()
-        if human.empty:
+        # ── BUG 1 CORREGIDO: filtrar solo la especie pedida ANTES de indexar ──
+        rows = chunk[chunk['Species ID'].str.strip() == species_id].copy()
+        if rows.empty:
             continue
 
-        for mir, gene in zip(human['miR Family'], human['Gene Symbol']):
+        for mir, gene in zip(rows['miR Family'], rows['Gene Symbol']):
             gene = str(gene).strip()
             if not gene or gene == 'nan':
                 continue
@@ -272,7 +295,7 @@ def _parse_targetscan_txt(fileobj):
     return temp_db
 
 # ── BÚSQUEDA DE GENES POR miRNA ───────────────────────────────────────────────
-def get_targets_local(mirna: str) -> set:
+def get_targets_local(mirna: str, db=None) -> set:
     """
     Busca los genes diana de un miRNA.
 
@@ -302,8 +325,9 @@ def get_targets_local(mirna: str) -> set:
                 return genes
 
     # 2. DB global — variantes de nombre exactas
+    db = TARGETSCAN_DB if db is None else db
     for key in [m_clean, m_no_letter, m_no_suffix, m_no_letter_no_suffix]:
-        res = TARGETSCAN_DB.get(key)
+        res = db.get(key)
         if res:
             logger.info(f"🗄 {mirna} → '{key}': {len(res)} genes")
             return set(res)
@@ -313,7 +337,7 @@ def get_targets_local(mirna: str) -> set:
     #    (que ya están indexadas por sub-parte en _parse_targetscan_txt)
     #    Esto cubre el caso de hsa-miR-106b-5p → familia compuesta.
     for key_variant in [m_clean, m_no_letter]:
-        for db_key, db_genes in TARGETSCAN_DB.items():
+        for db_key, db_genes in db.items():
             # Match exacto de sub-parte: la clave en DB debe SER el miRNA
             if db_key == key_variant:
                 logger.info(f"🔍 {mirna} → match exacto sub-familia '{db_key}': {len(db_genes)} genes")
@@ -326,7 +350,7 @@ def get_targets_local(mirna: str) -> set:
         specific_num = num_match.group(1)
         # Solo hacer difuso si el número incluye sufijo de strand (5p/3p)
         if '5p' in specific_num or '3p' in specific_num:
-            for k, v in TARGETSCAN_DB.items():
+            for k, v in db.items():
                 if specific_num in k:
                     logger.warning(f"⚠️ {mirna} → difuso (último recurso) '{k}': {len(v)} genes")
                     return set(v)
@@ -334,8 +358,8 @@ def get_targets_local(mirna: str) -> set:
     logger.warning(f"⚠️ {mirna}: sin datos en DB local")
     return set()
 
-async def fetch_mirtarbase(mirna: str) -> set:
-    m_name = clean_mirna_name_cloud(mirna)
+async def fetch_mirtarbase(mirna: str, species: str = "hsa") -> set:
+    m_name = clean_mirna_name_cloud(mirna, species)
     variants = [m_name, re.sub(r'-(5p|3p)$', '', m_name, flags=re.IGNORECASE)]
     try:
         async with make_async_client(timeout=12.0) as client:
@@ -671,6 +695,33 @@ async def fetch_clinicaltrials_for_gene(gene: str, client: httpx.AsyncClient) ->
         return []
 
 
+async def fetch_disgenet(gene: str, client: httpx.AsyncClient, api_key=None):
+    """Gene-disease associations from DisGeNET (disgenet.org).
+    Requires a FREE API key (DISGENET_API_KEY env var): the public API
+    answers without one only with the website HTML. Returns
+    {"diseases": [{"name": ..., "score": ...}]} or {"diseases": []}.
+    The response shape is parsed defensively (list, {"data": [...]},
+    or {"results": [...]}) because the API version is unpinned."""
+    if not api_key:
+        return {"diseases": []}
+    try:
+        r = await client.get(
+            f"https://www.disgenet.org/api/gda/gene/{gene}",
+            headers={"Authorization": api_key}, timeout=12.0)
+        if r.status_code != 200:
+            return {"diseases": []}
+        data = r.json()
+        rows = data if isinstance(data, list) else data.get("data") or data.get("results") or []
+        diseases = []
+        for row in rows[:10]:
+            name = row.get("disease_name") or row.get("disease") or ""
+            if name:
+                diseases.append({"name": name, "score": row.get("score")})
+        return {"diseases": diseases}
+    except Exception:
+        return {"diseases": []}
+
+
 async def research_gene_complete(gene: str, preset: dict, years: int, client: httpx.AsyncClient) -> dict:
     """Orquesta TODA la investigación de un gen core: PubMed (con cascada de años)
     + OMIM + ClinVar + ClinicalTrials.gov. Cachea el resultado por {gene}|{years}.
@@ -753,6 +804,8 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
         "omim": omim,
         "clinvar": clinvar,
         "trials": trials,
+        "diseases": (await fetch_disgenet(
+            gene, client, os.environ.get("DISGENET_API_KEY"))).get("diseases", []),
         "year_window_used": year_window_used,
     }
     PERSISTENT_CACHE["gene_research"][cache_key] = result
@@ -1088,15 +1141,104 @@ def install_update_endpoint(source: str):
 
 
 @app.get("/api/v1/reverse")
-def reverse(gene: str):
+def reverse(gene: str, species: str = "human"):
     """Búsqueda inversa: qué miRNAs (familias TargetScan locales) tienen
     a `gene` como diana predicha."""
     global TARGETSCAN_DB
+    if species == "mouse":
+        db = load_mouse_data()
+    else:
+        if not TARGETSCAN_DB:
+            TARGETSCAN_DB = load_local_data()
+        db = TARGETSCAN_DB
+    hits = reverse_lookup(gene, db)
+    return {"gene": (gene or "").strip().upper(), "species": species,
+            "mirnas": hits, "n": len(hits)}
+
+
+def panel_core(mirnas, mode="strict"):
+    """Local-only core of one panel: TargetScan sets + consensus.
+    No network, no live calls — the fast path behind /compare and /batch.
+    Returns (found_mirnas, common_genes)."""
+    global TARGETSCAN_DB
     if not TARGETSCAN_DB:
         TARGETSCAN_DB = load_local_data()
-    hits = reverse_lookup(gene, TARGETSCAN_DB)
-    return {"gene": (gene or "").strip().upper(), "mirnas": hits,
-            "n": len(hits)}
+    load_mirtarbase_local()
+    names, sets = [], []
+    for m in [normalize_isomir(x.strip()) for x in mirnas if x.strip()]:
+        local = get_targets_local(m)
+        remote = get_validated_local(m, MIRTARBASE_DB)
+        combined = local if local else remote
+        if combined:
+            names.append(m)
+            sets.append(combined)
+    if not sets:
+        return names, []
+    genes = consensus_genes(sets, mode)
+    return names, sorted(genes)
+
+
+class CompareRequest(BaseModel):
+    panels: List[dict] = Field(min_length=1)
+    mode: str = "strict"
+
+
+@app.post("/api/v1/compare")
+def compare(req: CompareRequest):
+    """Compare several panels (local data only): each panel's core genes,
+    the union, the intersection of all panels, and every pairwise overlap."""
+    if req.mode not in ("strict", "n-1", "n-2"):
+        raise HTTPException(400, "mode must be strict, n-1 or n-2")
+    out_panels = []
+    for p in req.panels:
+        name = str(p.get("name") or "panel")
+        found, genes = panel_core(p.get("mirnas") or [], req.mode)
+        out_panels.append({"name": name, "mirnas": found,
+                           "genes": genes, "n": len(genes)})
+    union = sorted(set().union(*[set(p["genes"]) for p in out_panels]) or set())
+    inter = sorted(set(out_panels[0]["genes"]).intersection(
+        *[set(p["genes"]) for p in out_panels[1:]]) if out_panels else [])
+    pairwise = []
+    for i, a in enumerate(out_panels):
+        for b in out_panels[i + 1:]:
+            shared = sorted(set(a["genes"]) & set(b["genes"]))
+            pairwise.append({"a": a["name"], "b": b["name"],
+                             "shared": shared, "n": len(shared)})
+    return {"panels": out_panels, "union": union, "n_union": len(union),
+            "intersection_all": inter, "n_intersection": len(inter),
+            "pairwise": pairwise, "mode": req.mode}
+
+
+@app.post("/api/v1/batch")
+async def batch(file: UploadFile = File(...)):
+    """Batch of panels from a file: CSV with a `panel,mirna` header (one
+    row per miRNA), or plain text with one panel per line
+    (`Name: mir1, mir2` or just `mir1, mir2`). Local data only."""
+    raw = (await file.read()).decode("utf-8", errors="replace")
+    panels = []
+    lines = [ln for ln in raw.splitlines() if ln.strip()]
+    if lines and lines[0].strip().lower().startswith("panel"):
+        import csv, io as _io
+        reader = csv.DictReader(_io.StringIO(raw))
+        grouped = {}
+        for row in reader:
+            name = (row.get("panel") or "panel").strip()
+            mirna = (row.get("mirna") or "").strip()
+            if mirna:
+                grouped.setdefault(name, []).append(mirna)
+        panels = [{"name": n, "mirnas": ms} for n, ms in grouped.items()]
+    else:
+        for ln in lines:
+            if ":" in ln:
+                name, rest = ln.split(":", 1)
+                panels.append({"name": name.strip(),
+                               "mirnas": [x.strip() for x in rest.split(",") if x.strip()]})
+            else:
+                panels.append({"name": f"panel-{len(panels) + 1}",
+                               "mirnas": [x.strip() for x in ln.split(",") if x.strip()]})
+    if not panels:
+        raise HTTPException(400, "no panels found in the uploaded file")
+    return compare(CompareRequest(panels=panels))
 @app.on_event("startup")
 async def startup_event():
     global TARGETSCAN_DB
@@ -1116,23 +1258,32 @@ async def analyze(req: AnalysisRequest):
     # ... resto del procesamiento ...
 
 
-    mirnas = [normalize_isomir(m.strip()) for m in req.mirnas if m.strip()]
+    mirnas = [normalize_isomir(m.strip(), "mmu" if req.species == "mouse" else "hsa")
+              for m in req.mirnas if m.strip()]
     if not mirnas:
         raise HTTPException(400, "Debe ingresar al menos un miRNA.")
+    if req.species not in ("human", "mouse"):
+        raise HTTPException(400, "species must be human or mouse")
 
     # ── RECOLECCIÓN DE GENES POR miRNA ───────────────────────────────────────────
     gene_sets, found_names = [], []
     local_by_mirna, remote_by_mirna = {}, {}
-    if not TARGETSCAN_DB:
-        TARGETSCAN_DB = load_local_data()
+    if req.species == "mouse":
+        db = load_mouse_data()
+        species_prefix = "mmu"
+    else:
+        if not TARGETSCAN_DB:
+            TARGETSCAN_DB = load_local_data()
+        db = TARGETSCAN_DB
+        species_prefix = "hsa"
     load_mirtarbase_local()
     for m in mirnas:
-        local  = get_targets_local(m)
+        local  = get_targets_local(m, db)
         # Validado: primero la librería local de miRTarBase; la API viva
         # de Harmonizome solo como respaldo (y nunca en modo offline).
-        remote = get_validated_local(m, MIRTARBASE_DB)
+        remote = get_validated_local(m, MIRTARBASE_DB, species_prefix)
         if not remote and not req.offline:
-            remote = await fetch_mirtarbase(m)
+            remote = await fetch_mirtarbase(m, species_prefix)
         local_by_mirna[m] = local
         remote_by_mirna[m] = remote
 
@@ -1184,6 +1335,7 @@ async def analyze(req: AnalysisRequest):
             "export": build_export(found_names, [], {}, [], empty_validation, gene_sets),
             "heatmap_plot": None,
             "offline": req.offline,
+            "species": req.species,
             "scientific_synthesis": (
                 f"No se encontraron genes diana comunes a todos los miRNAs analizados "
                 f"({', '.join(found_names)}) en modo de intersección estricta. "
@@ -1285,7 +1437,7 @@ async def analyze(req: AnalysisRequest):
         # Sin red: investigación vacía, marcada como offline (no inventada).
         research_results = [
             {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""},
-             "trials": [], "year_window_used": "offline"}
+             "trials": [], "diseases": [], "year_window_used": "offline"}
             for g in sorted_common[:5]
         ]
     else:
@@ -1299,7 +1451,7 @@ async def analyze(req: AnalysisRequest):
     for g, res in zip(sorted_common[:5], research_results):
         if isinstance(res, Exception):
             logger.warning(f"⚠️  Investigación falló para {g}: {res}")
-            gene_research_data[g] = {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""}, "trials": [], "year_window_used": "error"}
+            gene_research_data[g] = {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""}, "trials": [], "diseases": [], "year_window_used": "error"}
             continue
         gene_research_data[g] = res
         # Acumular PMIDs frescos como candidatos para el bloque de Bibliografía
@@ -1458,6 +1610,7 @@ async def analyze(req: AnalysisRequest):
         "export": export_data,
         "heatmap_plot": create_heatmap(found_names, sorted_common, gene_sets),
         "offline": req.offline,
+        "species": req.species,
         "scientific_synthesis": synthesis_obj["academic"],
         "functional_context": synthesis_obj["functional"],
         "references_text": synthesis_obj["references"],

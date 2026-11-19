@@ -5,3 +5,6 @@ __pycache__/
 .env
 .venv
 .coverage
+
+*.egg-info/
+__pycache__/

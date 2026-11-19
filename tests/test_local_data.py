@@ -135,3 +135,13 @@ def test_normalize_isomir():
     assert kc.normalize_isomir("hsa-miR-375") == "hsa-miR-375"
     assert kc.normalize_isomir("hsa-miR-33a-5p") == "hsa-miR-33a-5p"
     assert kc.normalize_isomir("hsa-miR-124-3p") == "hsa-miR-124-3p"
+
+
+def test_deep_clean_species_prefix():
+    # One species prefix is stripped; "mir-" itself is never stripped.
+    assert kc.deep_clean_mirna("hsa-miR-33a-5p") == "mir-33a-5p"
+    assert kc.deep_clean_mirna("mmu-miR-21a-5p") == "mir-21a-5p"
+    assert kc.deep_clean_mirna("mir-33a-5p") == "mir-33a-5p"
+    assert kc.deep_clean_mirna("hsa-let-7a-5p") == "let-7a-5p"
+    assert kc.clean_mirna_name_cloud("mmu-miR-21a-5p", "mmu") == "mmu-miR-21a-5p"
+    assert kc.normalize_isomir("mmu-miR-21a-5p", "mmu") == "mmu-miR-21a-5p"
