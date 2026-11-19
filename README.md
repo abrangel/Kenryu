@@ -457,6 +457,7 @@ KENRYU has been validated live against the deployed Space (`POST /api/v1/analyze
 
 - **miRTarBase is a local snapshot (Harmonizome, 2026-11-18), not the official database.** Coverage varies per miRNA: for example, `hsa-miR-758-3p` has no entry in the snapshot although the literature reports validated targets (ABCA1, MDM2, MTOR, NOTCH2). A gene whose miRNA lacks a snapshot entry can score at most "medium" — that is honest about what the file knows, not about the biology. Replacing the snapshot with the official miRTarBase (strong/weak evidence + PMID per interaction) is the next planned change.
 - **Enrichment background is the union of each GMT library**, not a curated reference universe; treat cross-library comparisons with care (fix planned).
+- **KEGG is not redistributed in this repository** (license: Kanehisa Labs prohibits repackaging KEGG without an agreement — see `DATA_LICENSES.md`). KEGG enrichment is available through the live Enrichr path; the offline path uses Reactome, WikiPathways and GO only.
 
 ---
 

@@ -2,6 +2,83 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.45] — 2026-11-19
+
+### Ronda 1 de la auditoría externa (23 hallazgos; 8 corregidos aquí)
+
+Se verificó cada hallazgo contra el código y en vivo antes de tocarlo.
+Dos afirmaciones de la auditoría NO se confirmaron: el DOI de Zenodo
+`10.5281/zenodo.20564689` sí resuelve (200 en doi.org y registro activo
+en la API de Zenodo; el 404 era solo de Crossref, que no indexa DOIs de
+DataCite) y la primera prueba del matching difuso dio 0 genes porque la
+DB no estaba cargada en ese proceso — con la DB cargada, el bug sí se
+reprodujo exactamente como decía la auditoría.
+
+### Security
+- **El endpoint `POST /api/v1/updates/{source}/install` ya no es
+  anónimo (H-01, crítico):** cualquiera podía descargar y sobrescribir
+  archivos del servidor. Ahora exige el secreto `KENRYU_ADMIN_TOKEN` en
+  la cabecera `X-Admin-Token` (comparación en tiempo constante); sin la
+  variable configurada, las actualizaciones están desactivadas (403). La
+  UI no llamaba a este endpoint, así que nada cambia en la web. Tras
+  instalar, las DB en memoria se invalidan y se recargan en la siguiente
+  petición.
+
+### Fixed
+- **Matching difuso por subcadena (H-03, crítico):** `hsa-miR-1-5p`
+  devolvía 793 genes de miR-204/211, `hsa-miR-9-3p` 1.385 de
+  miR-17/20/93/106/519, etc. El número solo vale ahora en límite de
+  token (tras `mir-`/`let-`/`/` y antes de `/`/`.`/fin): un miRNA sin
+  familia real devuelve vacío con aviso, y la variante real
+  `hsa-miR-873-5p` sigue encontrando `mir-873-5p.2`.
+- **Fisher + Benjamini-Hochberg (H-05, alto):** BH se calculaba solo
+  sobre términos con solape (m ~28× menor que el total en GO) y `genes`
+  no se recortaba al universo, con falsos positivos en 40/40 listas
+  nulas a p_adj < 0,3. Ahora todos los términos no vacíos de la
+  biblioteca entran en BH (los de solape 0 con p = 1,0), los genes se
+  recortan al universo y el corte de significancia es **p_adj < 0,05**
+  (también en la ruta viva de Enrichr, que usaba 0,3).
+- **La UI enviaba el año calendario como `years` (H-07, alto):** el
+  selector mandaba `2026` y el backend calculaba 2026−2026 = 0, anulando
+  el filtro temporal de PubMed. Ahora la UI convierte el año de inicio a
+  edad en años (por defecto, ventana de 10 años) y el backend valida
+  `years` entre 1 y 50. El selector de mes se eliminó de la UI: el
+  backend nunca lo usaba.
+- **Límites y validación de entradas (H-10, alto):** `/analyze` aceptaba
+  2.000 miRNAs (22,5 s de CPU); `/batch` leía archivos sin límite
+  (200.000 filas, 22,3 s); `/compare` devolvía 500 con `mirnas: [1, 2]`
+  y aceptaba 300 paneles. Ahora: panel ≤ 50 miRNAs, `mode` es un
+  literal (`strict`/`n-1`/`n-2`), `/compare` tipa cada panel (≤ 30
+  miRNAs, ≤ 20 paneles) y `/batch` rechaza archivos > 256 KB o > 500
+  filas.
+- **BOM UTF-8 en 4 archivos de datos (H-13, medio):** `\ufeffANO4`,
+  `\ufeffCTDSPL`, `\ufeffZNF772` corrompían símbolos génicos. Los
+  archivos se limpiaron y la lectura usa `utf-8-sig`.
+- **La caché de los tests ya no toca el archivo real (H-15, medio):**
+  un test de regresión había sobrescrito `local_db/analysis_cache.json`
+  con una sola entrada TESTGENE. `tests/conftest.py` redirige la caché
+  a un directorio temporal y el archivo queda fuera de git (es estado de
+  runtime, no contenido del repo).
+
+### Changed
+- **KEGG fuera del repositorio (H-02, crítico):** Kanehisa Labs prohíbe
+  redistribuir KEGG sin acuerdo. Se eliminó `local_db/gmt_KEGG_2021_Human.gmt`
+  de git y del cargador de GMTs; el enriquecimiento en vivo sigue
+  consultando KEGG vía Enrichr y el modo offline usa Reactome,
+  WikiPathways y GO. Nuevo `DATA_LICENSES.md`: la licencia MIT cubre
+  solo el código; cada dataset conserva la suya.
+- **Dependencias (H-09, alto):** `fastapi` 0.109.0 → 0.165.0 y
+  `python-multipart` 0.0.6 → 0.0.34 (CVEs parcheados; `pydantic`
+  2.5.3 → 2.14.3 por compatibilidad). `biopython` y `jinja2` eliminados:
+  no se usaban (Biopython solo ponía `Entrez.email`, que nunca se
+  llamaba).
+- **Licencia en `pyproject.toml` alineada a MIT (H-23):** seguía
+  diciendo "Free Academic License for Research and Education".
+
+### Tests
+- 94/94 (8 nuevos: matching difuso, Fisher/BH ×3, validación de
+  `/analyze`/`/compare`/`/batch`, token de instalación).
+
 ## [1.44] — 2026-11-19
 
 ### Fixed

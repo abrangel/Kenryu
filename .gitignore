@@ -8,3 +8,4 @@ __pycache__/
 
 *.egg-info/
 __pycache__/
+local_db/analysis_cache.json

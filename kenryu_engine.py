@@ -1,6 +1,6 @@
-import os, json, zipfile, asyncio, logging, re, io, base64, datetime
+import os, json, zipfile, asyncio, logging, re, io, base64, datetime, hmac
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Literal, Optional
 from collections import Counter
 import pandas as pd
 import numpy as np
@@ -11,22 +11,20 @@ import matplotlib.patches as patches
 import seaborn as sns
 from matplotlib_venn import venn2, venn3
 import httpx
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 import uvicorn
-from Bio import Entrez
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
-Entrez.email = "kenryu@bioinformatica.com"
 
 class AnalysisRequest(BaseModel):
-    mirnas: List[str] = Field(min_length=1)
-    years: int = 10
-    mode: str = "strict"
+    mirnas: List[str] = Field(min_length=1, max_length=50)
+    years: int = Field(default=10, ge=1, le=50)
+    mode: Literal["strict", "n-1", "n-2"] = "strict"
     month: Optional[str] = None
     offline: bool = False
     species: str = "human"
@@ -60,12 +58,13 @@ def load_mouse_data():
             logger.warning(f"⚠️ Sin base de ratón ({path} no existe).")
     return MOUSE_DB
 # miRTarBase validado (local, GMT de Harmonizome) y librerías GMT de
-# enriquecimiento (KEGG/Reactome/WikiPathways/GO, de Enrichr). Se cargan
-# bajo demanda y se cachean como TARGETSCAN_DB.
+# enriquecimiento (Reactome/WikiPathways/GO, de Enrichr). KEGG NO está en
+# el repo: Kanehisa Labs prohíbe redistribuir KEGG sin acuerdo (ver
+# DATA_LICENSES.md); el enriquecimiento en vivo lo consulta vía Enrichr.
+# Se cargan bajo demanda y se cachean como TARGETSCAN_DB.
 MIRTARBASE_DB = {}
 GMT_LIBRARIES = {}
 GMT_FILES = {
-    "KEGG": "local_db/gmt_KEGG_2021_Human.gmt",
     "Reactome": "local_db/gmt_Reactome_Pathways_2024.gmt",
     "WikiPathways": "local_db/gmt_WikiPathways_2019_Human.gmt",
     "GO": "local_db/gmt_GO_Biological_Process_2023.gmt",
@@ -219,7 +218,7 @@ def load_local_data():
         temp_db = {}
         for txt in RAW_DATA_DIR.glob("hsa-*.txt"):
             key = txt.stem.lower()
-            with open(txt, 'r', encoding='utf-8') as f:
+            with open(txt, 'r', encoding='utf-8-sig') as f:
                 genes = {l.strip() for l in f if l.strip()}
             if genes:
                 temp_db[key] = list(genes)
@@ -319,7 +318,7 @@ def get_targets_local(mirna: str, db=None) -> set:
         for variant in [mirna, f"hsa-{m_clean}", m_clean, m_no_letter, m_no_suffix]:
             fp = RAW_DATA_DIR / f"{variant}.txt"
             if fp.exists():
-                with open(fp, 'r', encoding='utf-8') as f:
+                with open(fp, 'r', encoding='utf-8-sig') as f:
                     genes = {l.strip() for l in f if l.strip()}
                 logger.info(f"📂 {mirna}: {len(genes)} genes (archivo individual)")
                 return genes
@@ -344,14 +343,24 @@ def get_targets_local(mirna: str, db=None) -> set:
                 return set(db_genes)
 
     # 4. Último recurso: búsqueda por número base SOLO si es suficientemente
-    #    específico (incluye el sufijo 5p/3p para evitar falsos positivos)
+    #    específico (incluye el sufijo 5p/3p para evitar falsos positivos).
+    #    CORREGIDO (auditoría externa, 2026-11-19): la subcadena simple
+    #    `specific_num in k` asignaba dianas de familias ajenas — p. ej.
+    #    "1-5p" aparece dentro de "mir-211-5p" y devolvía 793 genes de
+    #    miR-204/211 para un hsa-miR-1-5p inexistente. Ahora el número solo
+    #    vale en un LÍMITE DE TOKEN (tras mir-/let-/ o /, y antes de / o .
+    #    o fin de clave): así "873-5p" sigue encontrando "mir-873-5p.2"
+    #    (variante real sin clave exacta), pero "1-5p" ya no casa con
+    #    "mir-211-5p". Un miRNA sin familia real devuelve vacío con aviso.
     num_match = re.search(r'(\d+[ab]?(?:-[35]p)?)', m_clean)
     if num_match:
         specific_num = num_match.group(1)
         # Solo hacer difuso si el número incluye sufijo de strand (5p/3p)
         if '5p' in specific_num or '3p' in specific_num:
+            token_pat = re.compile(
+                rf'(?:^|mir-|let-|/){re.escape(specific_num)}(?:$|[/.])')
             for k, v in db.items():
-                if specific_num in k:
+                if token_pat.search(k):
                     logger.warning(f"⚠️ {mirna} → difuso (último recurso) '{k}': {len(v)} genes")
                     return set(v)
 
@@ -446,7 +455,7 @@ async def enrich_genes_direct(gene_list: list, client: httpx.AsyncClient):
                     data = r_enr.json().get(gs_full, [])
                     # Enrichr: [Rank, Term, P-val, Z-score, Combined, Genes, AdjP, ...]
                     for row in data[:8]:
-                        if row[6] < 0.3: # p-adj < 0.3
+                        if row[6] < 0.05: # p-adj < 0.05 (auditoría externa, 2026-11-19: 0.3 no es significancia)
                             results.append({
                                 "Term": row[1],
                                 "Source": label,
@@ -1228,7 +1237,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     return info
 
 # ── GRÁFICOS ──────────────────────────────────────────────────────────────────
-app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.44")
+app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.45")
 
 # Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
 origins = [
@@ -1267,7 +1276,7 @@ async def serve_style():
 
 @app.get("/health")
 async def health():
-    return {"status": "OK", "version": "1.44",
+    return {"status": "OK", "version": "1.45",
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": load_local_versions()}
@@ -1289,17 +1298,34 @@ def updates():
 
 
 @app.post("/api/v1/updates/{source}/install")
-def install_update_endpoint(source: str):
+def install_update_endpoint(source: str, request: Request):
     """Install the new release for one source. Only the registry's own
     whitelisted files are downloaded; the old file is kept as a backup and
-    the new version is recorded. Returns the install report (the notice)."""
+    the new version is recorded. Returns the install report (the notice).
+
+    PROTEGIDO (auditoría externa, 2026-11-19): antes cualquier cliente
+    anónimo podía llamar a este endpoint y sobrescribir archivos del
+    servidor. Ahora exige el secreto KENRYU_ADMIN_TOKEN en la cabecera
+    X-Admin-Token; si la variable no está configurada, las
+    actualizaciones están desactivadas (403). Tras instalar, las DB en
+    memoria se invalidan para recargar los archivos nuevos en la
+    siguiente petición."""
+    global TARGETSCAN_DB, MIRTARBASE_DB
+    admin_token = os.environ.get("KENRYU_ADMIN_TOKEN")
+    if not admin_token:
+        raise HTTPException(403, "updates are disabled: KENRYU_ADMIN_TOKEN is not configured")
+    if not hmac.compare_digest(request.headers.get("X-Admin-Token", ""), admin_token):
+        raise HTTPException(403, "invalid admin token")
     try:
-        return install_source_update(source)
+        report = install_source_update(source)
     except ValueError as exc:
         raise HTTPException(400, str(exc))
     except Exception as exc:
         logger.error(f"❌ Fallo instalando actualización {source}: {exc}")
         raise HTTPException(502, f"install failed: {exc}")
+    TARGETSCAN_DB = {}
+    MIRTARBASE_DB = {}
+    return report
 
 
 @app.get("/api/v1/reverse")
@@ -1340,21 +1366,24 @@ def panel_core(mirnas, mode="strict"):
     return names, sorted(genes)
 
 
+class PanelItem(BaseModel):
+    name: str = "panel"
+    mirnas: List[str] = Field(min_length=1, max_length=30)
+
+
 class CompareRequest(BaseModel):
-    panels: List[dict] = Field(min_length=1)
-    mode: str = "strict"
+    panels: List[PanelItem] = Field(min_length=1, max_length=20)
+    mode: Literal["strict", "n-1", "n-2"] = "strict"
 
 
 @app.post("/api/v1/compare")
 def compare(req: CompareRequest):
     """Compare several panels (local data only): each panel's core genes,
     the union, the intersection of all panels, and every pairwise overlap."""
-    if req.mode not in ("strict", "n-1", "n-2"):
-        raise HTTPException(400, "mode must be strict, n-1 or n-2")
     out_panels = []
     for p in req.panels:
-        name = str(p.get("name") or "panel")
-        found, genes = panel_core(p.get("mirnas") or [], req.mode)
+        name = str(p.name or "panel")
+        found, genes = panel_core(p.mirnas or [], req.mode)
         out_panels.append({"name": name, "mirnas": found,
                            "genes": genes, "n": len(genes)})
     union = sorted(set().union(*[set(p["genes"]) for p in out_panels]) or set())
@@ -1376,9 +1405,14 @@ async def batch(file: UploadFile = File(...)):
     """Batch of panels from a file: CSV with a `panel,mirna` header (one
     row per miRNA), or plain text with one panel per line
     (`Name: mir1, mir2` or just `mir1, mir2`). Local data only."""
-    raw = (await file.read()).decode("utf-8", errors="replace")
+    raw_bytes = await file.read()
+    if len(raw_bytes) > 256 * 1024:
+        raise HTTPException(400, "file too large (max 256 KB)")
+    raw = raw_bytes.decode("utf-8", errors="replace")
     panels = []
     lines = [ln for ln in raw.splitlines() if ln.strip()]
+    if len(lines) > 500:
+        raise HTTPException(400, "too many rows (max 500)")
     if lines and lines[0].strip().lower().startswith("panel"):
         import csv, io as _io
         reader = csv.DictReader(_io.StringIO(raw))
@@ -1400,6 +1434,13 @@ async def batch(file: UploadFile = File(...)):
                                "mirnas": [x.strip() for x in ln.split(",") if x.strip()]})
     if not panels:
         raise HTTPException(400, "no panels found in the uploaded file")
+    if len(panels) > 20:
+        raise HTTPException(400, "too many panels (max 20)")
+    for p in panels:
+        if not p["mirnas"]:
+            raise HTTPException(400, f"panel '{p['name']}' has no miRNAs")
+        if len(p["mirnas"]) > 30:
+            raise HTTPException(400, f"panel '{p['name']}' has too many miRNAs (max 30)")
     return compare(CompareRequest(panels=panels))
 @app.on_event("startup")
 async def startup_event():
@@ -1409,7 +1450,7 @@ async def startup_event():
         TARGETSCAN_DB = load_local_data()
     load_mirtarbase_local()
     load_gmt_libraries()
-    logger.info(f"🚀 KENRYU v1.44 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+    logger.info(f"🚀 KENRYU v1.45 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
 
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):

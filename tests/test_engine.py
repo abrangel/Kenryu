@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.44"
+    assert body["version"] == "1.45"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -392,3 +392,90 @@ def test_research_gene_complete_labels_desc_as_editorial_note():
     assert ref["pmid"] == "12345678"
     assert ref["editorial_note"] == "miR-33 suprime ABCA1."
     assert "desc" not in ref
+
+
+def test_get_targets_local_fuzzy_match_is_token_bounded():
+    """v1.45 (auditoría externa, H-03): la subcadena simple asignaba dianas
+    de familias ajenas — '1-5p' casa dentro de 'mir-211-5p' y devolvía 793
+    genes de miR-204/211 para un hsa-miR-1-5p inexistente. El número solo
+    vale en límite de token: '873-5p' sí encuentra 'mir-873-5p.2'
+    (variante real sin clave exacta), pero '1-5p' ya no casa con 'mir-211-5p'."""
+    db = {
+        "mir-204-5p/211-5p": {"GENE1", "GENE2"},
+        "mir-211-5p": {"GENE3"},
+        "mir-873-5p.2": {"GENE4"},
+        "mir-17-5p/20-5p/93-5p/106-5p/519-3p": {"GENE5"},
+    }
+    # Casos de la auditoría: miRNAs inexistentes → conjunto vacío.
+    assert ke.get_targets_local("hsa-miR-1-5p", db) == set()
+    assert ke.get_targets_local("hsa-miR-3-5p", db) == set()
+    assert ke.get_targets_local("hsa-miR-9-3p", db) == set()
+    assert ke.get_targets_local("hsa-miR-2-5p", db) == set()
+    # Variante real .2: sigue encontrándose por límite de token.
+    assert ke.get_targets_local("hsa-miR-873-5p", db) == {"GENE4"}
+
+
+def test_analyze_validates_years_mode_and_panel_size():
+    """v1.45 (auditoría externa, H-07/H-10): la UI enviaba el año
+    calendario (2026) como `years` y el backend lo aceptaba sin validar
+    (2026-2026=0 anulaba el filtro de PubMed); `mode` inválido caía
+    silenciosamente a n-2. Ahora years es 1-50, mode es un literal y el
+    panel tiene tope de 50 miRNAs."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        base = {"mirnas": ["hsa-miR-33a-5p"], "offline": True}
+        assert client.post("/api/v1/analyze", json={**base, "years": 2026}).status_code == 422
+        assert client.post("/api/v1/analyze", json={**base, "years": 0}).status_code == 422
+        assert client.post("/api/v1/analyze", json={**base, "years": 51}).status_code == 422
+        assert client.post("/api/v1/analyze", json={**base, "mode": "foo"}).status_code == 422
+        assert client.post("/api/v1/analyze", json={"mirnas": ["hsa-miR-33a-5p"] * 51, "offline": True}).status_code == 422
+        assert client.post("/api/v1/analyze", json={**base, "years": 10}).status_code == 200
+
+
+def test_compare_validates_panels_and_types():
+    """v1.45 (H-10): /compare devolvía 500 con `mirnas: [1, 2]` (int sin
+    .strip) y aceptaba 300 paneles sin límite. Ahora los tipos y los
+    límites se validan (422)."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        good = {"panels": [{"name": "a", "mirnas": ["hsa-miR-33a-5p"]}], "mode": "strict"}
+        assert client.post("/api/v1/compare", json=good).status_code == 200
+        assert client.post("/api/v1/compare", json={"panels": [{"name": "x", "mirnas": [1, 2]}]}).status_code == 422
+        too_many = {"panels": [{"name": f"p{i}", "mirnas": ["hsa-miR-33a-5p"]} for i in range(21)]}
+        assert client.post("/api/v1/compare", json=too_many).status_code == 422
+        assert client.post("/api/v1/compare", json={"panels": []}).status_code == 422
+        assert client.post("/api/v1/compare", json={"panels": [{"name": "x", "mirnas": ["hsa-miR-33a-5p"] * 31}]}).status_code == 422
+
+
+def test_batch_rejects_oversize_file_and_too_many_rows():
+    """v1.45 (H-10): /batch leía el archivo completo sin límite (200k
+    filas → 22 s de CPU). Ahora 400 con >256 KB o >500 filas."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        big = b"panel,mirna\n" + b"p1,hsa-miR-33a-5p\n" * 300000
+        assert len(big) > 256 * 1024
+        r = client.post("/api/v1/batch", files={"file": ("big.csv", big, "text/csv")})
+        assert r.status_code == 400
+        many_rows = b"panel,mirna\n" + b"p1,hsa-miR-33a-5p\n" * 501
+        r2 = client.post("/api/v1/batch", files={"file": ("rows.csv", many_rows, "text/csv")})
+        assert r2.status_code == 400
+
+
+def test_install_endpoint_requires_admin_token():
+    """v1.45 (auditoría externa, H-01): /api/v1/updates/{source}/install
+    permitía a cualquier cliente anónimo descargar y sobrescribir archivos
+    del servidor. Sin KENRYU_ADMIN_TOKEN configurado → 403; con token,
+    un token distinto → 403; con el token correcto y fuente desconocida →
+    400 (llega a la lógica, sin descargar nada)."""
+    import os
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        assert client.post("/api/v1/updates/foo/install").status_code == 403
+        os.environ["KENRYU_ADMIN_TOKEN"] = "test-token"
+        try:
+            assert client.post("/api/v1/updates/foo/install").status_code == 403
+            r = client.post("/api/v1/updates/foo/install",
+                            headers={"X-Admin-Token": "test-token"})
+            assert r.status_code == 400
+        finally:
+            del os.environ["KENRYU_ADMIN_TOKEN"]

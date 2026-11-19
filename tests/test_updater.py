@@ -306,15 +306,19 @@ def test_install_endpoint(monkeypatch):
     canned = {"source": "mirbase", "old_version": "22", "new_version": "23.1",
               "installed": [], "backups": [], "notice": "ok"}
     monkeypatch.setattr(ke, "install_source_update", lambda source: canned)
+    # v1.45 (H-01): el endpoint exige KENRYU_ADMIN_TOKEN en X-Admin-Token.
+    monkeypatch.setenv("KENRYU_ADMIN_TOKEN", "test-token")
+    headers = {"X-Admin-Token": "test-token"}
     with TestClient(ke.app) as client:
-        r = client.post("/api/v1/updates/mirbase/install")
+        assert client.post("/api/v1/updates/mirbase/install").status_code == 403
+        r = client.post("/api/v1/updates/mirbase/install", headers=headers)
     assert r.status_code == 200
     assert r.json()["new_version"] == "23.1"
 
     monkeypatch.setattr(ke, "install_source_update",
                         lambda source: (_ for _ in ()).throw(ValueError("unknown source: x")))
     with TestClient(ke.app) as client:
-        r = client.post("/api/v1/updates/x/install")
+        r = client.post("/api/v1/updates/x/install", headers=headers)
     assert r.status_code == 400
 
 

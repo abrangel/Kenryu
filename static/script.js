@@ -20,6 +20,8 @@ function populateYearSelect() {
     html += `<option value="${y}">Año ${y}</option>`;
   }
   select.innerHTML = html;
+  // Por defecto, ventana de 10 años (año de inicio = hace 9 años).
+  select.value = String(currentYear - 9);
 }
 
 function switchView(v) {
@@ -54,7 +56,10 @@ async function analyzePro() {
   const mirnas = input.split(',').map(m => m.trim()).filter(Boolean);
   const mode = document.getElementById('consensus-mode').value;
   const startYear = document.getElementById('pubmed-years').value;
-  const month = document.getElementById('pubmed-month').value;
+  // La UI elige un AÑO DE INICIO; la API espera una EDAD en años (v1.45:
+  // antes se enviaba el año calendario 2026 como `years`, lo que anulaba
+  // el filtro temporal de PubMed).
+  const years = Math.max(1, new Date().getFullYear() - parseInt(startYear) + 1);
   
   if (!mirnas.length) return alert("Ingrese al menos un miRNA.");
 
@@ -66,7 +71,7 @@ async function analyzePro() {
     const res = await fetch(`${API_URL}/api/v1/analyze`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({mirnas, years: parseInt(startYear), month: month, mode: mode})
+      body: JSON.stringify({mirnas, years: years, mode: mode})
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     const data = await res.json();

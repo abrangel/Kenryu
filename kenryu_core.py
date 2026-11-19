@@ -527,11 +527,20 @@ def benjamini_hochberg(pvalues):
     return adj
 
 
-def fisher_enrichment(genes, library, background=None, top_n=8, p_adj_max=0.3):
+def fisher_enrichment(genes, library, background=None, top_n=8, p_adj_max=0.05):
     """Over-representation analysis of `genes` against one GMT library.
     Fisher's exact test (scipy) + Benjamini-Hochberg. Returns up to
     `top_n` terms with adjusted p < `p_adj_max`, sorted by adjusted p.
-    Each entry: {Term, Pval (adjusted), RawPval, Overlap, TermSize}."""
+    Each entry: {Term, Pval (adjusted), RawPval, Overlap, TermSize}.
+
+    CORREGIDO (auditoría externa, 2026-11-19): antes se descartaban los
+    términos con overlap 0 ANTES de BH, así que m era el nº de términos
+    con solape y no el total de la biblioteca (subestimación de ~28× en
+    GO, con falsos positivos en 40/40 listas nulas a p_adj < 0.3); y
+    `genes` no se intersecaba con el universo, así que genes ausentes de
+    la GMT inflaban b y podían hacer d negativo. Ahora: genes se recorta
+    al universo, TODOS los términos no vacíos de la biblioteca entran en
+    BH (los de overlap 0 con p = 1.0) y el corte es p_adj < 0.05."""
     from scipy.stats import fisher_exact
     genes = set(genes)
     if not genes or not library:
@@ -540,19 +549,26 @@ def fisher_enrichment(genes, library, background=None, top_n=8, p_adj_max=0.3):
     n_bg = len(universe)
     if n_bg == 0:
         return []
+    genes = genes & universe
+    if not genes:
+        return []
     rows = []
     for term, term_genes in library.items():
         term_genes = term_genes & universe
         if not term_genes:
             continue
         overlap = len(genes & term_genes)
-        if overlap == 0:
-            continue
         a = overlap
         b = len(genes - term_genes)
         c = len(term_genes - genes)
         d = n_bg - a - b - c
         if d < 0:
+            continue
+        if overlap == 0:
+            # Sin solape: p = 1.0. Cuenta para m en BH pero nunca es
+            # significativo; se descarta de la salida, no del ajuste.
+            rows.append({"Term": term, "Pval": 1.0, "RawPval": 1.0,
+                         "Overlap": 0, "TermSize": len(term_genes)})
             continue
         _, p = fisher_exact([[a, b], [c, d]], alternative="greater")
         rows.append({"Term": term, "Pval": p, "RawPval": p,
@@ -562,7 +578,7 @@ def fisher_enrichment(genes, library, background=None, top_n=8, p_adj_max=0.3):
     adj = benjamini_hochberg([r["Pval"] for r in rows])
     for r, p_adj in zip(rows, adj):
         r["Pval"] = p_adj
-    rows = [r for r in rows if r["Pval"] < p_adj_max]
+    rows = [r for r in rows if r["Pval"] < p_adj_max and r["Overlap"] > 0]
     rows.sort(key=lambda r: r["Pval"])
     return rows[:top_n]
 
