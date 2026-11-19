@@ -38,3 +38,12 @@ def test_script_js_has_no_hardcoded_old_version():
     text = _script_text()
     assert "v1.38" not in text
     assert "engine_version" in text
+
+
+def test_script_js_has_evidence_by_mirna_table():
+    """v1.51 (idea 1): the gene panel shows the per-miRNA evidence table,
+    with the weak level labelled high-throughput support, not validation."""
+    text = _script_text()
+    assert "evidence_by_mirna" in text
+    assert "apoyo de alto rendimiento" in text
+    assert "Evidencia por miRNA" in text

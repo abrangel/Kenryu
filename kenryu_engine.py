@@ -1380,7 +1380,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.50"
+APP_VERSION = "1.51"
 app = FastAPI(title="KENRYU Bioinformatics Engine", version=APP_VERSION)
 
 # Seguridad CORS (H-14, v1.47): solo el origen exacto del Space. Antes el
@@ -1697,6 +1697,30 @@ async def startup_event():
 RESEARCH_CAP = 5
 
 
+def loaded_data_versions():
+    """Flat {source: version} of the reference data actually loaded in
+    this process (v1.51, idea 2): the static record in data_versions.json
+    says what SHOULD be there; this says what IS there. miRTarBase and
+    KEGG are the two that can be absent in a fresh clone, so they report
+    "not loaded" instead of the declared version; TargetScan reports the
+    loaded family count. Same keys as load_local_versions(), so /health,
+    the analysis JSON and the export all agree."""
+    versions = dict(load_local_versions())
+    if MIRTARBASE_FORMAT == "official":
+        versions["mirtarbase"] = ("miRTarBase 9.0 official index "
+                                  "(hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, "
+                                  "396,758 pairs)")
+    elif MIRTARBASE_FORMAT == "gmt":
+        versions["mirtarbase"] = "Harmonizome GMT snapshot (legacy)"
+    else:
+        versions["mirtarbase"] = "not loaded"
+    if "KEGG" not in GMT_LIBRARIES:
+        versions["kegg"] = "not loaded"
+    versions["targetscan"] = (f"8.0 ({len(TARGETSCAN_DB)} families)"
+                              if TARGETSCAN_DB else "not loaded")
+    return versions
+
+
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):
     global TARGETSCAN_DB
@@ -1804,9 +1828,10 @@ async def analyze(req: AnalysisRequest):
         # Devolver respuesta vacía pero informativa en lugar de cambiar modo
         empty_validation = build_validation_report(
             found_names, [], {}, local_by_mirna, remote_by_mirna,
-            load_local_versions(), evidence_by_mirna)
+            loaded_data_versions(), evidence_by_mirna)
         return {
             "engine_version": APP_VERSION,
+            "data_versions": loaded_data_versions(),
             "common_genes": [],
             "found_mirnas": found_names,
             "missing_mirnas": missing_mirnas,
@@ -2130,7 +2155,7 @@ async def analyze(req: AnalysisRequest):
 
     validation_report = build_validation_report(
         found_names, prioritized_common, gene_research_data,
-        local_by_mirna, remote_by_mirna, load_local_versions(),
+        local_by_mirna, remote_by_mirna, loaded_data_versions(),
         evidence_by_mirna)
 
     export_data = build_export(
@@ -2142,6 +2167,7 @@ async def analyze(req: AnalysisRequest):
 
     return {
         "engine_version": APP_VERSION,
+        "data_versions": loaded_data_versions(),
         "common_genes": prioritized_common,
         "found_mirnas": found_names,
         "missing_mirnas": missing_mirnas,

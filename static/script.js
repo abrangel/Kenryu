@@ -145,15 +145,17 @@ function renderDashboard(data) {
       if (v && v.genes && Object.keys(v.genes).length) {
         const s = v.summary || {};
         const badge = document.getElementById('validation-badge');
-        if (badge) badge.textContent = `${s.high || 0} alta · ${s.medium || 0} media · ${s.low || 0} baja` + (s.n_not_evaluated ? ` · ${s.n_not_evaluated} sin evaluar` : '');
+        if (badge) badge.textContent = `${s.high || 0} alta · ${s.medium || 0} media · ${s.low || 0} baja` + (s.n_not_evaluated ? ` · ${s.n_not_evaluated} sin evaluar` : '') + (s.n_strong !== undefined ? ` · ${s.n_strong} fuerte · ${s.n_weak} débil · ${s.n_only_predicted} solo predicho` : '');
         let html = `<table class="sci-table"><thead><tr><th>Gen</th><th>Puntaje</th><th>Nivel</th><th>Evidencia miRTarBase</th><th>Dossier (4 niveles)</th><th>Capas de evidencia</th><th>Qué falta</th></tr></thead><tbody>`;
         for (const [gene, gv] of Object.entries(v.genes)) {
           const levelColor = gv.level === 'alta' ? 'var(--teal)' : gv.level === 'media' ? 'var(--gold)' : gv.level === 'not_evaluated' ? 'var(--text-dim)' : 'var(--red)';
           const levelLabel = gv.level === 'not_evaluated' ? 'no evaluado' : gv.level;
           const scoreText = gv.score === null || gv.score === undefined ? '—' : `${gv.score}/100`;
           // Ronda 3 (v1.48): nivel de evidencia miRTarBase por gen
-          // (fuerte / débil / solo predicho) con sus PMIDs.
-          const evLabel = {strong: 'fuerte', weak: 'débil', legacy: 'validado', none: 'solo predicho'}[gv.evidence_level] || '—';
+          // (fuerte / apoyo de alto rendimiento / solo predicho) con sus
+          // PMIDs. Matiz 2 (v1.51): la evidencia débil no se llama
+          // "validado": es apoyo de alto rendimiento.
+          const evLabel = {strong: 'fuerte', weak: 'apoyo de alto rendimiento', legacy: 'validado (snapshot)', none: 'solo predicho'}[gv.evidence_level] || '—';
           const evPmids = (gv.mirtarbase_pmids || []).filter(p => Number.isInteger(p)).map(p => `<a href="https://pubmed.ncbi.nlm.nih.gov/${p}/" target="_blank" rel="noopener">${p}</a>`).join(', ');
           const evCell = `${escapeHtml(evLabel)}${evPmids ? `<br><span style="font-family:var(--font-mono); font-size:10px;">${evPmids}</span>` : ''}`;
           // Ronda 3 (v1.49): dossier de 4 niveles + enfermedades asociadas
@@ -330,6 +332,23 @@ async function openGenePanel(gene) {
     return `<div style="font-size:12px; color:var(--text-dim); line-height:1.7;">${mark} <b style="color:var(--text);">${name}</b> — ${escapeHtml(t ? t.summary : 'Sin datos')}</div>`;
   }).join('');
   const disRows = (gv.diseases || []).map(dd => `<div style="font-size:12px; color:var(--text-dim); line-height:1.7;">${escapeHtml(dd.name)} <span style="font-family:var(--font-mono); font-size:11px;">(${escapeHtml(String(dd.score))})</span></div>`).join('');
+  // Tabla miRNA x gen (v1.51, idea 1): qué miRNA aporta cada nivel de
+  // evidencia para este gen, con sus PMIDs y experimentos. "Fuerte" es
+  // por pareja: no dice que todos los miRNAs del panel lo regulen.
+  const evTable = gv.evidence_by_mirna || {};
+  const panelMirnas = (lastData?.validation?.mirnas || Object.keys(evTable));
+  const evLevelLabel = {strong: 'fuerte', weak: 'apoyo de alto rendimiento', legacy: 'validado (snapshot)', none: 'solo predicho'};
+  const evRows = panelMirnas.map(m => {
+    const e = evTable[m] || {level: 'none', pmids: [], experiments: []};
+    const pmids = (e.pmids || []).filter(p => Number.isInteger(p)).map(p => `<a href="https://pubmed.ncbi.nlm.nih.gov/${p}/" target="_blank" rel="noopener">${p}</a>`).join(', ');
+    const exps = (e.experiments || []).map(escapeHtml).join('; ');
+    return `<tr><td style="font-family:var(--font-mono); font-size:11px;">${escapeHtml(m)}</td><td style="font-size:11px;">${escapeHtml(evLevelLabel[e.level] || '—')}</td><td style="font-family:var(--font-mono); font-size:10px;">${pmids || '—'}</td><td style="font-size:11px;">${exps || '—'}</td></tr>`;
+  }).join('');
+  const evBlock = evRows ? `<div style="margin-bottom:20px; padding:15px; background:rgba(79,195,161,0.03); border-radius:8px; border-left:4px solid var(--teal);">
+      <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Evidencia por miRNA — qué miRNA valida este gen</small>
+      <table class="sci-table" style="width:100%;"><thead><tr><th style="text-align:left;">miRNA</th><th style="text-align:left;">Nivel</th><th style="text-align:left;">PMIDs</th><th style="text-align:left;">Experimentos</th></tr></thead><tbody>${evRows}</tbody></table>
+      <div style="font-size:11px; color:var(--text-dim); margin-top:8px;">«Fuerte» significa que ese miRNA tiene evidencia fuerte para este gen; no dice que todos los miRNAs del panel lo regulen. La evidencia débil es apoyo de alto rendimiento y no demuestra unión directa.</div>
+    </div>` : '';
   
   document.getElementById('gene-panel-body').innerHTML = `
     <div style="margin-bottom:20px;">
@@ -360,6 +379,7 @@ async function openGenePanel(gene) {
       ${tierRows}
       ${disRows ? `<div style="margin-top:8px; font-size:11px; color:var(--text-dim);">Enfermedades asociadas (Open Targets):</div>${disRows}` : ''}
     </div>` : ''}
+    ${evBlock}
     ${d.protein ? `<div style="margin-bottom:20px; padding:15px; background:rgba(79,195,161,0.05); border-radius:8px; border-left:4px solid var(--teal);">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Proteína (UniProt)</small>
       <div style="font-size:13.5px; font-weight:600; color:var(--text);">${escapeHtml(d.protein.protein_name)} ${(d.protein.url && d.protein.url.startsWith('https://rest.uniprot.org/')) ? `<a href="${escapeHtml(d.protein.url)}" target="_blank" style="color:var(--gold); font-size:11px; font-family:var(--font-mono);">${escapeHtml(d.protein.uniprot_id || '')}</a>` : escapeHtml(d.protein.uniprot_id || '')}</div>

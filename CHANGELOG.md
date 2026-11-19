@@ -2,6 +2,62 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.51] — 2026-11-19
+
+### Bloque 1: tabla miRNA × gen, versiones de datos y conteos de evidencia
+
+Decisiones de Claude sobre la revisión de v1.50 (2026-11-19): las ideas 1
+y 2 aprobadas como primer bloque, junto con el conteo de evidencia y
+dos matices de etiquetado. Los pesos y el criterio de selección NO
+cambian (el método de la tesis sigue intacto; el interruptor "exigir
+evidencia experimental" sigue apagado por defecto).
+
+**Idea 1 — tabla miRNA × gen.** Cada gen del dossier lleva ahora
+`evidence_by_mirna`: una fila por cada miRNA del panel con su nivel,
+sus PMIDs y sus experimentos ("none" cuando ese miRNA no tiene entrada
+para el gen). Matiz 1: el nivel "fuerte" de un gen significa que AL
+MENOS UN miRNA del panel tiene evidencia fuerte para ese gen — la
+tabla muestra cuál. La ficha del gen en la interfaz muestra la tabla
+("Evidencia por miRNA — qué miRNA valida este gen"), con los PMIDs
+enlazados (solo enteros) y todo escapado (H-08).
+
+**Idea 2 — versiones de datos en el JSON del análisis.** Nuevo
+`loaded_data_versions()` en el motor: un diccionario plano
+{fuente: versión} de lo que está cargado EN ESTE PROCESO (no de lo que
+el JSON estático declara). Va en el nivel superior de la respuesta de
+`/api/v1/analyze` (`"data_versions"`), en `validation.data_sources` y
+en la exportación estructurada — los tres con el mismo valor. Sin el
+índice oficial, miRTarBase dice "not loaded" en vez de la versión
+declarada; igual para KEGG y TargetScan. (La corrección de /health
+para que use lo cargado queda para el bloque 2.)
+
+**Conteos de evidencia en el resumen.** `validation.summary` gana
+`n_strong`, `n_weak`, `n_legacy` y `n_only_predicted` (por nivel de
+evidencia de cada gen). Panel de la tesis: 1 fuerte, 2 débiles,
+2 solo predichos — la cifra "N de 5" ahora sale del propio informe.
+La insignia de la interfaz muestra los conteos.
+
+**Matiz 2 — la evidencia débil no se llama "validado".** La evidencia
+débil (Functional MTI Weak: CLIP-seq, microarray, proteómica) es apoyo
+de alto rendimiento: respalda la interacción sin demostrar unión
+directa. Cambios de etiqueta (peso +15 y el candado de "alta" NO
+cambian, por la decisión de diseño de v1.48): el resumen del nivel en
+el dossier dice "Apoyo de alto rendimiento (...)"; la capa en la
+puntuación dice "miRTarBase (apoyo de alto rendimiento, evidencia
+débil)"; la columna de la interfaz dice "apoyo de alto rendimiento";
+el texto del método define ambas cosas.
+
+**Números antes/después (corrida en vivo local, panel de la tesis):**
+sin cambio en genes ni en puntajes — solo se añaden campos y se
+reetiqueta. Suite: 180 → 189 tests (8 nuevos en
+`tests/test_evidence_table.py` + 1 guarda en
+`tests/test_frontend_safety.py`; los 3 tests que requieren el índice
+oficial se omiten en CI, como antes — el archivo sintético para el CI
+es el bloque 3).
+
+**Inconsistencias señaladas por Claude, corregidas aquí:** SECURITY.md
+listaba 1.49 (ahora 1.51) y paper.md decía 162 tests (ahora 189).
+
 ## [1.50] — 2026-11-19
 
 ### Lo que faltaba de la auditoría de Claude (H-10, H-20, H-19, H-22)

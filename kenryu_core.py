@@ -842,8 +842,12 @@ def build_evidence_tiers(predicted, evidence_level, research):
     if evidence_level == "strong":
         exp_summary = "Validado experimentalmente (miRTarBase, evidencia fuerte)"
     elif evidence_level == "weak":
-        exp_summary = ("Validado experimentalmente (miRTarBase, evidencia débil: "
-                       "CLIP-seq, microarray o proteómica)")
+        # Matiz 2 (auditoría, v1.51): la evidencia débil es apoyo de alto
+        # rendimiento (CLIP-seq, microarray, proteómica) — respalda la
+        # interacción sin demostrar unión directa. No se llama "validado".
+        exp_summary = ("Apoyo de alto rendimiento (miRTarBase, evidencia "
+                       "débil: CLIP-seq, microarray o proteómica; "
+                       "no demuestra unión directa)")
     elif evidence_level == "legacy":
         exp_summary = "Validado experimentalmente (miRTarBase, snapshot)"
     else:
@@ -882,9 +886,10 @@ def validation_score(gene, research, predicted, validated):
     `validated` is the miRTarBase evidence level: True/"strong"/"legacy"
     (functional assay or the legacy snapshot) scores +30, "weak"
     (CLIP-seq, microarray, proteomics) scores +15, False/None/"none"
-    scores +0. Weak evidence IS experimental validation of the
-    interaction (CLIP shows physical binding), so it satisfies the
-    "alta" gate; its lower weight makes "alta" harder to reach with it."""
+    scores +0. Weak evidence is high-throughput SUPPORT for the
+    interaction, not proof of direct binding — the label says so — but
+    by the v1.48 design decision it still satisfies the "alta" gate;
+    its lower weight makes "alta" harder to reach with it."""
     research = research or {}
     layers, missing = [], []
     score = 0
@@ -901,7 +906,7 @@ def validation_score(gene, research, predicted, validated):
         score += _VALIDATION_WEIGHTS["validated"]
         validated_level = "strong"
     elif validated == "weak":
-        layers.append("miRTarBase (validado experimentalmente, evidencia débil)")
+        layers.append("miRTarBase (apoyo de alto rendimiento, evidencia débil)")
         score += _VALIDATION_WEIGHTS["validated_weak"]
         validated_level = "weak"
     else:
@@ -978,6 +983,21 @@ def _best_evidence(gene, evidence_by_mirna):
             "experiments": sorted(best["experiments"])}
 
 
+def _evidence_by_mirna_table(gene, evidence_by_mirna, mirnas):
+    """Per-miRNA evidence table for one gene: one row per panel miRNA,
+    with its level, PMIDs and experiments ("none" when the miRNA has no
+    entry for the gene). This is what makes a "strong" claim auditable:
+    the best level across the panel (see _best_evidence) says nothing
+    about WHICH miRNA carries it — the table does."""
+    table = {}
+    for m in mirnas or []:
+        ev = ((evidence_by_mirna or {}).get(m) or {}).get(gene) or {}
+        table[m] = {"level": ev.get("level") or "none",
+                    "pmids": sorted(ev.get("pmids") or []),
+                    "experiments": sorted(ev.get("experiments") or [])}
+    return table
+
+
 def build_validation_report(mirnas, common_genes, gene_research,
                             local_by_mirna, remote_by_mirna, data_versions,
                             evidence_by_mirna=None):
@@ -986,8 +1006,9 @@ def build_validation_report(mirnas, common_genes, gene_research,
     map each panel miRNA to its TargetScan / miRTarBase target sets;
     `evidence_by_mirna` maps each panel miRNA to its per-gene miRTarBase
     evidence ({gene: {"level", "pmids", "experiments"}}) and drives the
-    three-level dossier: strong / weak (CLIP or weak) / only predicted.
-    Without it, validated genes are reported as "legacy" (no level).
+    dossier: each gene carries its best level AND the full per-miRNA
+    table (`evidence_by_mirna`), so "strong" is always auditable pair by
+    pair. Without it, validated genes are reported as "legacy" (no level).
     Each gene also carries `evidence_tiers` (four independent tiers:
     prediction, experimental, disease, clinical_literature) and
     `tiers_present` (how many of the four are present), plus the top
@@ -1000,6 +1021,7 @@ def build_validation_report(mirnas, common_genes, gene_research,
     genes = {}
     for gene in common_genes:
         evidence = _best_evidence(gene, evidence_by_mirna)
+        ev_table = _evidence_by_mirna_table(gene, evidence_by_mirna, mirnas)
         if evidence_by_mirna is None and gene in validated_set:
             evidence["level"] = "legacy"
         tiers = build_evidence_tiers(gene in predicted_set,
@@ -1012,16 +1034,26 @@ def build_validation_report(mirnas, common_genes, gene_research,
             # API): "no evaluado", sin puntaje — nunca "baja" (v1.46, H-06).
             # Las capas locales (TargetScan/miRTarBase) sí se conocen sin
             # costo de API y se muestran; la investigación multi-fuente no.
+            # El nivel miRTarBase de la capa usa el mejor nivel del gen
+            # (fuerte / apoyo de alto rendimiento / snapshot), nunca
+            # "validado" genérico para la evidencia débil (v1.51).
             local_layers = []
             if gene in predicted_set:
                 local_layers.append("TargetScan (predicho)")
-            if gene in validated_set:
-                local_layers.append("miRTarBase (validado experimentalmente)")
+            _layer = {
+                "strong": ("miRTarBase (validado experimentalmente, "
+                           "evidencia fuerte)"),
+                "weak": "miRTarBase (apoyo de alto rendimiento)",
+                "legacy": "miRTarBase (validado, snapshot)",
+            }.get(evidence["level"])
+            if _layer:
+                local_layers.append(_layer)
             genes[gene] = {
                 "gene": gene,
                 "score": None,
                 "level": "not_evaluated",
                 "evidence_level": evidence["level"],
+                "evidence_by_mirna": ev_table,
                 "mirtarbase_pmids": evidence["pmids"],
                 "mirtarbase_experiments": evidence["experiments"],
                 "evidence_tiers": tiers,
@@ -1041,6 +1073,7 @@ def build_validation_report(mirnas, common_genes, gene_research,
             predicted=gene in predicted_set,
             validated=(evidence["level"] if evidence["level"] != "none" else False),
         )
+        entry["evidence_by_mirna"] = ev_table
         entry["mirtarbase_pmids"] = evidence["pmids"]
         entry["mirtarbase_experiments"] = evidence["experiments"]
         entry["evidence_tiers"] = tiers
@@ -1050,6 +1083,7 @@ def build_validation_report(mirnas, common_genes, gene_research,
     evaluated = [g for g in genes.values() if g["level"] != "not_evaluated"]
     scores = [g["score"] for g in evaluated]
     levels = [g["level"] for g in evaluated]
+    ev_levels = [g["evidence_level"] for g in genes.values()]
     return {
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "mirnas": list(mirnas),
@@ -1065,7 +1099,12 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "La validación experimental se comprueba contra el índice local "
             "de miRTarBase 9.0 (oficial, construido desde hsa_MTI.xlsx; "
             "fuerte = Functional MTI, +30; débil = Functional MTI (Weak): "
-            "CLIP-seq, microarray o proteómica, +15). Un microARN sin entrada "
+            "CLIP-seq, microarray o proteómica, +15). El nivel fuerte de un "
+            "gen significa que al menos un miRNA del panel tiene evidencia "
+            "fuerte para ese gen; no dice que todos los miRNAs del panel lo "
+            "regulen — la tabla por miRNA de cada gen muestra cuál. La "
+            "evidencia débil es apoyo de alto rendimiento: respalda la "
+            "interacción pero no demuestra unión directa. Un microARN sin entrada "
             "en ese índice no aporta validación aunque la literatura reporte "
             "dianas validadas, y su gen queda en media como máximo. Cada gen "
             "lleva su nivel de evidencia (fuerte / débil / solo predicho) con "
@@ -1094,6 +1133,10 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "high": levels.count("alta"),
             "medium": levels.count("media"),
             "low": levels.count("baja"),
+            "n_strong": ev_levels.count("strong"),
+            "n_weak": ev_levels.count("weak"),
+            "n_legacy": ev_levels.count("legacy"),
+            "n_only_predicted": ev_levels.count("none"),
             "mean_score": round(sum(scores) / len(scores), 1) if scores else None,
             "mean_score_label": (
                 f"Media de los genes evaluados ({len(evaluated)} de {len(genes)})"
