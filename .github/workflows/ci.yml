@@ -18,13 +18,10 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      # gseapy==1.1.1 (pinned in requirements.txt) needs a Rust compiler to build.
-      - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest httpx
+          pip install pytest pytest-cov httpx
       - name: Run tests
-        run: pytest -v
+        run: pytest -v --cov=kenryu_engine --cov-report=term-missing
