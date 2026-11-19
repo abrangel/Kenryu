@@ -2,6 +2,33 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `CITATION.cff` so the software can be cited from GitHub.
+- Cancer-panel case study (`docs/case-study-cancer-panel.md`): second
+  computational validation (18-gene Strict core, live run 2026-11-11).
+- `kenryu_core.py`: pure helpers extracted from the engine
+  (`deep_clean_mirna`, `clean_mirna_name_cloud`, `consensus_genes`,
+  `create_visuals`, `build_synthesis`), unit-testable in isolation.
+- `consensus_genes()` pure function for the Strict / N-1 / N-2 modes,
+  extracted verbatim from `analyze()`.
+- API validation: `POST /api/v1/analyze` now rejects an empty miRNA panel
+  with 422 instead of running a meaningless analysis.
+- Comparison with multiMiR, miRWalk 3.0, DIANA-miRPath v3, and miRNet in
+  `paper.md` (State of the field), with verified citations.
+
+### Fixed
+- `clean_mirna_name_cloud` kept the let-7 family name: `let-7a-5p` was
+  converted to `hsa-miR-7a-5p`, so the remote miRTarBase lookup queried a
+  name that does not exist. Now returns `hsa-let-7a-5p` (regression tests
+  added).
+
+### Changed
+- CI: removed the dead Rust toolchain step (gseapy is gone) and added
+  coverage reporting (`pytest --cov=kenryu_engine`).
+- Test suite grew from 22 to 31 tests, all offline.
+
 ## [1.38] — 2026-07-04
 
 Current release. Deployed at https://huggingface.co/spaces/Kenryu007/Bioinformatica.

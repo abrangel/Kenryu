@@ -457,7 +457,8 @@ KENRYU has been validated live against the deployed Space (`POST /api/v1/analyze
 
 ```
 Kenryu/
-├── kenryu_engine.py              # FastAPI backend + bioinformatics logic (~1700 lines)
+├── kenryu_engine.py              # FastAPI backend + API endpoints (~1340 lines)
+├── kenryu_core.py                # Pure helpers: names, consensus, visuals, synthesis
 ├── Dockerfile                    # HF Spaces / Docker configuration
 ├── requirements.txt
 │

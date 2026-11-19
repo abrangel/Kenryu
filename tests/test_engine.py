@@ -124,6 +124,36 @@ def test_create_visuals_returns_three_pngs():
         assert raw[:8] == b"\x89PNG\r\n\x1a\n"  # PNG magic bytes
 
 
+# ── Consensus modes (pure function, extracted from analyze()) ───────────────
+
+def test_consensus_genes_strict():
+    sets = [{"A", "B"}, {"A", "C"}, {"A", "D"}]
+    assert ke.consensus_genes(sets, "strict") == {"A"}
+
+
+def test_consensus_genes_n1():
+    sets = [{"A", "B"}, {"A", "C"}, {"B", "C"}]
+    assert ke.consensus_genes(sets, "n-1") == {"A", "B", "C"}
+
+
+def test_consensus_genes_n2():
+    sets = [{"A", "B"}, {"A", "C"}, {"A", "D"}]
+    assert ke.consensus_genes(sets, "n-2") == {"A", "B", "C", "D"}
+
+
+def test_consensus_genes_single_panel_behaves_as_strict():
+    assert ke.consensus_genes([{"A", "B"}], "n-1") == {"A", "B"}
+
+
+# ── API validation ───────────────────────────────────────────────────────────
+
+def test_analyze_rejects_empty_panel():
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={"mirnas": []})
+    assert r.status_code == 422
+
+
 # ── HTTP health + HEAD endpoints ───────────────────────────────────────────────
 
 def test_head_root_returns_200():
