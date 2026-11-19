@@ -31,6 +31,11 @@ def test_deep_clean_mirna(raw, expected):
     ("hsa-miR-21-5p", "hsa-miR-21-5p"),
     ("miR-144-3p", "hsa-miR-144-3p"),
     ("mir-106b-5p", "hsa-miR-106b-5p"),
+    # let-7 family keeps its name: hsa-let-7a-5p, never hsa-miR-7a-5p.
+    ("let-7a-5p", "hsa-let-7a-5p"),
+    ("hsa-let-7a-5p", "hsa-let-7a-5p"),
+    ("mir-let-7a-5p", "hsa-let-7a-5p"),
+    ("let-7a", "hsa-let-7a"),
 ])
 def test_clean_mirna_name_cloud(raw, expected):
     assert ke.clean_mirna_name_cloud(raw) == expected

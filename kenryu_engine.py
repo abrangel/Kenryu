@@ -95,6 +95,16 @@ def deep_clean_mirna(m: str) -> str:
 def clean_mirna_name_cloud(m: str) -> str:
     c = deep_clean_mirna(m)
     parts = c.split('-')
+    # The let-7 family keeps its own name (hsa-let-7a-5p). The generic
+    # rule below would drop "let" and wrongly return hsa-miR-7a-5p,
+    # so the remote miRTarBase lookup queried a name that does not exist.
+    if "let" in parts[:2]:
+        i = parts.index("let")
+        rest = parts[i + 1:]
+        r = "hsa-let"
+        if rest:
+            r += "-" + "-".join(rest)
+        return r
     if len(parts) > 1:
         num = parts[1]; suf = '-'.join(parts[2:])
         r = f"hsa-miR-{num}"
