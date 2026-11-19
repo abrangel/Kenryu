@@ -32,7 +32,9 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ### Changed
 - CI: removed the dead Rust toolchain step (gseapy is gone) and added
-  coverage reporting (`pytest --cov=kenryu_engine`).
+  coverage reporting (`pytest --cov=kenryu_engine --cov=kenryu_core`).
+  Current coverage: 34% total (kenryu_core 75%, engine 17% — the
+  network-dependent functions are not covered offline).
 - Test suite grew from 22 to 31 tests, all offline.
 
 ## [1.38] — 2026-07-04

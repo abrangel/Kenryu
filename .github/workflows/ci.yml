@@ -22,4 +22,4 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov httpx
       - name: Run tests
-        run: pytest -v --cov=kenryu_engine --cov-report=term-missing
+        run: pytest -v --cov=kenryu_engine --cov=kenryu_core --cov-report=term-missing
