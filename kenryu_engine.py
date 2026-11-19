@@ -1335,13 +1335,14 @@ app.add_middleware(
     allow_origins=origins,
     allow_origin_regex=r"https://.*\.hf\.space", # Soporte dinámico para subdominios de Hugging Face
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "HEAD", "OPTIONS"],
     allow_headers=["*"],
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
+@app.head("/")
 async def root():
     return FileResponse('static/index.html')
 

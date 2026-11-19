@@ -119,6 +119,17 @@ def test_create_visuals_returns_three_pngs():
         assert raw[:8] == b"\x89PNG\r\n\x1a\n"  # PNG magic bytes
 
 
+# ── HTTP health + HEAD endpoints ───────────────────────────────────────────────
+
+def test_head_root_returns_200():
+    # Backported from the Space: the root serves HEAD so uptime checks and
+    # the Hugging Face platform can probe / without a body.
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.head("/")
+    assert r.status_code == 200
+
+
 # ── HTTP health endpoint ─────────────────────────────────────────────────────
 
 def test_health_endpoint():
