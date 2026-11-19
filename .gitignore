@@ -13,5 +13,8 @@ local_db/analysis_cache.json
 # miRTarBase oficial (Ronda 3): el xlsx descargado y el índice derivado
 # son datos de ejecución, no se suben a git (ver DATA_LICENSES.md).
 local_db/mirtarbase_official.json.gz
+# El snapshot GMT de Harmonizome tampoco se sube: se descarga bajo
+# demanda con el actualizador (v1.52).
+local_db/mirtarbase_gene_set_library.gmt.gz
 *.xlsx
 local_db/gmt_KEGG_2021_Human.gmt

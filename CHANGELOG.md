@@ -2,6 +2,61 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.52] — 2026-11-19
+
+### Bloque 2: XSS residual, /health con lo cargado, GMT a descarga bajo demanda
+
+Pendientes de la re-auditoría de v1.50 (2026-11-19, verificados contra el
+código antes de corregirlos) + la declaración de uso de IA para JOSS,
+aprobada por el autor. Ningún resultado de análisis cambia: los puntajes
+y los genes del panel de la tesis son los mismos antes y después.
+
+**XSS residual (auditoría v1.50).** La fila de la Sección II del informe
+imprimible interpolaba `g`, `d.system`, `associated_routes` y `pathText`
+sin escapar (línea 912 en v1.51); ahora los cuatro pasan por
+`escapeHtml()`. Las tres imágenes del informe (`venn`, `volcano`, `ppi`)
+interpolaban el base64 sin validar (líneas 937/938/957); ahora usan el
+nuevo `b64Img()`, con el mismo guard `/^[A-Za-z0-9+/=]+$/` que `setImg`
+— solo base64 válido llega al `src`. Guardas nuevas en
+`tests/test_frontend_safety.py` (escritas primero, fallaron contra v1.51).
+
+**/health refleja lo cargado.** `/health` usaba `load_local_versions()`
+(el registro estático) y declaraba el índice oficial 9.0 y el snapshot
+de KEGG en un clon fresco donde ninguno de los dos archivos existe.
+Ahora usa `loaded_data_versions()` (v1.51): en un clon fresco dice
+"not loaded". Contrato actualizado en
+`tests/test_updater.py::test_health_reports_data_sources`.
+
+**GMT de Harmonizome a descarga bajo demanda.** El snapshot
+`local_db/mirtarbase_gene_set_library.gmt.gz` (CC BY-NC-SA 4.0) ya no
+está en el repo (`git rm` + `.gitignore`); el actualizador ya sabía
+descargarlo y ahora es la única vía para obtenerlo. El motor sigue
+usándolo como respaldo cuando el índice oficial no existe (también en
+el Space, que conserva su copia: modelo Galaxy — la plataforma mantiene
+los datos, el repo no los redistribuye). El loader se prueba ahora
+contra un GMT sintético (`_tiny_legacy_gmt`, mismo formato) en vez del
+archivo real. Notas actualizadas en `DATA_LICENSES.md`, el actualizador
+y los READMEs.
+
+**Nota TargetScan.** `data_versions.json` decía `targetscan_full.json.zip`;
+el archivo es `data/targetscan_full.txt.zip` desde v1.49. Corregido.
+
+**`@app.on_event("startup")` → lifespan.** El decorador deprecado
+generaba un `DeprecationWarning` en cada corrida; el arranque (caché +
+bases locales) ahora vive en un handler `lifespan`. Todos los tests
+usan `with TestClient(...)`, así que el lifespan se ejecuta en la
+suite. De paso, el mensaje de arranque decía "v1.46"; ahora usa
+`APP_VERSION`.
+
+**Declaración de uso de IA (paper.md).** Se añade la sección
+"AI use statement" con su traducción "Declaración de uso de IA",
+aprobada por el autor: Muse ayudó con código y documentación; la
+suite de pruebas la desarrolló el autor (aportada en estado avanzado)
+y Muse ayudó con cobertura adicional para las correcciones de la
+auditoría; Claude hizo la auditoría técnica independiente; el autor
+verificó los resultados con sus propios scripts (audit_v150.py) y
+comprobaciones en vivo.
+
 ## [1.51] — 2026-11-19
 
 ### Bloque 1: tabla miRNA × gen, versiones de datos y conteos de evidencia

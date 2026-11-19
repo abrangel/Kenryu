@@ -909,7 +909,7 @@ function initReportWithData(data) {
   data.common_genes.slice(0, 40).forEach(g => {
     const d = (data.gene_details && data.gene_details[g]) || {system:'—', associated_routes:[], pathology:'—'};
     const pathText = (d.pathology||'').length > 180 ? d.pathology.substring(0, 180) + '...' : (d.pathology||'—');
-    tableRows += `<tr><td style="font-weight:600; color:#1a3a6b; padding:8px;">${g}</td><td style="padding:8px;">${d.system||'—'}</td><td style="font-style:italic; padding:8px;">${(d.associated_routes||[]).slice(0,2).join('; ')||'—'}</td><td style="text-align:justify; padding:8px; font-size:11px;">${pathText}</td></tr>`;
+    tableRows += `<tr><td style="font-weight:600; color:#1a3a6b; padding:8px;">${escapeHtml(g)}</td><td style="padding:8px;">${escapeHtml(d.system||'—')}</td><td style="font-style:italic; padding:8px;">${escapeHtml((d.associated_routes||[]).slice(0,2).join('; ')||'—')}</td><td style="text-align:justify; padding:8px; font-size:11px;">${escapeHtml(pathText)}</td></tr>`;
   });
   tableSec.innerHTML = `
     <div class="section-heading"><span class="s-num">II.</span> Panel de Biomarcadores Core Identificados</div>
@@ -934,8 +934,13 @@ function initReportWithData(data) {
   // 5. GRÁFICOS (SALTO FORZADO CON TAMAÑOS FIJOS PARA PDF)
   const vizSec = document.createElement('div');
   vizSec.className = 'report-section force-page-break';
-  const vennImg = data.venn_plot ? `<img src="data:image/png;base64,${data.venn_plot}" style="width:380px; height:300px; object-fit:contain; border:1px solid #eee; background:white; padding:10px; margin-bottom:10px;">` : '<div style="padding:40px; color:#999; border:1px dashed #ccc;">Gráfico no disponible</div>';
-  const volcanoImg = data.volcano_plot ? `<img src="data:image/png;base64,${data.volcano_plot}" style="width:480px; height:320px; object-fit:contain; border:1px solid #eee; background:white; padding:10px;">` : '<div style="padding:40px; color:#999; border:1px dashed #ccc;">Gráfico no disponible</div>';
+  // v1.52 (bloque 2): mismo guard de base64 que setImg — solo base64
+  // válido llega al src de una <img>; cualquier otra cosa es "no disponible".
+  const b64Img = (b64, style, fallback) => (b64 && /^[A-Za-z0-9+/=]+$/.test(b64))
+    ? `<img src="data:image/png;base64,${b64}" style="${style}">`
+    : `<div style="padding:40px; color:#999; border:1px dashed #ccc;">${fallback}</div>`;
+  const vennImg = b64Img(data.venn_plot, 'width:380px; height:300px; object-fit:contain; border:1px solid #eee; background:white; padding:10px; margin-bottom:10px;', 'Gráfico no disponible');
+  const volcanoImg = b64Img(data.volcano_plot, 'width:480px; height:320px; object-fit:contain; border:1px solid #eee; background:white; padding:10px;', 'Gráfico no disponible');
   
   vizSec.innerHTML = `
     <div class="section-heading"><span class="s-num">IV.</span> Evidencia Gráfica de Convergencia</div>
@@ -954,7 +959,7 @@ function initReportWithData(data) {
   // 6. PPI (CON SALTO FORZADO)
   const ppiSec = document.createElement('div');
   ppiSec.className = 'report-section force-page-break';
-  const ppiImg = data.ppi_plot ? `<img src="data:image/png;base64,${data.ppi_plot}" style="width:85%; max-height:400px; object-fit:contain; border:1px solid #eee; box-shadow:0 2px 4px rgba(0,0,0,0.05);">` : '<div style="padding:40px; color:#999; border:1px dashed #ccc;">Interactoma no disponible</div>';
+  const ppiImg = b64Img(data.ppi_plot, 'width:85%; max-height:400px; object-fit:contain; border:1px solid #eee; box-shadow:0 2px 4px rgba(0,0,0,0.05);', 'Interactoma no disponible');
   ppiSec.innerHTML = `
     <div class="section-heading"><span class="s-num">V.</span> Interactoma Proteico (STRING-DB)</div>
     <div class="viz-print" style="margin-top:10px; text-align:center;">${ppiImg}</div>`;

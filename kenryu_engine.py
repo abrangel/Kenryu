@@ -1,4 +1,5 @@
 import os, json, zipfile, asyncio, logging, re, io, base64, datetime, hmac, threading, time
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Literal, Optional
 from collections import Counter, deque
@@ -85,7 +86,8 @@ MIRTARBASE_OFFICIAL = "local_db/mirtarbase_official.json.gz"
 def load_mirtarbase_local():
     """Carga la librería local de miRTarBase (una sola vez). Prefiere el
     índice oficial 9.0 (con niveles fuerte/débil); si no existe, usa el
-    GMT de Harmonizome (nivel "legacy", sin distinción de evidencia)."""
+    GMT de Harmonizome (nivel "legacy", sin distinción de evidencia),
+    descargado bajo demanda y no incluido en el repo desde v1.52."""
     global MIRTARBASE_DB, MIRTARBASE_FORMAT
     if not MIRTARBASE_DB:
         official = BASE_DIR / MIRTARBASE_OFFICIAL
@@ -1380,8 +1382,27 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.51"
-app = FastAPI(title="KENRYU Bioinformatics Engine", version=APP_VERSION)
+APP_VERSION = "1.52"
+
+
+@asynccontextmanager
+async def lifespan(app):
+    # v1.52: @app.on_event("startup") is deprecated (it raised a
+    # DeprecationWarning on every run); the lifespan handler replaces
+    # it. Same work as the old startup_event: load the cache and the
+    # local databases before serving the first request.
+    global TARGETSCAN_DB
+    load_persistent_cache()
+    if not TARGETSCAN_DB:
+        TARGETSCAN_DB = load_local_data()
+    load_mirtarbase_local()
+    load_gmt_libraries()
+    logger.info(f"🚀 KENRYU v{APP_VERSION} listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+    yield
+
+
+app = FastAPI(title="KENRYU Bioinformatics Engine", version=APP_VERSION,
+              lifespan=lifespan)
 
 # Seguridad CORS (H-14, v1.47): solo el origen exacto del Space. Antes el
 # regex https://.*\.hf\.space con allow_credentials=True confiaba en
@@ -1517,7 +1538,7 @@ async def health():
     return {"status": "OK", "version": APP_VERSION,
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
-            "data_sources": load_local_versions()}
+            "data_sources": loaded_data_versions()}
 
 
 @app.get("/api/v1/updates")
@@ -1680,16 +1701,6 @@ async def batch(file: UploadFile = File(...)):
         if len(p["mirnas"]) > 30:
             raise HTTPException(400, f"panel '{p['name']}' has too many miRNAs (max 30)")
     return compare(CompareRequest(panels=panels))
-@app.on_event("startup")
-async def startup_event():
-    global TARGETSCAN_DB
-    load_persistent_cache()
-    if not TARGETSCAN_DB:
-        TARGETSCAN_DB = load_local_data()
-    load_mirtarbase_local()
-    load_gmt_libraries()
-    logger.info(f"🚀 KENRYU v1.46 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
-
 # Tope de investigación multi-fuente por análisis (v1.46, H-06): cada gen
 # investigado cuesta varias llamadas a PubMed/OMIM/ClinVar/ClinicalTrials.
 # Se investigan solo los RESEARCH_CAP genes priorizados; los demás figuran

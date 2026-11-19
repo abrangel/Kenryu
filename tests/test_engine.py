@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.51"
+    assert body["version"] == "1.52"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -509,7 +509,9 @@ def test_analyze_offline_cancer_panel_researches_prioritized_genes():
     investigados deben ser los de mayor prioridad por validación en
     miRTarBase (AGO4, MEIS1, PURB, RPS6KA3, WNK3), no los 5 primeros
     alfabéticos (AAK1, ACVR2A, AGO4, BNC2, BRWD3). Los 13 restantes son
-    'no evaluado', nunca 'baja' por no haberse investigado."""
+    'no evaluado', nunca 'baja' por no haberse investigado. Excepción
+    v1.52: sin ningún miRTarBase local (clon fresco) no hay validación
+    que priorice, así que los 5 son los alfabéticos, con 25 ("baja")."""
     from fastapi.testclient import TestClient
     with TestClient(ke.app) as client:
         r = client.post("/api/v1/analyze", json={
@@ -525,12 +527,22 @@ def test_analyze_offline_cancer_panel_researches_prioritized_genes():
     # tienen validación en 2 miRNAs del panel (antes 0 en el snapshot), así
     # que entran en el tope de 5 por delante de PURB/RPS6KA3/WNK3 (1 miRNA).
     # Con el GMT anterior, los 5 investigados eran los únicos validados.
-    expected = ({"AAK1", "AGO4", "CHD7", "IL6R", "MEIS1"} if _OFFICIAL.exists()
-                else {"AGO4", "MEIS1", "PURB", "RPS6KA3", "WNK3"})
+    # v1.52: sin ningún miRTarBase local (clon fresco: el GMT ya no está
+    # en el repo), todos los genes empatan a 0 validación y el tope de 5
+    # cae a los 5 primeros alfabéticos, con 25 puntos ("baja", solo
+    # TargetScan); los 13 restantes quedan sin evaluar.
+    if _OFFICIAL.exists():
+        expected = {"AAK1", "AGO4", "CHD7", "IL6R", "MEIS1"}
+    elif _GMT.exists():
+        expected = {"AGO4", "MEIS1", "PURB", "RPS6KA3", "WNK3"}
+    else:
+        expected = {"AAK1", "ACVR2A", "AGO4", "BNC2", "BRWD3"}
     assert researched == expected
     assert len(not_ev) == 13
     assert all(val["genes"][g]["score"] is None for g in not_ev)
-    assert val["summary"]["low"] == 0
+    # Con validación local los 5 investigados son media/alta (low 0); sin
+    # ningún miRTarBase local los 5 son "baja" (25, solo TargetScan).
+    assert val["summary"]["low"] == (0 if (_OFFICIAL.exists() or _GMT.exists()) else 5)
 
 
 def test_analyze_offline_n2_truncates_enrichment_by_priority():
@@ -618,8 +630,15 @@ def test_analyze_offline_reports_source_per_mirna():
     assert r.status_code == 200
     src = r.json()["source_by_mirna"]
     assert src["hsa-miR-33a-5p"].startswith("TargetScan")
-    assert "miRTarBase" in src["hsa-miR-106b-3p"]
-    assert "respaldo" in src["hsa-miR-106b-3p"]
+    # hsa-miR-106b-3p has no TargetScan data: it falls back to miRTarBase
+    # when a local copy exists (official index or GMT); with neither (fresh
+    # clone since v1.52), it has no data anywhere and is reported as such.
+    if _OFFICIAL.exists() or _GMT.exists():
+        assert "miRTarBase" in src["hsa-miR-106b-3p"]
+        assert "respaldo" in src["hsa-miR-106b-3p"]
+    else:
+        assert src["hsa-miR-106b-3p"] == "sin datos en ninguna fuente"
+        assert "hsa-miR-106b-3p" in r.json()["missing_mirnas"]
     # El panel de control usa solo TargetScan.
     r2 = client.post("/api/v1/analyze", json={
         "mirnas": ["hsa-miR-375", "hsa-miR-29a-3p", "hsa-miR-21-5p"],
@@ -908,6 +927,10 @@ import pytest as _pytest
 _THESIS = ["hsa-miR-33a-5p", "hsa-miR-144-3p", "hsa-miR-758-3p",
            "hsa-miR-106b-5p", "hsa-miR-33b-5p"]
 _OFFICIAL = ke.BASE_DIR / "local_db" / "mirtarbase_official.json.gz"
+# v1.52: the Harmonizome GMT is download-on-demand (not in the repo), so
+# a fresh clone has NO local miRTarBase at all; tests that depend on the
+# fallback branch on whichever local source exists (official, GMT, none).
+_GMT = ke.BASE_DIR / "local_db" / "mirtarbase_gene_set_library.gmt.gz"
 
 
 @_pytest.mark.skipif(not _OFFICIAL.exists(),

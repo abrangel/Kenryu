@@ -11,13 +11,29 @@ import kenryu_core as kc
 
 REPO = Path(__file__).resolve().parent.parent
 LOCAL_DB = REPO / "local_db"
-MIRTARBASE_GMT = LOCAL_DB / "mirtarbase_gene_set_library.gmt.gz"
 REACTOME_GMT = LOCAL_DB / "gmt_Reactome_Pathways_2024.gmt"
 
 
-def test_load_mirtarbase_gmt_real_file():
-    db = kc.load_mirtarbase_gmt(MIRTARBASE_GMT)
-    assert len([k for k in db if k.startswith("hsa-")]) >= 500
+def _tiny_legacy_gmt(tmp_path):
+    """A minimal Harmonizome GMT (same format as the real file:
+    miRNA \\t MIRT-id \\t gene1 \\t gene2 ...)."""
+    import gzip
+    path = tmp_path / "mirtarbase_gene_set_library.gmt.gz"
+    lines = [
+        "hsa-miR-21-5p\tMIRT000001\tPTEN\tPDCD4\tAGO4\tMEIS1\tTGFBR2",
+        "hsa-let-7a-5p\tMIRT000002\tLIN28A\tHMGA2",
+        "hsa-miR-33a-5p\tMIRT000003\tABCA1",
+    ]
+    with gzip.open(path, "wt", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+    return path
+
+
+def test_load_mirtarbase_gmt_synthetic_file(tmp_path):
+    # v1.52: the real Harmonizome GMT is download-on-demand (not in the
+    # repo), so the loader is tested against a synthetic file with the
+    # same format; the real file is no longer a fixture.
+    db = kc.load_mirtarbase_gmt(_tiny_legacy_gmt(tmp_path))
     mir21 = db["hsa-miR-21-5p"]
     for expected in ("PTEN", "PDCD4", "AGO4", "MEIS1", "TGFBR2"):
         assert expected in mir21

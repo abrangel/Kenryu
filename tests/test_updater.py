@@ -180,9 +180,10 @@ def test_health_reports_data_sources():
     with TestClient(ke.app) as client:
         r = client.get("/health")
     assert r.status_code == 200
-    # /health reports whatever data_versions.json pins (23.1 after the
-    # live install); the contract is that it matches the pinned record.
-    assert r.json()["data_sources"] == ku.load_local_versions()
+    # /health reports what is ACTUALLY loaded in this process (v1.52,
+    # bloque 2): in a fresh clone without the official index or the
+    # KEGG GMT it says "not loaded" instead of the pinned record.
+    assert r.json()["data_sources"] == ke.loaded_data_versions()
     assert set(r.json()["data_sources"]) == {"mirbase", "targetscan",
                                              "mirtarbase", "enrichr", "kegg"}
 

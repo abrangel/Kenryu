@@ -27,7 +27,7 @@
     "download_url": "https://www.targetscan.org/vert_80/",
     "latest_known": "8.0",
     "local": "8.0",
-    "note": "Local database (targetscan_full.json.zip, 8.3 MB). No v9.0 release found as of 2026-11-18."
+    "note": "Local database (targetscan_full.txt.zip, 8.3 MB). No v9.0 release found as of 2026-11-18."
   },
   "kegg": {
     "check_url": "https://maayanlab.cloud/Enrichr/datasetStatistics",

@@ -47,3 +47,26 @@ def test_script_js_has_evidence_by_mirna_table():
     assert "evidence_by_mirna" in text
     assert "apoyo de alto rendimiento" in text
     assert "Evidencia por miRNA" in text
+
+
+def test_report_table_row_escapes_values():
+    """v1.52 (bloque 2, XSS residual): the printable report's Section II
+    row interpolated g, d.system, associated_routes and pathText raw.
+    Every value must go through escapeHtml before innerHTML."""
+    text = _script_text()
+    row = next(l for l in text.splitlines() if "tableRows +=" in l)
+    assert "escapeHtml(g)" in row
+    assert "escapeHtml(d.system" in row
+    assert "escapeHtml((d.associated_routes" in row
+    assert "escapeHtml(pathText)" in row
+
+
+def test_report_images_validate_base64():
+    """v1.52 (bloque 2): the report's venn/volcano/ppi images interpolated
+    data.*_plot raw into data:image/png;base64,.... Only validated
+    base64 may reach an <img> src (same guard as setImg)."""
+    text = _script_text()
+    assert "data:image/png;base64,${data.venn_plot}" not in text
+    assert "data:image/png;base64,${data.volcano_plot}" not in text
+    assert "data:image/png;base64,${data.ppi_plot}" not in text
+    assert "b64Img(" in text
