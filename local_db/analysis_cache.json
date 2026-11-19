@@ -1226,6 +1226,25 @@
       "trials": [],
       "diseases": [],
       "year_window_used": "10y_ampliado"
+    },
+    "v3|TESTGENE|10": {
+      "pubmed": [
+        {
+          "pmid": "12345678",
+          "term": "Metabolismo del colesterol",
+          "source": "KEGG",
+          "editorial_note": "miR-33 suprime ABCA1.",
+          "year_window": "10y"
+        }
+      ],
+      "omim": [],
+      "clinvar": {
+        "count": 0,
+        "url": "https://www.ncbi.nlm.nih.gov/clinvar/?term=TESTGENE%5BGene+Name%5D"
+      },
+      "trials": [],
+      "diseases": [],
+      "year_window_used": "10y"
     }
   }
 }

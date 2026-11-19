@@ -868,7 +868,7 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
     + OMIM + ClinVar + ClinicalTrials.gov. Cachea el resultado por {gene}|{years}.
 
     Devuelve dict con:
-      - pubmed: [{pmid, term, source, desc, year_window}]
+      - pubmed: [{pmid, term, source, editorial_note, year_window}]
       - omim: [{omim_id, title, url}]
       - clinvar: {count, url}
       - trials: [{nct_id, title, status, url}]
@@ -899,11 +899,15 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
             if isinstance(res, Exception) or not res or not res[0]:
                 continue
             pmid, window = res
+            # La descripción del preset es una NOTA EDITORIAL (contexto del
+            # equipo, sin cita): va en su propio campo y NUNCA se presenta
+            # como respaldada por este PMID. El PMID es solo el primer
+            # resultado de la búsqueda en PubMed por gen + término.
             pubmed_refs.append({
                 "pmid": pmid,
                 "term": ev["term"],
                 "source": ev["source"],
-                "desc": ev.get("desc", ""),
+                "editorial_note": ev.get("desc", ""),
                 "year_window": window,
             })
     else:
@@ -915,7 +919,7 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
                 "pmid": pmid,
                 "term": "Función biológica",
                 "source": "PubMed",
-                "desc": "",
+                "editorial_note": "",
                 "year_window": window,
             })
 
@@ -1224,7 +1228,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     return info
 
 # ── GRÁFICOS ──────────────────────────────────────────────────────────────────
-app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.43")
+app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.44")
 
 # Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
 origins = [
@@ -1263,7 +1267,7 @@ async def serve_style():
 
 @app.get("/health")
 async def health():
-    return {"status": "OK", "version": "1.43",
+    return {"status": "OK", "version": "1.44",
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": load_local_versions()}
@@ -1405,7 +1409,7 @@ async def startup_event():
         TARGETSCAN_DB = load_local_data()
     load_mirtarbase_local()
     load_gmt_libraries()
-    logger.info(f"🚀 KENRYU v1.43 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+    logger.info(f"🚀 KENRYU v1.44 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
 
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):

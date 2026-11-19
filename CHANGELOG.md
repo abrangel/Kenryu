@@ -2,6 +2,40 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.44] — 2026-11-19
+
+### Fixed
+- **La síntesis imprimía "(PMID: None)":** al quitar los PMIDs escritos a
+  mano en v1.43, el informe quedó con 11 ocurrencias literales de
+  "PMID: None" junto a cada descripción de ruta. Ya no se imprime ningún
+  PMID junto a la descripción (ver el cambio de abajo).
+
+### Changed
+- **Texto y cita separados (auditoría externa, opción 1):** la descripción
+  escrita a mano de cada ruta se pegaba al primer artículo que devolvía
+  PubMed para gen + término, como si ese artículo la respaldara — buscar
+  por término no garantiza que el primer resultado diga lo que dice la
+  frase. Ahora van separados y se dice así: la descripción se muestra como
+  "Notas editoriales sobre las rutas (contexto del equipo, sin cita)" y el
+  artículo en vivo como "Primeros resultados en PubMed (búsqueda por gen +
+  término; no se verificó que respalden la nota anterior)". En la API, el
+  campo `desc` del registro de PubMed pasa a llamarse `editorial_note`. El
+  texto del método del dossier lo explica. La opción 2 (eliminar la
+  descripción y mostrar solo fuentes) queda para la ronda del miRTarBase
+  oficial.
+
+### Docs
+- **Cifras de v1.42 matizadas:** el CHANGELOG y las notas de la release
+  decían "SCN1A 60" como si fuera un valor fijo del parche. Es la corrida
+  de verificación: en vivo los puntajes varían unos puntos entre corridas
+  según PubMed (el Space dio SCN1A 65 en una corrida, dos artículos
+  distintos sin duplicar). Lo que el parche garantiza es que no hay doble
+  conteo, no un puntaje exacto.
+- **Comentario del CI sin mención del incidente:** el escaneo de secretos
+  sigue en el CI; el comentario ya no anuncia la clave purgada (revocada y
+  fuera del historial; el mensaje del commit que añadió el escaneo conserva
+  el motivo).
+
 ## [1.43] — 2026-11-19
 
 ### Fixed
@@ -40,8 +74,13 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   duplicado. Ahora `dedupe_pubmed_refs()` deduplica por PMID antes de puntuar
   (la deduplicación que existía solo afectaba a la bibliografía del informe,
   no al puntaje). Caché de investigación versionada v2 → v3 para invalidar
-  los resultados viejos con duplicados. Panel de la tesis tras el arreglo:
-  ABCA1 100 (alta), SCN1A 60, KPNA3 50, SNTB2 50, TSC22D2 50 (media).
+  los resultados viejos con duplicados. Panel de la tesis tras el arreglo
+  (corrida de verificación; los puntajes en vivo varían unos puntos entre
+  corridas según lo que devuelva PubMed ese día): ABCA1 100 (alta), SCN1A 60,
+  KPNA3 50, SNTB2 50, TSC22D2 50 (media). El Space en vivo dio SCN1A 65 en una
+  corrida — dos artículos distintos, sin duplicar —, así que el 60 no es un
+  valor fijo del parche: lo que el parche garantiza es que no hay doble
+  conteo, no un puntaje exacto.
 
 ### Changed
 - **El nivel "alta" exige validación experimental de la interacción:** un gen

@@ -274,12 +274,26 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
         para = (f"En relación al gen {g} ({full_name}), la literatura científica lo describe como {pathology.lower().replace('.', '')}. "
                 f"Diversas investigaciones destacan su papel como un nodo de control esencial.")
 
+        # La investigación en vivo de este gen (PubMed, OMIM, ClinVar, ensayos).
+        gr = gene_research.get(g, {}) or {}
+
+        # Separación texto / cita (v1.44): la descripción de cada ruta es una
+        # NOTA EDITORIAL del equipo — contexto, sin cita — y el PMID que se
+        # imprimía junto a ella era solo el primer resultado de una búsqueda
+        # por gen + término, sin verificar que respalde la frase. Van en
+        # bloques distintos y se dice así.
         evidence_list = d.get('clinical_evidence', [])
         if evidence_list:
-            route_lines = []
-            for ev in evidence_list:
-                route_lines.append(f"• {ev['source']} {ev['term']}: {ev['desc']} (PMID: {ev['pmid']})")
-            para += "\n\nRutas biológicas validadas:\n" + "\n".join(route_lines)
+            route_lines = [f"• {ev['source']} {ev['term']}: {ev['desc']}" for ev in evidence_list]
+            para += "\n\nNotas editoriales sobre las rutas (contexto del equipo, sin cita):\n" + "\n".join(route_lines)
+            live_refs = gr.get("pubmed", []) or []
+            if live_refs:
+                live_lines = [
+                    f"• {r['term']}: primer resultado en PubMed para {g} + «{r['term']}» — PMID: {r['pmid']}"
+                    for r in live_refs
+                ]
+                para += ("\n\nPrimeros resultados en PubMed (búsqueda por gen + término; "
+                         "no se verificó que respalden la nota anterior):\n" + "\n".join(live_lines))
         else:
             para += f" Su regulación por el panel de miRNAs analizado tiene consecuencias directas en la estabilidad tisular [{i+1}].\n"
 
@@ -287,7 +301,6 @@ def build_synthesis(mirnas: list, common: list, gene_details: dict, enrichment: 
         # Se construye un párrafo narrativo continuo, omitiendo silenciosamente
         # las fuentes sin resultados. Si NINGUNA fuente devolvió datos, no se
         # añade el bloque.
-        gr = gene_research.get(g, {}) or {}
         omim_list = gr.get("omim", []) or []
         clinvar = gr.get("clinvar", {}) or {}
         trials_list = gr.get("trials", []) or []
@@ -799,7 +812,10 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "La validación experimental se comprueba contra el snapshot local "
             "de miRTarBase (Harmonizome): un microARN sin entrada en ese "
             "snapshot no aporta validación aunque la literatura reporte dianas "
-            "validadas, y su gen queda en media como máximo."
+            "validadas, y su gen queda en media como máximo. Las notas "
+            "editoriales sobre las rutas son contexto del equipo y no llevan "
+            "cita; los PMIDs de PubMed son los primeros resultados de la "
+            "búsqueda por gen + término y no se verificó que respalden la nota."
         ),
         "genes": genes,
         "summary": {

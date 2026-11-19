@@ -25,9 +25,8 @@ jobs:
         run: pytest -v --cov=kenryu_engine --cov=kenryu_core --cov-report=term-missing
 
   gitleaks:
-    # Secret scan over the full history: a hardcoded credential must never
-    # reach the repo again (an NCBI API key was purged from the gh-pages
-    # branch history on 2026-11-19; see CHANGELOG [1.42]).
+    # Secret scan over the full history: fail the build if a credential
+    # ever reaches the repo, so a leak is caught before it is published.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

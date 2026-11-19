@@ -98,7 +98,7 @@ def test_build_synthesis_structure():
             "pathology": "Regulador maestro del eflujo de colesterol.",
             "clinical_evidence": [
                 {"source": "KEGG", "term": "Metabolismo del colesterol",
-                 "desc": "miR-33 suprime ABCA1.", "pmid": "30212345"},
+                 "desc": "miR-33 suprime ABCA1.", "pmid": None},
             ],
         }
     }
@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.43"
+    assert body["version"] == "1.44"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -317,3 +317,78 @@ def test_preset_gene_details_have_no_handwritten_pmids():
         info = asyncio.run(_run(gene))
         assert info["pmid"] is None, gene
         assert all(ev.get("pmid") is None for ev in info["clinical_evidence"]), gene
+
+
+def test_build_synthesis_separates_editorial_note_from_live_pmid():
+    """v1.44 (auditoría externa): la síntesis pegaba la descripción escrita
+    a mano junto a un PMID — primero uno inventado, y tras v1.43 el literal
+    'PMID: None'. La nota editorial y el artículo en vivo van separados y
+    se dice así: la nota sin cita, el PMID como primer resultado de la
+    búsqueda por gen + término."""
+    common = ["ABCA1"]
+    gene_details = {
+        "ABCA1": {
+            "full_name": "ATP Binding Cassette Subfamily A Member 1",
+            "pathology": "Regulador maestro del eflujo de colesterol.",
+            "clinical_evidence": [
+                {"source": "KEGG", "term": "Metabolismo del colesterol",
+                 "desc": "miR-33 suprime ABCA1.", "pmid": None},
+            ],
+        }
+    }
+    gene_research = {
+        "ABCA1": {
+            "pubmed": [{"pmid": "12345678", "term": "Metabolismo del colesterol",
+                        "source": "KEGG", "editorial_note": "miR-33 suprime ABCA1.",
+                        "year_window": "10y"}],
+            "omim": [], "clinvar": {"count": 0, "url": ""}, "trials": [],
+        }
+    }
+    out = ke.build_synthesis(PANEL, common, gene_details, [], [], gene_research)
+    text = out["academic"]
+    assert "PMID: None" not in text
+    assert "Notas editoriales" in text
+    assert "Primeros resultados en PubMed" in text
+    assert "12345678" in text
+    # Ninguna línea junta la frase editorial con un PMID.
+    for line in text.splitlines():
+        if "miR-33 suprime ABCA1" in line:
+            assert "PMID" not in line
+
+
+def test_research_gene_complete_labels_desc_as_editorial_note():
+    """v1.44: el registro de PubMed ya no lleva la descripción del preset
+    en el campo 'desc' junto al PMID (eso implicaba que el artículo la
+    respalda). Ahora va en 'editorial_note' y el PMID es solo el primer
+    resultado de la búsqueda por gen + término."""
+    import asyncio
+    import httpx
+
+    def _mock(request):
+        url = str(request.url)
+        params = request.url.params
+        if "clinicaltrials.gov" in url:
+            return httpx.Response(200, json={"studies": []})
+        if "esearch.fcgi" in url:
+            db = params.get("db", "")
+            if db == "pubmed":
+                return httpx.Response(200, json={"esearchresult": {"idlist": ["12345678"], "count": "1"}})
+            return httpx.Response(200, json={"esearchresult": {"idlist": [], "count": "0"}})
+        return httpx.Response(200, json={"result": {}})
+
+    preset = {"clinical_evidence": [
+        {"term": "Metabolismo del colesterol", "source": "KEGG",
+         "desc": "miR-33 suprime ABCA1."},
+    ]}
+
+    async def _run():
+        transport = httpx.MockTransport(_mock)
+        async with httpx.AsyncClient(transport=transport) as client:
+            return await ke.research_gene_complete("TESTGENE", preset, 10, client)
+
+    res = asyncio.run(_run())
+    assert len(res["pubmed"]) == 1
+    ref = res["pubmed"][0]
+    assert ref["pmid"] == "12345678"
+    assert ref["editorial_note"] == "miR-33 suprime ABCA1."
+    assert "desc" not in ref
