@@ -189,7 +189,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.45"
+    assert body["version"] == "1.46"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -479,3 +479,106 @@ def test_install_endpoint_requires_admin_token():
             assert r.status_code == 400
         finally:
             del os.environ["KENRYU_ADMIN_TOKEN"]
+
+
+def test_analyze_offline_marks_genes_beyond_research_cap_not_evaluated():
+    """v1.46 (H-06): el panel de control (6 genes) supera el tope de 5
+    investigaciones: el gen de menor prioridad sale como 'no evaluado'
+    (sin puntaje), nunca 'baja', y la respuesta dice el tope."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-375", "hsa-miR-29a-3p", "hsa-miR-21-5p"],
+            "years": 10, "mode": "strict", "offline": True})
+    assert r.status_code == 200
+    d = r.json()
+    assert sorted(d["common_genes"]) == ["GMFB", "KLF12", "NFIA", "PDE3A", "SKI", "SOX6"]
+    val = d["validation"]
+    not_ev = [g for g, s in val["genes"].items() if s["level"] == "not_evaluated"]
+    assert len(not_ev) == 1
+    assert val["genes"][not_ev[0]]["score"] is None
+    assert val["summary"]["n_not_evaluated"] == 1
+    scope = d["research_scope"]
+    assert scope["cap"] == 5
+    assert len(scope["researched_genes"]) == 5
+    assert scope["not_evaluated_genes"] == not_ev
+
+
+def test_analyze_offline_cancer_panel_researches_prioritized_genes():
+    """v1.46 (H-06): en el panel de cáncer (18 genes, strict) los 5
+    investigados deben ser los de mayor prioridad por validación en
+    miRTarBase (AGO4, MEIS1, PURB, RPS6KA3, WNK3), no los 5 primeros
+    alfabéticos (AAK1, ACVR2A, AGO4, BNC2, BRWD3). Los 13 restantes son
+    'no evaluado', nunca 'baja' por no haberse investigado."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-21-5p", "hsa-miR-155-5p", "hsa-let-7a-5p"],
+            "years": 10, "mode": "strict", "offline": True})
+    assert r.status_code == 200
+    d = r.json()
+    assert len(d["common_genes"]) == 18
+    val = d["validation"]
+    researched = {g for g, s in val["genes"].items() if s["level"] != "not_evaluated"}
+    not_ev = {g for g, s in val["genes"].items() if s["level"] == "not_evaluated"}
+    assert researched == {"AGO4", "MEIS1", "PURB", "RPS6KA3", "WNK3"}
+    assert len(not_ev) == 13
+    assert all(val["genes"][g]["score"] is None for g in not_ev)
+    assert val["summary"]["low"] == 0
+
+
+def test_analyze_offline_n2_truncates_enrichment_by_priority():
+    """v1.46 (H-06): en N-2 el panel de cáncer da 1.941 genes; el
+    enriquecimiento usa los 300 priorizados (no los A–C alfabéticos) y
+    la respuesta lo dice."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-21-5p", "hsa-miR-155-5p", "hsa-let-7a-5p"],
+            "years": 10, "mode": "n-2", "offline": True})
+    assert r.status_code == 200
+    d = r.json()
+    assert len(d["common_genes"]) > 300
+    assert d["enrichment_truncated"] is True
+    assert "300" in (d.get("enrichment_note") or "")
+
+
+class _FakeEnrichrResp:
+    def __init__(self, status, payload):
+        self.status_code = status
+        self._payload = payload
+
+    def json(self):
+        return self._payload
+
+
+class _FakeEnrichrClient:
+    """Enrichr falso: un término significativo (p-adj 0,01) y uno que no
+    lo es (0,0584) en cada biblioteca."""
+
+    async def post(self, url, files=None, timeout=None):
+        return _FakeEnrichrResp(200, {"userListId": 1})
+
+    async def get(self, url, params=None, timeout=None):
+        return _FakeEnrichrResp(200, {params["backgroundType"]: [
+            [1, "Term A", 0.001, 5.0, 10.0, "GENE", 0.01],
+            [2, "Term B", 0.002, 4.0, 9.0, "GENE", 0.0584],
+        ]})
+
+
+def test_enrich_genes_direct_ignores_stale_cache_and_filters_padj():
+    """v1.46: la caché de Enrichr guardaba términos con el corte viejo
+    (p-adj < 0,3); la clave no llevaba versión y se seguían sirviendo
+    términos de 0,0584 como significativos. La clave versionada ignora
+    esas entradas y el filtro < 0,05 se aplica a los resultados frescos."""
+    import asyncio
+    import kenryu_engine as ke
+    genes = ["ABCA1", "KPNA3", "SCN1A", "SNTB2", "TSC22D2"]
+    old_key = ",".join(sorted(genes))
+    ke.PERSISTENT_CACHE["enrichr"][old_key] = [
+        {"Term": "Stale", "Source": "GO", "Pval": 0.0584, "RawTerm": "Stale"}]
+    res = asyncio.run(ke.enrich_genes_direct(genes, _FakeEnrichrClient()))
+    assert all(r["Pval"] < 0.05 for r in res)
+    assert not any(r["Term"] == "Stale" for r in res)
+    assert any(r["Term"] == "Term A" for r in res)
+    assert ("enr-v2|" + old_key) in ke.PERSISTENT_CACHE["enrichr"]

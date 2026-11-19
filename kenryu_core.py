@@ -66,6 +66,21 @@ def consensus_genes(gene_sets: list, mode: str) -> set:
     return {g for g, c in Counter(all_genes).items() if c >= threshold}
 
 
+def prioritize_genes(common_genes, gene_sets, remote_by_mirna):
+    """Order common genes by evidence potential, not alphabetically (v1.46,
+    H-06). Key: (n panel miRNAs regulating the gene, n panel miRNAs with
+    the gene validated in miRTarBase), both descending; gene name only as
+    final tiebreak for determinism. Pure function."""
+    remote_sets = list((remote_by_mirna or {}).values())
+
+    def key(g):
+        n_reg = sum(1 for s in gene_sets if g in s)
+        n_val = sum(1 for s in remote_sets if g in s)
+        return (-n_reg, -n_val, g)
+
+    return sorted(common_genes, key=key)
+
+
 def create_visuals(gene_sets: list, mirnas: list, common_all: list,
                    pubmed_counts: dict | None = None,
                    ppi_edges: list | None = None):
@@ -806,13 +821,37 @@ def build_validation_report(mirnas, common_genes, gene_research,
     gene_research = gene_research or {}
     genes = {}
     for gene in common_genes:
+        if gene not in gene_research:
+            # No investigado en esta corrida (fuera del tope por costo de
+            # API): "no evaluado", sin puntaje — nunca "baja" (v1.46, H-06).
+            # Las capas locales (TargetScan/miRTarBase) sí se conocen sin
+            # costo de API y se muestran; la investigación multi-fuente no.
+            local_layers = []
+            if gene in predicted_set:
+                local_layers.append("TargetScan (predicho)")
+            if gene in validated_set:
+                local_layers.append("miRTarBase (validado experimentalmente)")
+            genes[gene] = {
+                "gene": gene,
+                "score": None,
+                "level": "not_evaluated",
+                "layers": local_layers,
+                "missing": ["investigación multi-fuente (PubMed/OMIM/ClinVar/ClinicalTrials)"],
+                "explanation": (
+                    f"{gene}: no evaluado — la investigación multi-fuente "
+                    f"se limitó a los genes priorizados (tope por costo de API); "
+                    f"sin puntaje y sin nivel de evidencia."
+                ),
+            }
+            continue
         genes[gene] = validation_score(
             gene, gene_research.get(gene),
             predicted=gene in predicted_set,
             validated=gene in validated_set,
         )
-    scores = [g["score"] for g in genes.values()]
-    levels = [g["level"] for g in genes.values()]
+    evaluated = [g for g in genes.values() if g["level"] != "not_evaluated"]
+    scores = [g["score"] for g in evaluated]
+    levels = [g["level"] for g in evaluated]
     return {
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "mirnas": list(mirnas),
@@ -831,15 +870,22 @@ def build_validation_report(mirnas, common_genes, gene_research,
             "validadas, y su gen queda en media como máximo. Las notas "
             "editoriales sobre las rutas son contexto del equipo y no llevan "
             "cita; los PMIDs de PubMed son los primeros resultados de la "
-            "búsqueda por gen + término y no se verificó que respalden la nota."
+            "búsqueda por gen + término y no se verificó que respalden la nota. "
+            "La investigación multi-fuente se limita a los genes priorizados "
+            "por costo de API; los genes fuera de ese tope figuran como "
+            "«no evaluado», sin puntaje y sin nivel — no es evidencia en "
+            "contra, es ausencia de investigación en esta corrida."
         ),
         "genes": genes,
         "summary": {
             "n_genes": len(genes),
+            "n_evaluated": len(evaluated),
+            "n_not_evaluated": len(genes) - len(evaluated),
             "high": levels.count("alta"),
             "medium": levels.count("media"),
             "low": levels.count("baja"),
             "mean_score": round(sum(scores) / len(scores), 1) if scores else None,
             "not_validated": [g for g, s in genes.items() if s["level"] == "baja"],
+            "not_evaluated": [g for g, s in genes.items() if s["level"] == "not_evaluated"],
         },
     }

@@ -161,6 +161,7 @@ from kenryu_core import (
     load_mirtarbase_gmt,
     local_enrichment,
     normalize_isomir,
+    prioritize_genes,
     reverse_lookup,
 )
 from kenryu_updater import (
@@ -409,8 +410,10 @@ async def enrich_genes_direct(gene_list: list, client: httpx.AsyncClient):
     """Llamada directa a la API de Enrichr con caché persistente."""
     if len(gene_list) < 3: return []
     
-    # Crear una clave única basada en los genes (ordenados)
-    cache_key = ",".join(sorted(gene_list[:300]))
+    # Crear una clave única basada en los genes (ordenados). Versionada
+    # (enr-v2): la v1 guardaba términos con el corte viejo de p-adj < 0,3
+    # y se seguían sirviendo como significativos (v1.46, H-05).
+    cache_key = "enr-v2|" + ",".join(sorted(gene_list[:300]))
     if cache_key in PERSISTENT_CACHE["enrichr"]:
         logger.info("⚡ Usando resultados de enriquecimiento desde caché.")
         return PERSISTENT_CACHE["enrichr"][cache_key]
@@ -887,7 +890,9 @@ async def research_gene_complete(gene: str, preset: dict, years: int, client: ht
     # con queries en español/PMIDs incorrectos. v2 = búsquedas con términos
     # en inglés + filtro de título en Trials. v3 = v2 + deduplicación de
     # PubMed por PMID (sin ella, un mismo artículo sumaba 5 puntos dos veces).
-    cache_key = f"v3|{gene}|{years}"
+    # v4 = v3 + H-06 (orden de prioridad por validación; los genes no
+    # investigados ya no se puntúan).
+    cache_key = f"v4|{gene}|{years}"
     if cache_key in PERSISTENT_CACHE["gene_research"]:
         logger.info(f"  💾 Cache hit: {gene} (años={years})")
         return PERSISTENT_CACHE["gene_research"][cache_key]
@@ -1237,7 +1242,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
     return info
 
 # ── GRÁFICOS ──────────────────────────────────────────────────────────────────
-app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.45")
+app = FastAPI(title="KENRYU Bioinformatics Engine", version="1.46")
 
 # Seguridad CORS: Restringir a orígenes de confianza para proteger el motor
 origins = [
@@ -1276,7 +1281,7 @@ async def serve_style():
 
 @app.get("/health")
 async def health():
-    return {"status": "OK", "version": "1.45",
+    return {"status": "OK", "version": "1.46",
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": load_local_versions()}
@@ -1450,7 +1455,14 @@ async def startup_event():
         TARGETSCAN_DB = load_local_data()
     load_mirtarbase_local()
     load_gmt_libraries()
-    logger.info(f"🚀 KENRYU v1.45 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+    logger.info(f"🚀 KENRYU v1.46 listo — {len(TARGETSCAN_DB)} familias miRNA cargadas.")
+
+# Tope de investigación multi-fuente por análisis (v1.46, H-06): cada gen
+# investigado cuesta varias llamadas a PubMed/OMIM/ClinVar/ClinicalTrials.
+# Se investigan solo los RESEARCH_CAP genes priorizados; los demás figuran
+# como "no evaluado" y la respuesta lo dice.
+RESEARCH_CAP = 5
+
 
 @app.post("/api/v1/analyze")
 async def analyze(req: AnalysisRequest):
@@ -1539,6 +1551,14 @@ async def analyze(req: AnalysisRequest):
             "heatmap_plot": None,
             "offline": req.offline,
             "species": req.species,
+            "enrichment_truncated": False,
+            "enrichment_note": None,
+            "research_scope": {
+                "cap": RESEARCH_CAP,
+                "researched_genes": [],
+                "not_evaluated_genes": [],
+                "note": "Sin genes comunes: no hubo investigación multi-fuente.",
+            },
             "scientific_synthesis": (
                 f"No se encontraron genes diana comunes a todos los miRNAs analizados "
                 f"({', '.join(found_names)}) en modo de intersección estricta. "
@@ -1552,12 +1572,17 @@ async def analyze(req: AnalysisRequest):
             "report_references": []
         }
 
-    sorted_common = sorted(list(common))
-    logger.info(f"✅ {len(sorted_common)} genes comunes identificados: {sorted_common[:10]}")
+    # Orden de prioridad (v1.46, H-06): por nº de miRNAs del panel que
+    # regulan el gen y por validación en miRTarBase — nunca alfabético.
+    # Todas las listas recortadas (investigación, enriquecimiento,
+    # gráficos, detalles) usan este orden.
+    prioritized_common = prioritize_genes(list(common), gene_sets, remote_by_mirna)
+    logger.info(f"✅ {len(prioritized_common)} genes comunes identificados: {prioritized_common[:10]}")
 
     # ── ENRIQUECIMIENTO FUNCIONAL (REESCRITO PARA ESTABILIDAD) ─────────────────
     enrichment_results = []
-    gene_list_enr = sorted_common[:300]
+    gene_list_enr = prioritized_common[:300]
+    enrichment_truncated = len(prioritized_common) > 300
     
     if len(gene_list_enr) >= 3:
         load_gmt_libraries()
@@ -1631,10 +1656,10 @@ async def analyze(req: AnalysisRequest):
             # Primera corona: 5 proteínas vecinas que más interactúan con
             # los genes core (la red que la tesis describía como dos módulos).
             ppi_edges = await fetch_string_network(
-                sorted_common[:12], _viz_client, add_nodes=5)
+                prioritized_common[:12], _viz_client, add_nodes=5)
 
     # ── GRÁFICOS ──────────────────────────────────────────────────────────────
-    v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, sorted_common,
+    v_p, volc_p, ppi_p = create_visuals(gene_sets, found_names, prioritized_common,
                                         pubmed_counts=pubmed_counts,
                                         ppi_edges=ppi_edges)
 
@@ -1644,12 +1669,12 @@ async def analyze(req: AnalysisRequest):
     else:
         async with make_async_client(timeout=20.0) as client:
             # Aumentar a 40 para cubrir toda la tabla del informe
-            tasks = [get_gene_details(g, client) for g in sorted_common[:40]]
+            tasks = [get_gene_details(g, client) for g in prioritized_common[:40]]
             details = await asyncio.gather(*tasks)
-        gene_details = {g: d for g, d in zip(sorted_common[:40], details)}
+        gene_details = {g: d for g, d in zip(prioritized_common[:40], details)}
 
     # ── REFERENCIAS — INVESTIGACIÓN MULTI-FUENTE ──────────────────────────────
-    # Para CADA gen core del Venn (sorted_common[:5]):
+    # Para CADA gen core del Venn (prioritized_common[:RESEARCH_CAP]):
     #   - PubMed: búsqueda fresca (gen + contexto biológico de PRESETS + filtro
     #     de años req.years). Cascada: estricto → ampliado → fallback.
     #   - OMIM: enfermedades mendelianas asociadas (NCBI eUtils).
@@ -1664,23 +1689,23 @@ async def analyze(req: AnalysisRequest):
     pubmed_candidates = []   # [{pmid, source, fallback_title}] — para metadata fetch en batch
     seen_pmids = set()
 
-    # 1. Investigación multi-fuente PARALELA de los 5 genes core del Venn
+    # 1. Investigación multi-fuente PARALELA de los RESEARCH_CAP genes core del Venn
     if req.offline:
         # Sin red: investigación vacía, marcada como offline (no inventada).
         research_results = [
             {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""},
              "trials": [], "diseases": [], "year_window_used": "offline"}
-            for g in sorted_common[:5]
+            for g in prioritized_common[:RESEARCH_CAP]
         ]
     else:
         async with make_async_client(timeout=25.0) as client:
             research_tasks = [
                 research_gene_complete(g, gene_details.get(g, {}), req.years, client)
-                for g in sorted_common[:5]
+                for g in prioritized_common[:RESEARCH_CAP]
             ]
             research_results = await asyncio.gather(*research_tasks, return_exceptions=True)
 
-    for g, res in zip(sorted_common[:5], research_results):
+    for g, res in zip(prioritized_common[:RESEARCH_CAP], research_results):
         if isinstance(res, Exception):
             logger.warning(f"⚠️  Investigación falló para {g}: {res}")
             gene_research_data[g] = {"pubmed": [], "omim": [], "clinvar": {"count": 0, "url": ""}, "trials": [], "diseases": [], "year_window_used": "error"}
@@ -1821,32 +1846,53 @@ async def analyze(req: AnalysisRequest):
         f"Extras (OMIM/ClinVar/Trials): {extras_count}."
     )
 
-    synthesis_obj = build_synthesis(found_names, sorted_common, gene_details, enrichment_results, report_references, gene_research_data)
+    synthesis_obj = build_synthesis(found_names, prioritized_common, gene_details, enrichment_results, report_references, gene_research_data)
 
     validation_report = build_validation_report(
-        found_names, sorted_common, gene_research_data,
+        found_names, prioritized_common, gene_research_data,
         local_by_mirna, remote_by_mirna, load_local_versions())
 
     export_data = build_export(
-        found_names, sorted_common, gene_details, enrichment_results,
+        found_names, prioritized_common, gene_details, enrichment_results,
         validation_report, gene_sets)
 
     # Persistir descubrimientos (Traducciones, PubMed, Enriquecimiento)
     save_persistent_cache()
 
     return {
-        "common_genes": sorted_common,
+        "common_genes": prioritized_common,
         "found_mirnas": found_names,
         "gene_details": gene_details,
         "validation": validation_report,
         "export": export_data,
-        "heatmap_plot": create_heatmap(found_names, sorted_common, gene_sets),
+        "heatmap_plot": create_heatmap(found_names, prioritized_common, gene_sets),
         "offline": req.offline,
         "species": req.species,
         "scientific_synthesis": synthesis_obj["academic"],
         "functional_context": synthesis_obj["functional"],
         "references_text": synthesis_obj["references"],
         "enrichment": enrichment_results,
+        "enrichment_truncated": enrichment_truncated,
+        "enrichment_note": (
+            f"Enriquecimiento calculado sobre los 300 genes priorizados de "
+            f"{len(prioritized_common)} (orden por nº de miRNAs reguladores "
+            f"y validación en miRTarBase)."
+            if enrichment_truncated else None
+        ),
+        "research_scope": {
+            "cap": RESEARCH_CAP,
+            "researched_genes": prioritized_common[:RESEARCH_CAP],
+            "not_evaluated_genes": prioritized_common[RESEARCH_CAP:],
+            "note": (
+                f"Investigación multi-fuente (PubMed, OMIM, ClinVar, "
+                f"ClinicalTrials) limitada a los {RESEARCH_CAP} genes "
+                f"priorizados por costo de API; los "
+                f"{len(prioritized_common) - RESEARCH_CAP} restantes figuran "
+                f"como no evaluados, sin puntaje."
+                if len(prioritized_common) > RESEARCH_CAP else
+                "Todos los genes del panel fueron investigados (dentro del tope por costo de API)."
+            ),
+        },
         "venn_plot": v_p,
         "volcano_plot": volc_p,
         "ppi_plot": ppi_p,

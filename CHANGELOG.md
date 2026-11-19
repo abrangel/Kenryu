@@ -2,6 +2,58 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.46] — 2026-11-19
+
+### Ronda 1, último hallazgo: H-06 (sesgo alfabético)
+
+La investigación por gen y el enriquecimiento se recortaban por orden
+alfabético: en el panel de cáncer (18 genes) solo se investigaban AAK1,
+ACVR2A, AGO4, BNC2 y BRWD3, y los 13 restantes salían como "baja" con
+25/100 por no haberse investigado, no por falta de evidencia.
+
+### Fixed
+- **Orden de prioridad en vez de alfabético (H-06, alto):** nueva
+  función pura `prioritize_genes` — primero los genes que regulan más
+  miRNAs del panel y, en empate, los validados en miRTarBase por más
+  miRNAs (el nombre solo desempata). El mismo orden se usa en la
+  investigación (top 5), el enriquecimiento (top 300), los gráficos
+  (top 12) y los detalles de genes (top 40).
+- **Genes no investigados: "no evaluado", nunca "baja":** el informe
+  de validación marca `level: "not_evaluated"` con `score: null` a los
+  genes fuera del tope; la media y los conteos de alta/media/baja los
+  excluyen. La interfaz muestra "no evaluado" sin puntaje (en gris) y
+  el resumen "N sin evaluar".
+- **Tope por costo de API, declarado en la respuesta:** la investigación
+  multi-fuente sigue limitada a 5 genes por corrida (constante
+  `RESEARCH_CAP`), pero ahora la respuesta incluye `research_scope`
+  (tope, genes investigados, genes no evaluados y la nota) y el
+  enriquecimiento avisa con `enrichment_truncated` + `enrichment_note`
+  cuando usa solo los 300 priorizados.
+- **Caché de Enrichr versionada (hallazgo propio en la regresión):**
+  la caché guardaba términos con el corte viejo de p-adj < 0,3 y se
+  seguían sirviendo (el panel de la tesis devolvía 24 términos con
+  p-adj máximo 0,0584). La clave pasa a `enr-v2|` y las entradas viejas
+  se ignoran. Caché de investigación v3 → v4.
+
+### Resultados, antes y después (panel de cáncer, 18 genes, en vivo)
+- Antes (v1.45): investigados AAK1, ACVR2A, AGO4, BNC2, BRWD3
+  (alfabéticos); alta 1, media 8, baja 9, media 40,3. Ocho genes
+  (CHD7, DCUN1D3, FOXP1, IL6R, KPNA4, RDX, SESN3, UBN2, XKR4) salían
+  "baja" sin haberse investigado.
+- Después (v1.46): investigados AGO4, MEIS1, PURB, RPS6KA3, WNK3
+  (los 5 con validación en miRTarBase) — los 5 con 80/100 "alta";
+  13 "no evaluado" sin puntaje; media 80,0 sobre los 5 evaluados;
+  baja 0. Enriquecimiento sin cambio: 3 términos significativos
+  (0,0176 / 0,0424 / 0,0424).
+- Panel de la tesis, sin cambio (regresión): ABCA1 100 alta, SCN1A 60
+  media, KPNA3/SNTB2/TSC22D2 50 media, media 62,0; enriquecimiento
+  19 términos, p-adj máximo 0,0349 (todos < 0,05).
+
+### Tests
+- 100/100 (6 nuevos: orden de prioridad, "no evaluado" en el informe,
+  tope en `/analyze` offline con el panel de control y el de cáncer,
+  truncado del enriquecimiento en N-2, caché de Enrichr versionada).
+
 ## [1.45] — 2026-11-19
 
 ### Ronda 1 de la auditoría externa (23 hallazgos; 8 corregidos aquí)

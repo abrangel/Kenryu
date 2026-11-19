@@ -128,16 +128,24 @@ function renderDashboard(data) {
       if (v && v.genes && Object.keys(v.genes).length) {
         const s = v.summary || {};
         const badge = document.getElementById('validation-badge');
-        if (badge) badge.textContent = `${s.high || 0} alta · ${s.medium || 0} media · ${s.low || 0} baja`;
+        if (badge) badge.textContent = `${s.high || 0} alta · ${s.medium || 0} media · ${s.low || 0} baja` + (s.n_not_evaluated ? ` · ${s.n_not_evaluated} sin evaluar` : '');
         let html = `<table class="sci-table"><thead><tr><th>Gen</th><th>Puntaje</th><th>Nivel</th><th>Capas de evidencia</th><th>Qué falta</th></tr></thead><tbody>`;
         for (const [gene, gv] of Object.entries(v.genes)) {
-          const levelColor = gv.level === 'alta' ? 'var(--teal)' : gv.level === 'media' ? 'var(--gold)' : 'var(--red)';
-          html += `<tr><td><b>${gene}</b></td><td><span style="font-family:var(--font-mono);">${gv.score}/100</span></td><td><span style="color:${levelColor}; font-weight:600;">${gv.level}</span></td><td style="font-size:11px;">${(gv.layers || []).join('<br>') || '—'}</td><td style="font-size:11px; color:var(--text-dim);">${(gv.missing || []).join('<br>') || '—'}</td></tr>`;
+          const levelColor = gv.level === 'alta' ? 'var(--teal)' : gv.level === 'media' ? 'var(--gold)' : gv.level === 'not_evaluated' ? 'var(--text-dim)' : 'var(--red)';
+          const levelLabel = gv.level === 'not_evaluated' ? 'no evaluado' : gv.level;
+          const scoreText = gv.score === null || gv.score === undefined ? '—' : `${gv.score}/100`;
+          html += `<tr><td><b>${gene}</b></td><td><span style="font-family:var(--font-mono);">${scoreText}</span></td><td><span style="color:${levelColor}; font-weight:600;">${levelLabel}</span></td><td style="font-size:11px;">${(gv.layers || []).join('<br>') || '—'}</td><td style="font-size:11px; color:var(--text-dim);">${(gv.missing || []).join('<br>') || '—'}</td></tr>`;
         }
         html += '</tbody></table>';
         const ds = v.data_sources || {};
         const dsText = Object.entries(ds).map(([k, val]) => `${k} ${val}`).join(' · ');
         html += `<div style="margin-top:12px; color:var(--text-dim); font-size:11px; font-family:var(--font-mono);">Bases de datos: ${dsText || '—'}</div>`;
+        if (data.research_scope && data.research_scope.note) {
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">${data.research_scope.note}</div>`;
+        }
+        if (data.enrichment_note) {
+          html += `<div style="margin-top:4px; color:var(--text-dim); font-size:11px;">${data.enrichment_note}</div>`;
+        }
         vEl.innerHTML = html;
       } else {
         vEl.innerHTML = '<div style="color:var(--text-faint); padding:20px; text-align:center;">Sin dossier de validación en esta respuesta (versión anterior del motor).</div>';

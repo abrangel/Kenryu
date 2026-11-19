@@ -216,3 +216,36 @@ def test_fisher_enrichment_null_list_has_no_significant_terms():
     query = {f"G{i}" for i in range(0, 1000, 25)}  # 40 genes repartidos
     rows = kc.fisher_enrichment(query, library, background=universe, top_n=50)
     assert rows == []
+
+
+def test_prioritize_genes_orders_by_regulation_then_validation():
+    """v1.46 (H-06): el orden no es alfabético: primero los genes que
+    regulan más miRNAs del panel y, en empate, los validados en miRTarBase
+    por más miRNAs. El nombre solo desempata (determinismo)."""
+    gene_sets = [{"AGO4", "FOXP1", "BNC2"}, {"AGO4", "FOXP1"}, {"AGO4"}]
+    remote = {"m1": {"AGO4"}, "m2": {"AGO4", "BNC2"}, "m3": set()}
+    ordered = kc.prioritize_genes(["FOXP1", "BNC2", "AGO4"], gene_sets, remote)
+    assert ordered == ["AGO4", "FOXP1", "BNC2"]
+
+
+def test_build_validation_report_marks_unresearched_as_not_evaluated():
+    """v1.46 (H-06): un gen fuera del tope de investigación no es 'baja'
+    por orden alfabético: es 'no evaluado', sin puntaje, y no entra en la
+    media ni en los conteos."""
+    local = {"hsa-miR-21-5p": {"AGO4", "FOXP1"}, "hsa-miR-155-5p": {"AGO4", "FOXP1"}}
+    remote = {"hsa-miR-21-5p": {"AGO4"}, "hsa-miR-155-5p": {"AGO4"}}
+    research = {"AGO4": {"pubmed": [{"pmid": "12345678", "term": "x", "source": "KEGG",
+                                     "editorial_note": "", "year_window": "10y"}],
+                         "omim": [], "clinvar": {"count": 0, "url": ""},
+                         "trials": [], "diseases": []}}
+    # FOXP1 no tiene entrada: no investigado.
+    rep = kc.build_validation_report(
+        ["hsa-miR-21-5p", "hsa-miR-155-5p"], ["AGO4", "FOXP1"], research, local, remote, {})
+    assert rep["genes"]["FOXP1"]["level"] == "not_evaluated"
+    assert rep["genes"]["FOXP1"]["score"] is None
+    assert rep["genes"]["AGO4"]["level"] == "media"
+    assert rep["genes"]["AGO4"]["score"] == 60
+    assert rep["summary"]["n_not_evaluated"] == 1
+    assert rep["summary"]["not_evaluated"] == ["FOXP1"]
+    assert "FOXP1" not in rep["summary"]["not_validated"]
+    assert rep["summary"]["mean_score"] == 60.0
