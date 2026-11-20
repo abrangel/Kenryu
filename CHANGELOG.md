@@ -4,6 +4,24 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Added
+- Lipid benchmark (`docs/validation/lipid-benchmark.md`): one PMID
+  per miRNA–gene pair, each checked on PubMed 20 November 2026.
+  ABCA1 is the only gene with abstract-level support (three 2010
+  papers demonstrate miR-33 → ABCA1 repression); SNTB2 and TSC22D2
+  rest on CLIP datasets only (the pair is in the dataset, not in
+  the abstract); KPNA3 and SCN1A are predicted only, with no PMID
+  invented for them. The paper now points to it.
+
+### Fixed
+- v1.57 verified live on the Space (commit ef1edc1): /health 1.57,
+  commit 1d720ee, mirtarbase_mode official, 285 families; lipid
+  panel 5 genes, 19 Enrichr terms in 3 groups [10, 7, 2], local 0
+  terms; cancer panel 18 genes, 3 terms, exact specificity
+  [0.0061, 0.0032, 0.0048], local 0 terms. The live convergence
+  matches the local engine bit for bit (seed 2547548954;
+  p 0.126/0.123/0.097 at ±10/25/50%).
+
 ## [1.57] - 2026-11-20
 
 ### Added
