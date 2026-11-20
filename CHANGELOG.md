@@ -4,6 +4,8 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.56] - 2026-11-19
+
 ### Added
 - Exact specificity: `term_specificity` now returns the exact
   hypergeometric tail (scipy), equal to the unadjusted one-sided

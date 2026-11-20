@@ -113,11 +113,12 @@ the panel is too small for that test to have power. The lipid
 panel's support is at the gene level (ABCA1 with strong experimental
 evidence). The Enrichr terms are reported with the per-term
 specificity column as the guard: each term is rarely hit by a random
-list (13 of 19 below 0.03, 6 near the threshold reported as numbers
-only), even though some term or other is almost always hit. The 19
-terms collapse into 3 groups resting on the same panel genes (see
-`docs/validation/lipid-terms-specificity.md`); they are not 19
-independent findings.
+list (the 19 values are reported as numbers in
+`docs/validation/lipid-terms-specificity.md`; no term is labelled
+"specific", and the 19 terms reduce to 3 groups, each sustained by a
+single gene — ABCA1, SCN1A, KPNA3 — which is gene annotation, not
+pathway enrichment), even though some term or other is almost always
+hit.
 
 ## 5-gene lists (thesis-like): engine criterion — DONE 2026-11-19
 
