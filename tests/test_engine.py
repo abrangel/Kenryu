@@ -1122,18 +1122,48 @@ def test_annotate_enrichment_groups_marks_redundant_terms_without_touching_pvalu
     assert [t["Pval"] for t in terms] == [0.02, 0.03]
 
 
+def _space_remote(monkeypatch):
+    # Simula el contenedor del Space: su remoto es Hugging Face, no
+    # GitHub, así que su HEAD no es el commit de GitHub y el archivo
+    # build_info.json es la única fuente del commit.
+    import subprocess as _sp
+    fake = _sp.CompletedProcess(
+        args=["git", "config", "--get", "remote.origin.url"],
+        returncode=0,
+        stdout="https://huggingface.co/spaces/Kenryu007/Bioinformatica\n")
+    monkeypatch.setattr(ke.subprocess, "run", lambda *a, **k: fake)
+
+
 def test_health_reports_commit_hash_from_build_info(tmp_path, monkeypatch):
     # Unreleased: /health identifica el código exacto con el hash corto
     # de GitHub, leído de local_db/build_info.json (generado al sincronizar).
-    # El archivo solo vale si su versión coincide con el motor: un
-    # build_info.json viejo (p. ej. 1.54) no debe ganarle al HEAD real.
+    # En el Space (remoto Hugging Face) el archivo es la única fuente;
+    # en un checkout de GitHub gana el HEAD de git.
     info = tmp_path / "build_info.json"
     info.write_text(json.dumps({"commit": "abc1234", "version": ke.APP_VERSION}))
     monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
+    _space_remote(monkeypatch)
     with TestClient(ke.app) as client:
         r = client.get("/health")
     assert r.status_code == 200
     assert r.json()["commit"] == "abc1234"
+
+
+def test_health_prefers_git_head_over_matching_build_info(tmp_path, monkeypatch):
+    # Mismo número de versión, distinto commit: el archivo no debe
+    # ganar. El HEAD de git es el código que realmente corre.
+    import subprocess
+    from pathlib import Path
+    head = subprocess.check_output(
+        ["git", "rev-parse", "--short", "HEAD"],
+        cwd=Path(__file__).resolve().parent.parent, text=True).strip()
+    info = tmp_path / "build_info.json"
+    info.write_text(json.dumps({"commit": "e7d6eb0", "version": ke.APP_VERSION}))
+    monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
+    with TestClient(ke.app) as client:
+        r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["commit"] == head
 
 
 def test_health_ignores_stale_build_info(tmp_path, monkeypatch):
@@ -1176,6 +1206,7 @@ def test_analyze_includes_commit_hash(tmp_path, monkeypatch):
     info = tmp_path / "build_info.json"
     info.write_text(json.dumps({"commit": "deadbee", "version": ke.APP_VERSION}))
     monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
+    _space_remote(monkeypatch)
     with TestClient(ke.app) as client:
         r = client.post("/api/v1/analyze", json={
             "mirnas": ["hsa-miR-33a-5p"], "years": 10, "mode": "strict",

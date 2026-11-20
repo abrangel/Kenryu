@@ -37,7 +37,10 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   (false positives, strong-target sensitivity, reproducibility,
   offline), run by hand under each tool's terms of use, report
   only what the run folder reproduces. KENRYU baseline:
-  **0 of 7 random panels** with a significant local term
+  **0 of 7 random panels** with a significant local term —
+  descriptive only (exact 95% Clopper–Pearson interval 0–41%),
+  read with the positive controls (6 of 8) and the TargetScan
+  sensitivity (54%)
   (`docs/validation/comparison-kenryu-baseline.json`).
 
 ### Fixed
@@ -57,11 +60,18 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   `test_cli_offline`.
 - **The manifest reported a stale commit.** `load_commit_hash()`
   read only `local_db/build_info.json`, which still said 1.54 /
-  e7d6eb0 while HEAD had moved on. build_info.json is now
-  authoritative only when its version matches APP_VERSION (the
-  Space sync writes it with the GitHub commit); otherwise the real
-  git HEAD is used. The Space container must not fall through to
-  git — its repo commit is the Space's own, not GitHub's.
+  e7d6eb0 while HEAD had moved on. First fix: the file only won
+  when its version matched APP_VERSION. That still had a hole: a
+  file with the same version and an old commit would pass. Final
+  rule: when this checkout is the GitHub repo (or has no remote),
+  the git HEAD is the code that runs — always prefer it, even
+  against a same-version file. build_info.json is used only when
+  there is no GitHub git (the Space, Docker), where the file the
+  sync wrote is the only record of the GitHub commit — and there
+  it only counts when its version matches. The remote check is
+  what keeps the Space correct: its remote is Hugging Face, so
+  its HEAD is never used. Tests: same version, different commit
+  → the manifest comes out with git's.
 
 ## [1.57] - 2026-11-20
 

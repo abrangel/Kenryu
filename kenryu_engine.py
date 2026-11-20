@@ -47,31 +47,53 @@ BUILD_INFO_PATH = BASE_DIR / "local_db" / "build_info.json"
 _COMMIT_RE = re.compile(r"[0-9a-f]{7,40}")
 
 
-def load_commit_hash():
-    """Short GitHub commit hash of the code running here, or "unknown".
+def _git_head():
+    """Short HEAD of this checkout, but only when it is the GitHub repo.
 
-    build_info.json is authoritative when its version matches the
-    running engine (the Space sync writes it with the GitHub commit);
-    a stale file (older version) is ignored. The real git HEAD is
-    used otherwise — local runs and CI. The Space container must not
-    fall through to git: its repo commit is the Space's own, not
-    GitHub's, so the matching file wins there.
+    A checkout whose remote is anything else (the Hugging Face Space
+    repo, a Docker image) has a different history: its HEAD is not
+    the GitHub commit, so it must not be used. A checkout with no
+    remote at all is a local copy of the code — its HEAD is fine.
+    Returns None when there is no usable git HEAD.
     """
     try:
-        data = json.loads(BUILD_INFO_PATH.read_text(encoding="utf-8"))
-        if isinstance(data, dict) and data.get("version") == APP_VERSION:
-            commit = data.get("commit")
-            if isinstance(commit, str) and _COMMIT_RE.fullmatch(commit):
-                return commit
-    except Exception:
-        pass
-    try:
+        remote = subprocess.run(["git", "config", "--get", "remote.origin.url"],
+                                cwd=BASE_DIR, capture_output=True, text=True,
+                                timeout=5)
+        url = remote.stdout.strip()
+        if url and "abrangel/Kenryu" not in url:
+            return None
         out = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
                              cwd=BASE_DIR, capture_output=True, text=True,
                              timeout=5)
         if out.returncode == 0:
             commit = out.stdout.strip()
             if _COMMIT_RE.fullmatch(commit):
+                return commit
+    except Exception:
+        pass
+    return None
+
+
+def load_commit_hash():
+    """Short GitHub commit hash of the code running here, or "unknown".
+
+    Rule: if this checkout is the GitHub repo (or has no remote),
+    the git HEAD is the code that runs — always prefer it, even when
+    build_info.json has the same version with a different commit.
+    build_info.json is used only when there is no GitHub git (the
+    Space, Docker): there the file the sync wrote is the only record
+    of the GitHub commit, and it only counts when its version
+    matches the running engine.
+    """
+    head = _git_head()
+    if head:
+        return head
+    try:
+        data = json.loads(BUILD_INFO_PATH.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and data.get("version") == APP_VERSION:
+            commit = data.get("commit")
+            if isinstance(commit, str) and _COMMIT_RE.fullmatch(commit):
                 return commit
     except Exception:
         pass

@@ -57,6 +57,18 @@ index and searching it for the four new PMIDs (21885853, 23519695,
 index, for any pair.** The index lists 20 miRNAs with ABCA1 evidence;
 the panel's miR-758 and miR-144 are not among them.
 
+**The gap was checked against the raw file before claiming it.**
+The user's downloaded `hsa_MTI.xlsx` (957,040 rows) was read with
+pandas: no row carries any of the four PMIDs, and the ABCA1 rows
+(50 deduped, 20 miRNAs) include neither miR-758 nor miR-144 — even
+though the miRNAs themselves are in the file (137 rows for
+miR-758-3p, 677 for miR-144-3p). The index builder
+(`build_mirtarbase_official.py`) was then re-run from the raw file:
+the rebuilt index is identical to the live one (396,758 pairs,
+2,947 miRNAs, same per-pair levels/PMIDs/experiments), so the
+builder drops nothing. The gap is real: the four papers are
+**absent from miRTarBase 9.0 itself**, not from the derived index.
+
 - Functional ABCA1 pairs in the published literature, for the panel:
   5 of 5 miRNAs (miR-33a, miR-33b, miR-758, miR-144, miR-106b).
 - In the index at strong level: 2 of 5 (miR-33a, miR-33b).
