@@ -4,6 +4,13 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.55] - 2026-11-19
+
+This release changes what users see as the enrichment result, so it
+is cut as a release (see `RELEASING.md`): the local Fisher test is
+now the method shown in the interface, and the live Enrichr terms
+are a separate, labelled exploratory list.
+
 ### Fixed
 - Specificity column: tooltip and docs now say "random gene lists of the same
   size drawn from the TargetScan universe" (not "random panels"); a value of
@@ -24,13 +31,15 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   0.05 threshold (0.03–0.07, numbers only, no binary label).
 - docs/validation/calibration-enrichr-route.md: K18-engine run (100
   18-gene lists): FPR 30% GO, 18% Reactome, 19% WikiPathways, 10%
-  KEGG, 51% any library. Mechanism hypothesis: the Enrichr adjusted
-  p behaves like BH over only the terms with an overlapping gene
-  (author's replica + independent replica, `replica_bh_overlap.py`:
-  48 terms, BH-over-48 = 0.0342, same order as Enrichr except the
-  8th) — consistent, not confirmed; the same pattern KENRYU had
-  before v1.45 (H-05). paper.md now carries the K18 numbers and the
-  hypothesis (1,743 words).
+  KEGG, 51% any library. Mechanism CONFIRMED: the Enrichr adjusted
+  p is a BH correction over only the terms the API returns
+  (`verify_enrichr_bh.py`: 1,077 of 1,077 rows reproduced across 10
+  lists and 4 libraries, tolerance 1e-4). The local replica
+  (`replica_bh_overlap.py`: 48 terms, BH-over-48 = 0.0342) was the
+  same computation repeated, not an independent replica — it guards
+  against a transcription error and adds no evidence. Same pattern
+  KENRYU had before v1.45 (H-05). paper.md now carries the K18
+  numbers and the confirmed mechanism (1,580 words).
 - tests/fixtures/: synthetic miRTarBase official index (same schema, the
   7 thesis-panel pairs copied verbatim) so the official-format code path
   runs in CI; the 4 API tests that skipped in CI now run against it.
@@ -42,8 +51,8 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 - paper.md: local enrichment is now the stated method (Enrichr terms
   reported as exploratory); State of the field as a comparison table
   (miRPathDB, miRNet, miRWalk, DIANA-miRPath, miEAA); new Software
-  design and Research impact statement sections; 1,663 words, inside
-  the JOSS 750–1,750 limit.
+  design and Research impact statement sections; trimmed to 1,580
+  words (JOSS limit 750–1,750), detail moved to `docs/`.
 
 ### Fixed
 - `term_specificity` returned a 2-decimal rounding that blurred the 5%

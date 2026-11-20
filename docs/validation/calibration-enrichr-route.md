@@ -67,22 +67,36 @@ across the top 8 — the same pattern Enrichr shows (0.02515) — and
 the 8 terms come out in the same order as Enrichr's, except the
 8th. The raw p differs slightly (0.0024 vs Enrichr's 0.0017)
 because Enrichr's gene universe is larger, and the earlier bound
-m ≥ 40 is consistent with m = 48. The same replica was run
-independently against the repository's local GO library
+m ≥ 40 is consistent with m = 48. The same replica was run again
+against the repository's local GO library
 (`docs/validation/replica_bh_overlap.py`, 2026-11-19): identical
 result — 48 terms, raw p 0.002379, BH over the 48 = 0.0342 in the
 top 8, same order for the first 7, 8th term differs (ours:
 Negative Regulation Of Viral Life Cycle; Enrichr: Regulation Of
-Necroptotic Process). Note also that the API returned 48 rows for
-this list and the website shows 48 entries — the same count as the
-terms with an overlap.
+Necroptotic Process). That second run was the same computation
+repeated, not an independent replica: it guards against a
+transcription error and adds no evidence. Note also that the API
+returned 48 rows for this list and the website shows 48 entries —
+the same count as the terms with an overlap.
+
+### Confirmed against Enrichr's own output (2026-11-19)
+
+The calibration runs had only saved per-library counts, not the raw
+rows, so the decisive test re-submitted the first 10 lists of the
+K5-engine run (same lists, seed 7) and kept every returned row
+(`verify_enrichr_bh.py`; results in
+`docs/validation/enrichr-bh-verification.json`). Recomputing BH over
+exactly the returned rows of each library reproduces Enrichr's
+adjusted-p column in **1,077 of 1,077 rows across all 4 libraries**,
+tolerance 1e-4. The mechanism is confirmed from Enrichr's own
+output: the adjusted p is a Benjamini–Hochberg correction over only
+the terms the API returns for the list — the terms with at least one
+overlapping gene — not over the whole library. What remains open is
+only whether this is intentional; that is the question in the draft
+email to the maintainers.
 
 So the adjusted p behaves like a BH correction computed only over
-the terms that have at least one gene in common with the list, not
-over the whole library. This is a hypothesis consistent with one
-list and two independent replicas; it is NOT confirmed, and the
-definitive answer belongs to the maintainers (a draft question is
-in `joss-resubmission/email-enrichr-maintainers-DRAFT.md`). It is
+the terms that have at least one gene in common with the list. It is
 also the same pattern KENRYU itself had before v1.45: H-05 was
 exactly this — BH over only the terms with an overlap — corrected
 to BH over all non-empty terms. An easy mistake to make, which we
