@@ -79,3 +79,19 @@ def test_legacy_warnings_render_escaped():
     text = _script_text()
     line = next(l for l in text.splitlines() if "data.warnings" in l)
     assert "escapeHtml(w)" in line
+
+
+def test_specificity_tooltip_says_random_gene_lists():
+    # La especificidad muestrea LISTAS aleatorias de genes del universo
+    # de TargetScan, no paneles de miRNAs: el texto debe decirlo así.
+    js = _script_text()
+    assert "listas aleatorias de genes" in js
+    assert "paneles aleatorios" not in js
+
+
+def test_specificity_zero_renders_less_than_one_percent():
+    # Con 100 muestras la resolución es del 1%: un 0 observado es "<1%",
+    # nunca "0%".
+    js = _script_text()
+    assert "'<1%'" in js
+    assert "0% = específico" not in js

@@ -230,7 +230,7 @@ function renderDashboard(data) {
     const enEl = document.getElementById('enrich-container');
     if (enEl) {
       if (data.enrichment && data.enrichment.length) {
-        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p-valor</th><th title="Fracción de paneles aleatorios del mismo tamaño en los que este término aparece por azar. 100% = genérico; 0% = específico.">Especificidad</th><th>PubMed</th></tr></thead><tbody>`;
+        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p-valor</th><th title="Fracción de listas aleatorias de genes del mismo tamaño, extraídas del universo de TargetScan, en las que este término aparece por azar. 100% = genérico; <1% = específico.">Especificidad</th><th>PubMed</th></tr></thead><tbody>`;
         data.enrichment.forEach(item => {
           const pvalVal = (item.Pval !== undefined && item.Pval !== null) 
             ? (typeof item.Pval === 'number' ? item.Pval.toExponential(2) : item.Pval)
@@ -246,13 +246,17 @@ function renderDashboard(data) {
           const pmidOk = pmid !== null && pmid !== undefined && /^[0-9]+$/.test(String(pmid));
           const pLink = pmidOk ? `<a href="https://pubmed.ncbi.nlm.nih.gov/${pmid}" target="_blank" style="color:var(--gold); font-family:var(--font-mono); font-size:10px; font-weight:600; text-decoration:none; border-bottom:1px solid var(--gold-dim);">PMID: ${pmid}</a>` : '<span style="color:var(--text-faint); font-size:10px;">Sin evidencia</span>';
 
-          // v1.54: especificidad — fracción de paneles aleatorios del
-          // mismo tamaño en los que el término aparece por azar.
+          // v1.54: especificidad — fracción de listas aleatorias de genes
+          // del mismo tamaño, extraídas del universo de TargetScan, en las
+          // que el término aparece por azar.
           // Es un número del servidor, no texto libre: no necesita escape.
-          const spec = (item.specificity !== undefined && item.specificity !== null && typeof item.specificity === 'number')
-            ? `${Math.round(item.specificity * 100)}%`
-            : '—';
-          const specTitle = 'Fracción de paneles aleatorios del mismo tamaño en los que este término aparece por azar. 100% = genérico; 0% = específico.';
+          // Unreleased: con 100 muestras la resolución es del 1%: un 0
+          // observado se muestra como "<1%", nunca como "0%".
+          const specPct = (item.specificity !== undefined && item.specificity !== null && typeof item.specificity === 'number')
+            ? Math.round(item.specificity * 100)
+            : null;
+          const spec = specPct === null ? '—' : (specPct === 0 ? '<1%' : `${specPct}%`);
+          const specTitle = 'Fracción de listas aleatorias de genes del mismo tamaño, extraídas del universo de TargetScan, en las que este término aparece por azar. 100% = genérico; <1% = específico.';
 
           html += `<tr><td><span style="font-weight:500;">${escapeHtml(item.Term || '—')}</span><br><small style="color:var(--text-dim);">${escapeHtml(item.ScientificDesc || '')}</small></td>
             <td><span class="source-tag">${escapeHtml(item.Source || '—')}</span></td>

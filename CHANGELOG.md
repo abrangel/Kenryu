@@ -2,6 +2,20 @@
 
 All notable changes to KENRYU are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Specificity column: tooltip and docs now say "random gene lists of the same
+  size drawn from the TargetScan universe" (not "random panels"); a value of
+  0 is shown as "<1%" (100 draws).
+- Attribution: the random-panel protocol (`validate_random_panels.py`) was
+  written by Claude (Sonnet 5.5), not by the author — the [1.54] entry
+  said "el protocolo del autor"; the published entry is left as-is and
+  the correction is recorded here and in `docs/validation/README.md`.
+
+### Added
+- docs/validation/: specificity of the 19 lipid-panel terms (version, date).
+
 ## [1.54] — 2026-11-19
 
 ### Legacy cap, fondo TargetScan, especificidad, declaración y calibración

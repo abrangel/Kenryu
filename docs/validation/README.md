@@ -5,6 +5,9 @@ of the enrichment step: the fraction of random miRNA panels with at least
 one significant term (adjusted p < 0.05). If the method were well
 calibrated, the rate should be close to 5%.
 
+The protocol and the script were written by Claude (Sonnet 5.5); Muse
+reproduced the runs with v1.53 and verified the numbers matched.
+
 Three backgrounds are compared in each run:
 
 - **actual** — the union of each GMT library's genes (the pre-v1.49
