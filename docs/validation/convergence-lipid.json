@@ -1,0 +1,31 @@
+{
+  "mirnas": [
+    "hsa-miR-33a-5p",
+    "hsa-miR-144-3p",
+    "hsa-miR-758-3p",
+    "hsa-miR-106b-5p",
+    "hsa-miR-33b-5p"
+  ],
+  "mode": "strict",
+  "k_nombres": 5,
+  "k_efectivo": 4,
+  "tamanos_dianas": [
+    545,
+    1048,
+    271,
+    1385
+  ],
+  "genes_comunes_observados": 5,
+  "genes_comunes_sin_deduplicar": 5,
+  "perms": 10000,
+  "seed": 7,
+  "nulo": {
+    "media": 2.514,
+    "mediana": 2.0,
+    "p95": 6,
+    "p99": 9,
+    "max": 23
+  },
+  "p_empirico": 0.1366863313668633,
+  "p_minimo_resoluble": 0.0001
+}

@@ -1,0 +1,28 @@
+{
+  "mirnas": [
+    "hsa-miR-375",
+    "hsa-miR-29a-3p",
+    "hsa-miR-21-5p"
+  ],
+  "mode": "strict",
+  "k_nombres": 3,
+  "k_efectivo": 3,
+  "tamanos_dianas": [
+    304,
+    1264,
+    384
+  ],
+  "genes_comunes_observados": 6,
+  "genes_comunes_sin_deduplicar": 6,
+  "perms": 10000,
+  "seed": 7,
+  "nulo": {
+    "media": 6.71,
+    "mediana": 6.0,
+    "p95": 13,
+    "p99": 19,
+    "max": 124
+  },
+  "p_empirico": 0.5685431456854314,
+  "p_minimo_resoluble": 0.0001
+}

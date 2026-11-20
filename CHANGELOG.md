@@ -4,6 +4,24 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Added
+- Convergence test (`convergence_test.py`, repo root; written by
+  Claude, reproduced bit-for-bit by Muse): the observed gene count
+  against 10,000 random size-matched miRNA-family panels. Lipid
+  panel: 4 effective seed families, 5 genes, empirical p = 0.14;
+  cancer panel: 3 families, 18 genes, p = 0.10; neither is unusual
+  at 0.05. The paper now says so and reports the effective size:
+  the count is not evidence by itself; the value is in the
+  per-gene evidence layer. Results in `docs/validation/convergence.md`.
+
+### Fixed
+- README (EN+ES): the lipid panel no longer says "Lipid pathways
+  significant (q < 0.05)" and the cancer panel no longer says "3
+  significant with p-adj < 0.05". Both now say the local route
+  gives 0 terms and the Enrichr terms are exploratory, matching
+  the paper.
+- paper.md: test count 220 → 237.
+
 ## [1.56] - 2026-11-19
 
 ### Added
