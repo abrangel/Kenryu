@@ -4,6 +4,8 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.57] - 2026-11-20
+
 ### Added
 - Convergence test (`convergence_test.py`, repo root; written by
   Claude, reproduced bit-for-bit by Muse): the observed gene count
@@ -18,12 +20,23 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   tolerance, p as a range across ±10–50%, resolution shown next to
   p, seed from the sorted family names, effective size with a
   same-family warning, capped at 10 effective families. Tests in
-  `tests/test_convergence.py` (7 tests; suite 244).
+  `tests/test_convergence.py` (7 tests).
+- Execution manifest (`execution_manifest` in every `/api/v1/analyze`
+  response, in the CLI `analysis.json` and in the Markdown report):
+  engine version, commit, data versions, parameters, convergence
+  seed and a reproduce command. Same panel, same result — verified
+  end to end by API and by CLI (`tests/test_manifest.py`, 5 tests;
+  suite 249).
 - Comparison table with only verified claims
   (`docs/comparison.md`, sources + consultation date 20 November
-  2026): multiMiR, DIANA-miRPath v4.0, miRPathDB 2027, miRNet,
-  miRWalk 3.0, miEAA 2023. The paper's State of the field now
-  points to it (paper.md 1,625 words).
+  2026), including a measurable four-point comparison (false
+  positives on random panels, strong-target sensitivity,
+  reproducibility, offline operation) and the exact citation of the
+  miRPathDB 2027 evidence tiers. The paper's State of the field now
+  points to it (paper.md 1,624 words).
+- "How to use and cite" section in both READMEs, with the Zenodo
+  concept DOI, and GitHub issue templates (bug report, feature
+  request) that ask for the version/commit from the manifest.
 
 ### Fixed
 - README (EN+ES): the lipid panel no longer says "Lipid pathways
@@ -38,9 +51,10 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   is now presented as miRTarBase's own classification, inherited,
   not a contribution. miRPathDB 2027 stays: the version exists
   (Flotho et al., NAR advance article 17 Nov 2026, doi
-  10.1093/nar/gkag1178) — a correction claiming otherwise was
-  checked against the Oxford Academic page and rejected. miRNet's
-  "11 databases" (v1.0) verified in the primary source.
+  10.1093/nar/gkag1178, PMID 43042465) — a correction claiming
+  otherwise was checked against the Oxford Academic page and
+  rejected; the episode is recorded in the paper review (§11).
+  miRNet's "11 databases" (v1.0) verified in the primary source.
 
 ## [1.56] - 2026-11-19
 

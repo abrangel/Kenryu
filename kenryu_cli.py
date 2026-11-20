@@ -47,6 +47,20 @@ def write_report(result, out_dir):
         f"Modo offline: {result.get('offline', False)}",
         "",
     ]
+    manifest = result.get("execution_manifest", {})
+    if manifest:
+        params = manifest.get("parameters", {})
+        lines.append("## Manifiesto de ejecución")
+        lines.append("")
+        lines.append(f"Versión: {manifest.get('engine_version')} "
+                     f"(commit {manifest.get('commit')})")
+        lines.append(f"Parámetros: modo {params.get('mode')}, "
+                     f"offline {params.get('offline')}, "
+                     f"especie {params.get('species')}")
+        lines.append(f"Semilla de convergencia: "
+                     f"{manifest.get('seeds', {}).get('convergence')}")
+        lines.append(f"Reproducir: `{manifest.get('reproduce', '')}`")
+        lines.append("")
     summary = result.get("validation", {}).get("summary", {})
     if summary:
         lines.append(

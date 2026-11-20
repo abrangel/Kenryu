@@ -436,6 +436,29 @@ Plot fields (`venn_plot`, `volcano_plot`, `ppi_plot`) carry **raw base64 PNG** �
 
 ---
 
+## 📖 How to use and cite
+
+**Use.** Web interface, REST API (`/api/v1`, OpenAPI schema at `/docs`),
+or CLI (`kenryu panel.txt --offline --out results/`). Every analysis
+returns an execution manifest (engine version, commit, data versions,
+parameters, seeds, reproduce command) — cite the version you ran.
+
+**Cite.** If you use KENRYU, cite the Zenodo record. The concept DOI
+always resolves to the latest version:
+https://doi.org/10.5281/zenodo.20564688 — Manzo Carvajal, Cesar Abrahan.
+*KENRYU: A Platform for Convergent microRNA Target Analysis and
+Multi-Source Evidence Integration.* Zenodo. The versioned DOI of the
+release you used is on the badge at the top and in the release notes.
+The JOSS paper is in preparation; the validation evidence is in
+`docs/validation/`.
+
+**Report a problem or request a feature.** Open an issue with the
+templates in `.github/ISSUE_TEMPLATE/` — a bug report (panel,
+expected vs observed, version/commit from the manifest) or a feature
+request. Real use cases and real issues are how the tool improves.
+
+---
+
 ## ✅ Live Validation
 
 KENRYU has been validated live against the deployed Space (`POST /api/v1/analyze`, `years: 10`, `mode: strict`) with three independent miRNA panels. Each run was executed end-to-end through the public API and reproduced the expected convergent core.

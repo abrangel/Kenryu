@@ -1566,7 +1566,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.56"
+APP_VERSION = "1.57"
 
 
 @asynccontextmanager
@@ -2052,11 +2052,41 @@ async def analyze(req: AnalysisRequest):
         convergence = {
             "k_names": len(found_names), "k_effective": None,
             "same_family_warning": False, "genes_observed": len(common),
-            "perms": 0, "resolution": None, "p_by_tolerance": {},
+            "perms": 0, "seed": None, "resolution": None, "p_by_tolerance": {},
             "p_min": None, "p_max": None,
             "label": CONVERGENCE_LABEL, "limit": CONVERGENCE_LIMIT,
             "skipped": "needs_local_targets",
         }
+
+    # ── MANIFIESTO DE EJECUCIÓN (Unreleased) ─────────────────────────────────
+    # Todo lo necesario para repetir este análisis con un comando:
+    # versión del motor, commit, versiones de los datos, parámetros y
+    # semillas (incluida la de convergencia). La respuesta, el JSON del
+    # CLI y el informe Markdown llevan el mismo manifiesto.
+    manifest = {
+        "engine_version": APP_VERSION,
+        "commit": load_commit_hash(),
+        "data_versions": loaded_data_versions(),
+        "parameters": {
+            "mirnas": found_names,
+            "missing_mirnas": missing_mirnas,
+            "mode": mode,
+            "years": req.years,
+            "offline": req.offline,
+            "species": req.species,
+            "require_experimental": req.require_experimental,
+        },
+        "seeds": {"convergence": convergence.get("seed")},
+        "reproduce": (
+            "curl -s -X POST http://localhost:7860/api/v1/analyze "
+            "-H 'Content-Type: application/json' -d '"
+            + json.dumps({"mirnas": found_names, "mode": mode,
+                          "years": req.years, "offline": req.offline,
+                          "species": req.species,
+                          "require_experimental": req.require_experimental})
+            + "'"
+        ),
+    }
 
     # Ronda 3 (v1.48): interruptor opcional "exigir evidencia experimental"
     # (apagado por defecto). Cuando está activo, el consenso solo conserva
@@ -2088,6 +2118,7 @@ async def analyze(req: AnalysisRequest):
             "found_mirnas": found_names,
             "missing_mirnas": missing_mirnas,
             "convergence": convergence,
+            "execution_manifest": manifest,
             "single_mirna_warning": (
                 "El panel tiene un solo miRNA con datos: no hay convergencia "
                 "entre miRNAs; el resultado son todas sus dianas."
@@ -2440,6 +2471,7 @@ async def analyze(req: AnalysisRequest):
         "found_mirnas": found_names,
         "missing_mirnas": missing_mirnas,
         "convergence": convergence,
+        "execution_manifest": manifest,
         "single_mirna_warning": (
             "El panel tiene un solo miRNA con datos: no hay convergencia "
             "entre miRNAs; el resultado son todas sus dianas."

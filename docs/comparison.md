@@ -16,7 +16,7 @@ what KENRYU adds as a combination.
 | miRNet | Fan et al. 2016, *Nucleic Acids Res* 44(W1):W135–W141, doi 10.1093/nar/gkw288; v2.0 Chang et al. 2020, *Nucleic Acids Res* 48(W1):W244–W251 | miRNA/gene list | 11 miRNA databases (v1.0); network visualisation + functional analysis; v2.0 adds transcription factors, SNPs, >5-fold larger knowledgebases, in situ functional analysis | network edges | web |
 | miRWalk | 3.0, Sticht et al. 2018, *PLOS ONE* 13(10):e0206239 | miRNA/gene | TarPmiR random-forest binding-site scan (5′UTR/CDS/3′UTR) + TargetScan/miRDB/miRTarBase | target lists | web form |
 | miEAA | 2023, Aparicio-Puerta et al., *Nucleic Acids Res* 51(W1):W319–W325, doi 10.1093/nar/gkad392 | miRNA list (mature/precursor, 10 species) | enrichment over 139,399 miRNA sets (19 repositories); direct + indirect miRNA annotation; API + Python package | miRNA-set membership | web / API / package |
-| **KENRYU** | v1.56 | **miRNA panel** | **TargetScan convergence (Strict/N-1/N-2) + miRTarBase evidence tiers (inherited) + per-gene literature/clinical dossier + calibrated local enrichment + convergence test + bilingual report** | **strong/weak/none per gene, with PMIDs** | **local/offline or hosted** |
+| **KENRYU** | v1.57 | **miRNA panel** | **TargetScan convergence (Strict/N-1/N-2) + miRTarBase evidence tiers (inherited) + per-gene literature/clinical dossier + calibrated local enrichment + convergence test + bilingual report** | **strong/weak/none per gene, with PMIDs** | **local/offline or hosted** |
 
 ## What is NOT novel (and is presented as inheritance, not contribution)
 
@@ -39,7 +39,10 @@ what KENRYU adds as a combination.
   without a Support Type); Low = Medium plus TargetScan and miRDB
   predictions without additional score filtering. The tiers describe
   the included target evidence, not the biological certainty of an
-  enriched pathway (the paper says so).
+  enriched pathway (the paper says so). Exact citation: Flotho et
+  al., *Nucleic Acids Research*, 2026, gkag1178,
+  doi:10.1093/nar/gkag1178, PMID 43042465, section "Data processing
+  and enrichment" (consulted 20 November 2026).
 - **Programmatic access** already exists in miRPathDB 2027 (read-only
   JSON API and Model Context Protocol endpoint, plus versioned bulk
   downloads). It is not claimed as a KENRYU differentiator.
@@ -72,6 +75,53 @@ deriving Gene Ontology and pathway terms from their target genes,
 although this approximation is not without caveats". That is the
 same concern KENRYU's calibration addresses — the bias that target
 lists carry.
+
+## Measurable comparison: four tasks, with numbers
+
+"Better than everything" is not one claim; it is four measurable
+tasks. Galaxy is a workflow platform and miRPathDB is a database —
+they do not compete in the same category. The numbers below are
+KENRYU's own measurements (`docs/validation/`) and what the other
+tools publish in the papers read. Where a tool does not publish a
+number, the table says so; that is itself the comparison.
+
+**1. False positives on random panels.** Local route, TargetScan
+universe as background (300 panels unless noted): N-1, 5 miRNAs —
+GO 7.3%, Reactome 11.7%, WikiPathways 3.3%; Strict, 2 miRNAs — GO
+17.0%, Reactome 12.7%, WikiPathways 7.3%; thesis-like panels (65) —
+GO 1.5%, Reactome 3.1%, WikiPathways 0%. The Enrichr route, measured
+by KENRYU (not Enrichr's own numbers): 5-gene lists GO 98%,
+Reactome 75%, WikiPathways 86%, KEGG 56%; 18-gene lists GO 30%,
+Reactome 18%, WikiPathways 19%, KEGG 10%; 100-gene lists GO 10%,
+Reactome 3%, WikiPathways 17%, KEGG 23%. DIANA-miRPath v4.0 does not
+publish an FPR on random panels (full text read); it uses Wallenius
+non-central hypergeometric testing to account for targeting bias.
+miRPathDB 2027 does not publish an enrichment FPR (full text read);
+it uses matched random target sets for cross-species profile
+comparison, a different purpose. The other tools: not verified.
+
+**2. Recovery of known strong targets (sensitivity).** TargetScan
+recovers 54% (404/754) of known strong targets; the miRTarBase
+intersection adds the validated targets it misses
+(`docs/validation/strong-controls.md`). DIANA-miRPath v4.0 and
+miRPathDB 2027 do not publish a comparable sensitivity in the papers
+read (miRPathDB 2027 reports target-pair totals). The other tools:
+not verified.
+
+**3. Reproducibility: same panel, same result, with a version
+record.** Every KENRYU response carries an execution manifest
+(engine version, commit, data versions, parameters, convergence
+seed, reproduce command); the convergence seed is deterministic.
+miRPathDB 2027 has a versioned release, source records, checksum
+manifests and independent target-set reconstruction (full text,
+Table 1). DIANA-miRPath v4.0 is a web server with no per-analysis
+version record described in the paper read. The other tools: not
+verified.
+
+**4. Offline operation.** KENRYU runs fully offline (local TargetScan
++ miRTarBase index + local enrichment). multiMiR runs locally (R
+package). miEAA's Python package is a client to the web service, not
+offline. DIANA-miRPath, miRNet, miRWalk and miRPathDB are web-only.
 
 ## Not verified
 

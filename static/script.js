@@ -149,6 +149,7 @@ function renderDashboard(data) {
           if (cv.same_family_warning) {
             html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">⚠️ Hay miRNAs de la misma familia: el panel tiene ${cv.k_names} nombres pero ${cv.k_effective} semillas independientes.</div>`;
           }
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">Manifiesto: KENRYU ${escapeHtml(data.engine_version || '')} (commit ${escapeHtml(data.commit || '')}), semilla de convergencia ${cv.seed}.</div>`;
         }
         cvEl.innerHTML = html;
       } else {

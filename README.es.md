@@ -424,6 +424,31 @@ Los campos de gráficos (`venn_plot`, `volcano_plot`, `ppi_plot`) llevan **base6
 
 ---
 
+## 📖 Cómo usar y citar
+
+**Uso.** Interfaz web, API REST (`/api/v1`, esquema OpenAPI en `/docs`)
+o CLI (`kenryu panel.txt --offline --out results/`). Cada análisis
+devuelve un manifiesto de ejecución (versión del motor, commit,
+versiones de datos, parámetros, semillas, comando para repetir) —
+cita la versión que usaste.
+
+**Cita.** Si usas KENRYU, cita el registro de Zenodo. El DOI conceptual
+siempre resuelve a la última versión:
+https://doi.org/10.5281/zenodo.20564688 — Manzo Carvajal, Cesar Abrahan.
+*KENRYU: A Platform for Convergent microRNA Target Analysis and
+Multi-Source Evidence Integration.* Zenodo. El DOI de la versión que
+usaste está en la insignia de arriba y en las notas del release.
+El artículo JOSS está en preparación; la evidencia de validación
+está en `docs/validation/`.
+
+**Reporta un problema o pide una función.** Abre un issue con las
+plantillas de `.github/ISSUE_TEMPLATE/`: un reporte de error (panel,
+esperado vs observado, versión/commit del manifiesto) o una solicitud
+de función. Los casos de uso reales y los issues reales son como
+mejora la herramienta.
+
+---
+
 ## ✅ Validación en Vivo
 
 KENRYU ha sido validado en vivo contra el Space desplegado (`POST /api/v1/analyze`, `years: 10`, `mode: strict`) con tres paneles independientes de microARNs. Cada ejecución se realizó de extremo a extremo a través de la API pública y reprodujo el núcleo convergente esperado.

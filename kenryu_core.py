@@ -128,12 +128,17 @@ def panel_convergence(observed_sets, labels, all_families, mode="strict",
             distinct_labels.append(lab)
     k_eff = len(distinct)
     genes_observed = len(consensus_genes([set(s) for s in distinct], mode))
+    # The seed is part of the execution manifest: it is computed from
+    # the families even when the test itself is skipped, so a run stays
+    # fully described.
+    seed = _convergence_seed(distinct_labels)
     base = {
         "k_names": n_names,
         "k_effective": k_eff,
         "same_family_warning": n_names > k_eff,
         "genes_observed": genes_observed,
         "perms": perms,
+        "seed": seed,
         "resolution": 1 / (perms + 1),
         "label": CONVERGENCE_LABEL,
         "limit": CONVERGENCE_LIMIT,
@@ -147,7 +152,6 @@ def panel_convergence(observed_sets, labels, all_families, mode="strict",
                 "skipped": "too_many_families"}
     fam_sets = {f: frozenset(g) for f, g in all_families.items() if g}
     observed_keys = {f for f, s in fam_sets.items() if s in distinct}
-    seed = _convergence_seed(distinct_labels)
     p_by_tol = {}
     for tol in tolerances:
         pools = []
