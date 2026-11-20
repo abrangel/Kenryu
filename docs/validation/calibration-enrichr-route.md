@@ -161,3 +161,25 @@ should give. The cancer panel's three terms (Developmental Biology
 0.0424) therefore cannot be presented as significant findings;
 they are reported as exploratory, with their specificity values
 (<1%, <1%, 0.01) as the guard.
+
+## Whole-genome population (robustness check): DONE 2026-11-19
+
+Same protocol, 50 lists each, but the random genes drawn from the
+union of the local GMT libraries (17,436 genes, the whole-genome
+proxy) instead of the TargetScan universe (13,035 genes) —
+`calibrate_enrichr.py --population gmt-union`. The TargetScan
+universe is the relevant population for KENRYU's lists; this run
+checks whether the verdict depends on it.
+
+| Lists | Population | GO | Reactome | WikiPathways | KEGG | Any library |
+|---|---|---|---|---|---|---|
+| 5 genes | TargetScan (n=100) | 0.98 | 0.75 | 0.86 | 0.56 | 1.00 |
+| 5 genes | GMT union (n=50) | 1.00 | 0.58 | 0.84 | 0.56 | 1.00 |
+| 18 genes | TargetScan (n=100) | 0.30 | 0.18 | 0.19 | 0.10 | 0.51 |
+| 18 genes | GMT union (n=50) | 0.24 | 0.22 | 0.30 | 0.14 | 0.60 |
+
+The verdict does not change: the route is uncalibrated at both
+sizes in both populations (any-library 0.51–0.60 for 18-gene lists,
+1.00 for 5-gene lists). The differences between populations are
+within sampling noise (n=50, standard error ≈ 0.07). Files:
+`calibration-enrichr-K5-gmt.json`, `calibration-enrichr-K18-gmt.json`.
