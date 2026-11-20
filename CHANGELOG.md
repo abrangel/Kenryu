@@ -22,6 +22,14 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   runs in CI; the 4 API tests that skipped in CI now run against it.
 - CI: `smoke` job — clean-clone install (`pip install -e .`) plus the
   real CLI offline on the thesis panel (5 genes, ABCA1 strong).
+- docs/validation/calibration-enrichr-route.md: live Enrichr route
+  calibrated with random gene lists (100 x 5 genes: GO 98% false
+  positives — the route is not calibrated at these sizes).
+- paper.md: local enrichment is now the stated method (Enrichr terms
+  reported as exploratory); State of the field as a comparison table
+  (miRPathDB, miRNet, miRWalk, DIANA-miRPath, miEAA); new Software
+  design and Research impact statement sections; 1,663 words, inside
+  the JOSS 750–1,750 limit.
 
 ### Fixed
 - `term_specificity` returned a 2-decimal rounding that blurred the 5%
