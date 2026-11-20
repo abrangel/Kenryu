@@ -39,3 +39,23 @@ _TMP = Path(tempfile.mkdtemp(prefix="kenryu-test-cache-"))
 def pytest_configure():
     ke.CACHE_FILE = _TMP / "analysis_cache.json"
     ke.PERSISTENT_CACHE = {"trans": {}, "pubmed": {}, "enrichr": {}, "gene_research": {}}
+
+
+# Unreleased: the real official miRTarBase index (2.3 MB) is gitignored
+# and never exists in a fresh clone, so the tests that need the official
+# format skipped in CI. This fixture points the engine at the committed
+# synthetic index (tests/fixtures/mirtarbase_official_synthetic.json.gz:
+# same schema, the 7 thesis-panel pairs copied verbatim from the real
+# index) so the official-format code path runs in CI too.
+import pytest as _pytest
+
+
+@_pytest.fixture
+def synthetic_official_index(monkeypatch, tmp_path):
+    fixture = REPO_ROOT / "tests" / "fixtures" / "mirtarbase_official_synthetic.json.gz"
+    monkeypatch.setattr(ke, "MIRTARBASE_OFFICIAL", str(fixture))
+    monkeypatch.setattr(ke, "MIRTARBASE_GMT", str(tmp_path / "nope.gmt.gz"))
+    monkeypatch.setattr(ke, "MIRTARBASE_DB", {})
+    monkeypatch.setattr(ke, "MIRTARBASE_FORMAT", None)
+    monkeypatch.setattr(ke, "MIRTARBASE_META", None)
+    yield fixture

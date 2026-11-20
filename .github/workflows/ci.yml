@@ -35,3 +35,30 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  smoke:
+    # Clean-clone install check: install the package from this checkout
+    # and run the real CLI offline on the thesis panel. The deployed
+    # service and the local CLI share the same engine, so this is the
+    # install path a reviewer (or a colleague) would actually take.
+    # The synthetic official index (tests/fixtures/) stands in for the
+    # gitignored real one, so the official-format code path is exercised.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: CLI smoke test (thesis panel, offline)
+        run: |
+          cp tests/fixtures/mirtarbase_official_synthetic.json.gz local_db/mirtarbase_official.json.gz
+          printf 'hsa-miR-33a-5p\nhsa-miR-33b-5p\nhsa-miR-144-3p\nhsa-miR-758-3p\nhsa-miR-106b-5p\n' > /tmp/panel-tesis.txt
+          kenryu /tmp/panel-tesis.txt --offline --out /tmp/smoke-output
+          python -c "import json; d=json.load(open('/tmp/smoke-output/analysis.json')); assert sorted(d['common_genes'])==['ABCA1','KPNA3','SCN1A','SNTB2','TSC22D2'], d['common_genes']; g=d['validation']['genes']; assert g['ABCA1']['evidence_level']=='strong' and g['SNTB2']['evidence_level']=='weak', g; print('smoke: 5 thesis genes OK, ABCA1 strong / SNTB2 weak OK')"

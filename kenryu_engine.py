@@ -92,6 +92,10 @@ def load_mouse_data():
 # vía Enrichr. Se cargan bajo demanda y se cachean como TARGETSCAN_DB.
 MIRTARBASE_DB = {}
 MIRTARBASE_FORMAT = None  # "official" | "gmt" | None
+# Build metadata of the loaded official index (rows/pairs/miRNAs and
+# whether it is the synthetic CI fixture); None when no official index
+# is loaded. Drives the honest version string in loaded_data_versions().
+MIRTARBASE_META = None
 GMT_LIBRARIES = {}
 GMT_FILES = {
     "KEGG": "local_db/gmt_KEGG_2021_Human.gmt",
@@ -108,11 +112,11 @@ def load_mirtarbase_local():
     índice oficial 9.0 (con niveles fuerte/débil); si no existe, usa el
     GMT de Harmonizome (nivel "legacy", sin distinción de evidencia),
     descargado bajo demanda y no incluido en el repo desde v1.52."""
-    global MIRTARBASE_DB, MIRTARBASE_FORMAT
+    global MIRTARBASE_DB, MIRTARBASE_FORMAT, MIRTARBASE_META
     if not MIRTARBASE_DB:
         official = BASE_DIR / MIRTARBASE_OFFICIAL
         if official.exists():
-            MIRTARBASE_DB = load_mirtarbase_official(official)
+            MIRTARBASE_DB, MIRTARBASE_META = load_mirtarbase_official_with_meta(official)
             MIRTARBASE_FORMAT = "official"
             logger.info(f"📚 miRTarBase local: índice oficial 9.0, {len(MIRTARBASE_DB)} miRNAs.")
         else:
@@ -120,8 +124,10 @@ def load_mirtarbase_local():
             if path.exists():
                 MIRTARBASE_DB = load_mirtarbase_gmt(path)
                 MIRTARBASE_FORMAT = "gmt"
+                MIRTARBASE_META = None
                 logger.info(f"📚 miRTarBase local: {len(MIRTARBASE_DB)} miRNAs validados (GMT Harmonizome).")
             else:
+                MIRTARBASE_META = None
                 logger.warning(f"⚠️ Sin miRTarBase local ({official} ni {path} existen).")
     return MIRTARBASE_DB
 
@@ -289,6 +295,7 @@ from kenryu_core import (
     load_gmt_library,
     load_mirtarbase_gmt,
     load_mirtarbase_official,
+    load_mirtarbase_official_with_meta,
     local_enrichment,
     normalize_isomir,
     prioritize_genes,
@@ -1837,9 +1844,22 @@ def loaded_data_versions():
     the analysis JSON and the export all agree."""
     versions = dict(load_local_versions())
     if MIRTARBASE_FORMAT == "official":
-        versions["mirtarbase"] = ("miRTarBase 9.0 official index "
-                                  "(hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, "
-                                  "396,758 pairs)")
+        # The counts come from the loaded index's own metadata, so a
+        # synthetic fixture can never claim the real file's numbers.
+        meta = MIRTARBASE_META or {}
+        if meta.get("synthetic"):
+            versions["mirtarbase"] = (
+                "miRTarBase official index (synthetic CI fixture, "
+                f"{meta.get('n_mirnas', 0)} miRNAs, {meta.get('pairs', 0)} pairs)")
+        elif meta.get("rows_read") is not None:
+            versions["mirtarbase"] = (
+                "miRTarBase 9.0 official index "
+                f"({meta.get('built_from')}, {meta.get('rows_read'):,} rows, "
+                f"{meta.get('n_mirnas'):,} miRNAs, {meta.get('pairs'):,} pairs)")
+        else:  # index without build metadata (defensive fallback)
+            versions["mirtarbase"] = ("miRTarBase 9.0 official index "
+                                      "(hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, "
+                                      "396,758 pairs)")
     elif MIRTARBASE_FORMAT == "gmt":
         versions["mirtarbase"] = "Harmonizome GMT snapshot (legacy)"
     else:

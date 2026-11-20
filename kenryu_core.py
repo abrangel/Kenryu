@@ -513,6 +513,24 @@ def load_mirtarbase_gmt(path):
     return db
 
 
+def load_mirtarbase_official_with_meta(path):
+    """Load the local miRTarBase OFFICIAL index (v1.48, Ronda 3) and its
+    build metadata: returns ({miRNA: {gene: {"level", "pmids",
+    "experiments"}}}, meta), where meta holds the payload's top-level
+    fields (version, source, built_from, built_at, rows_read, pairs,
+    synthetic). The loader below keeps the old one-value signature."""
+    import gzip
+    import json
+    opener = gzip.open if str(path).endswith(".gz") else open
+    with opener(path, "rt", encoding="utf-8") as fh:
+        payload = json.load(fh)
+    meta = {k: payload.get(k) for k in
+            ("version", "source", "built_from", "built_at", "rows_read",
+             "pairs", "synthetic")}
+    meta["n_mirnas"] = len(payload.get("mirnas") or {})
+    return payload.get("mirnas") or {}, meta
+
+
 def load_mirtarbase_official(path):
     """Load the local miRTarBase OFFICIAL index (v1.48, Ronda 3): the compact
     derived file built by build_mirtarbase_official.py from hsa_MTI.xlsx
@@ -520,12 +538,7 @@ def load_mirtarbase_official(path):
     "experiments"}}}; level is "strong" (Functional MTI), "weak"
     (Functional MTI (Weak): CLIP-seq, microarray, proteomics) or "none"
     (only Non-Functional rows). Pure, no network."""
-    import gzip
-    import json
-    opener = gzip.open if str(path).endswith(".gz") else open
-    with opener(path, "rt", encoding="utf-8") as fh:
-        payload = json.load(fh)
-    return payload.get("mirnas") or {}
+    return load_mirtarbase_official_with_meta(path)[0]
 
 
 def _evidence_for_name(name, db):

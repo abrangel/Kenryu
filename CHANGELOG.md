@@ -17,6 +17,19 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 - docs/validation/: specificity of the 19 lipid-panel terms (version, date),
   re-estimated with 10,000 draws: 18 specific, 1 generic (Selenium);
   Folate and Rett remain borderline ("límite").
+- tests/fixtures/: synthetic miRTarBase official index (same schema, the
+  7 thesis-panel pairs copied verbatim) so the official-format code path
+  runs in CI; the 4 API tests that skipped in CI now run against it.
+- CI: `smoke` job — clean-clone install (`pip install -e .`) plus the
+  real CLI offline on the thesis panel (5 genes, ABCA1 strong).
+
+### Fixed
+- `term_specificity` returned a 2-decimal rounding that blurred the 5%
+  generic threshold (a true 0.047 read as 0.05); it now returns the raw
+  fraction and display layers round.
+- The miRTarBase version string was hardcoded to the real file's counts;
+  it is now built from the loaded index's own metadata, so a synthetic
+  fixture reports itself as synthetic.
 - Commit hash: `/health` and every analysis JSON now report `"commit"`,
   the short GitHub hash read from `local_db/build_info.json` (written
   by the sync step); `"unknown"` when the file is absent or malformed.

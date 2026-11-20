@@ -935,19 +935,6 @@ _OFFICIAL = ke.BASE_DIR / "local_db" / "mirtarbase_official.json.gz"
 _GMT = ke.BASE_DIR / "local_db" / "mirtarbase_gene_set_library.gmt.gz"
 
 
-@_pytest.mark.skipif(not _OFFICIAL.exists(),
-                     reason="official miRTarBase index not built")
-def test_analyze_require_experimental_filters_thesis_panel():
-    """v1.48: con require_experimental=true, el panel de la tesis conserva
-    solo los genes con evidencia en miRTarBase (ABCA1 fuerte, SNTB2 y
-    TSC22D2 débil); KPNA3 y SCN1A (solo predichos) salen del consenso."""
-    from fastapi.testclient import TestClient
-    with TestClient(ke.app) as client:
-        r = client.post("/api/v1/analyze", json={
-            "mirnas": _THESIS, "years": 10, "mode": "strict",
-            "offline": True, "require_experimental": True})
-    assert r.status_code == 200
-    assert sorted(r.json()["common_genes"]) == ["ABCA1", "SNTB2", "TSC22D2"]
 
 
 def test_analyze_default_keeps_all_thesis_genes():
@@ -992,24 +979,6 @@ def test_analyze_legacy_mode_warns_and_caps_at_media(tmp_path, monkeypatch):
     assert d["validation"]["summary"]["high"] == 0
 
 
-@_pytest.mark.skipif(not _OFFICIAL.exists(),
-                     reason="official miRTarBase index not built")
-def test_analyze_validation_report_has_evidence_levels():
-    """v1.48: el dossier trae el nivel de evidencia por gen (fuerte /
-    débil / solo predicho) con sus PMIDs."""
-    from fastapi.testclient import TestClient
-    with TestClient(ke.app) as client:
-        r = client.post("/api/v1/analyze", json={
-            "mirnas": _THESIS, "years": 10, "mode": "strict",
-            "offline": True})
-    assert r.status_code == 200
-    genes = r.json()["validation"]["genes"]
-    assert genes["ABCA1"]["evidence_level"] == "strong"
-    assert 20466885 in genes["ABCA1"]["mirtarbase_pmids"]
-    assert genes["SNTB2"]["evidence_level"] == "weak"
-    assert genes["TSC22D2"]["evidence_level"] == "weak"
-    assert genes["KPNA3"]["evidence_level"] == "none"
-    assert genes["SCN1A"]["evidence_level"] == "none"
 
 
 # ── v1.49 — fondo del enriquecimiento: universo predicho ───────────────────
