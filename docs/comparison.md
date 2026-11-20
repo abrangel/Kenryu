@@ -28,6 +28,21 @@ what KENRYU adds as a combination.
   (miRPathDB 2027 states it from miRTarBase's Support Type;
   miRPathDB 1.0, Backes et al. 2017, *Nucleic Acids Res*
   45(D1):D90–D96, states the same). KENRYU inherits it.
+- **Cumulative evidence tiers**: miRPathDB 2027 has three, defined
+  in its full text (not only the abstract): High = miRTarBase
+  Functional MTI records + DIANA-TarBase confidence-1 records whose
+  assays fall outside CLIP/AGO-based and nonpair-specific
+  transcriptome- or proteome-wide classes; Medium = High plus the
+  remaining experimental records (CLIP/AGO-based assays,
+  nonpair-specific readouts after miRNA perturbation, Functional MTI
+  (Weak) and Non-Functional MTI records, and miRTarBase entries
+  without a Support Type); Low = Medium plus TargetScan and miRDB
+  predictions without additional score filtering. The tiers describe
+  the included target evidence, not the biological certainty of an
+  enriched pathway (the paper says so).
+- **Programmatic access** already exists in miRPathDB 2027 (read-only
+  JSON API and Model Context Protocol endpoint, plus versioned bulk
+  downloads). It is not claimed as a KENRYU differentiator.
 - **Empirical testing against random sets** exists elsewhere:
   permutation testing was the DIANA-miRPath v3.0 alternative
   (Vlachos et al. 2015, *Nucleic Acids Res* 43(W1):W460–W466),
