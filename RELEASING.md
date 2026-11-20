@@ -23,3 +23,25 @@
 Exception: if a change alters results someone may already have used
 (for example the "high" level gate or the enrichment background), it
 does merit a release with its own note, even if it is small.
+
+## Space sync (lesson from the v1.55 incident, 2026-11-19)
+
+The v1.55 sync uploaded the engine but not `kenryu_core.py`, and the
+Space went into "Runtime error": the v1.54 core did not define
+`load_mirtarbase_official_with_meta`, which the v1.55 engine
+imports. The engine and the core move together. Before every sync:
+
+1. Build the sync package with `git ls-files` or `git archive`,
+   never by picking files by hand — a hand-picked list forgets a
+   module. Check first which modules changed since the last synced
+   version: `git log <prev-tag>..HEAD -- kenryu_core.py
+   kenryu_updater.py kenryu_engine.py static/`.
+2. Before pushing to the Space, import the engine from the package
+   itself: `cd <package> && python -c "import kenryu_engine"`. If
+   the import fails there, it will fail on the Space.
+3. After pushing, run an automatic `/health` check (version, commit
+   hash, `mirtarbase_mode`) plus the two reference panels (lipid and
+   cancer) before calling the sync done.
+4. A separate test Space costs little and avoids breaking the public
+   one. JOSS may open the service during review, so the public Space
+   must never be left in "Runtime error" by a sync.
