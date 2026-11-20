@@ -1,4 +1,4 @@
-import os, json, zipfile, asyncio, logging, re, io, base64, datetime, hmac, threading, time
+import os, json, zipfile, asyncio, logging, re, io, base64, datetime, hmac, threading, time, subprocess
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Literal, Optional
@@ -48,12 +48,31 @@ _COMMIT_RE = re.compile(r"[0-9a-f]{7,40}")
 
 
 def load_commit_hash():
-    """Short GitHub commit hash of the code running here, or "unknown"."""
+    """Short GitHub commit hash of the code running here, or "unknown".
+
+    build_info.json is authoritative when its version matches the
+    running engine (the Space sync writes it with the GitHub commit);
+    a stale file (older version) is ignored. The real git HEAD is
+    used otherwise — local runs and CI. The Space container must not
+    fall through to git: its repo commit is the Space's own, not
+    GitHub's, so the matching file wins there.
+    """
     try:
         data = json.loads(BUILD_INFO_PATH.read_text(encoding="utf-8"))
-        commit = data.get("commit") if isinstance(data, dict) else None
-        if isinstance(commit, str) and _COMMIT_RE.fullmatch(commit):
-            return commit
+        if isinstance(data, dict) and data.get("version") == APP_VERSION:
+            commit = data.get("commit")
+            if isinstance(commit, str) and _COMMIT_RE.fullmatch(commit):
+                return commit
+    except Exception:
+        pass
+    try:
+        out = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                             cwd=BASE_DIR, capture_output=True, text=True,
+                             timeout=5)
+        if out.returncode == 0:
+            commit = out.stdout.strip()
+            if _COMMIT_RE.fullmatch(commit):
+                return commit
     except Exception:
         pass
     return "unknown"

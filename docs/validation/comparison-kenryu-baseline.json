@@ -1,0 +1,119 @@
+[
+  {
+    "panel": "lipid",
+    "n_mirnas": 5,
+    "n_genes": 5,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.10": 0.12593703148425786,
+      "0.25": 0.12343828085957022,
+      "0.50": 0.09695152423788106
+    }
+  },
+  {
+    "panel": "cancer",
+    "n_mirnas": 3,
+    "n_genes": 18,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.10": 0.054972513743128434,
+      "0.25": 0.11144427786106946,
+      "0.50": 0.05647176411794103
+    }
+  },
+  {
+    "panel": "control",
+    "n_mirnas": 3,
+    "n_genes": 6,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.10": 0.6326836581709145,
+      "0.25": 0.5582208895552224,
+      "0.50": 0.3553223388305847
+    }
+  },
+  {
+    "panel": "R1",
+    "n_mirnas": 2,
+    "n_genes": 162,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.10": 0.15992003998001,
+      "0.25": 0.2773613193403298,
+      "0.50": 0.17891054472763618
+    }
+  },
+  {
+    "panel": "R2",
+    "n_mirnas": 3,
+    "n_genes": 1,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.10": 0.9450274862568716,
+      "0.25": 0.927536231884058,
+      "0.50": 0.8895552223888056
+    }
+  },
+  {
+    "panel": "R3",
+    "n_mirnas": 5,
+    "n_genes": 0,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.25": 1.0,
+      "0.50": 1.0
+    }
+  },
+  {
+    "panel": "R4",
+    "n_mirnas": 5,
+    "n_genes": 1,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.10": 0.07596201899050475,
+      "0.25": 0.05997001499250375,
+      "0.50": 0.08045977011494253
+    }
+  },
+  {
+    "panel": "R5",
+    "n_mirnas": 5,
+    "n_genes": 1,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.10": 0.895552223888056,
+      "0.25": 0.808095952023988,
+      "0.50": 0.655672163918041
+    }
+  },
+  {
+    "panel": "R6",
+    "n_mirnas": 8,
+    "n_genes": 0,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.50": 1.0
+    }
+  },
+  {
+    "panel": "R7",
+    "n_mirnas": 10,
+    "n_genes": 0,
+    "local_terms": 0,
+    "local_sig_terms": 0,
+    "convergence_p": {
+      "0.10": 1.0,
+      "0.25": 1.0,
+      "0.50": 1.0
+    }
+  }
+]

@@ -1,0 +1,483 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "KENRYU Bioinformatics Engine",
+    "version": "1.57"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Root",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "summary": "Root",
+        "operationId": "root__head",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/script.js": {
+      "get": {
+        "summary": "Serve Script",
+        "operationId": "serve_script_script_js_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/style.css": {
+      "get": {
+        "summary": "Serve Style",
+        "operationId": "serve_style_style_css_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/updates": {
+      "get": {
+        "summary": "Updates",
+        "description": "Self-update check: which reference databases are outdated, and\nwhere to download the new release. Never fails the request: with no\nnetwork every source reports 'unknown'.",
+        "operationId": "updates_api_v1_updates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/updates/{source}/install": {
+      "post": {
+        "summary": "Install Update Endpoint",
+        "description": "Install the new release for one source. Only the registry's own\nwhitelisted files are downloaded; the old file is kept as a backup and\nthe new version is recorded. Returns the install report (the notice).\n\nPROTEGIDO (auditoría externa, 2026-11-19): antes cualquier cliente\nanónimo podía llamar a este endpoint y sobrescribir archivos del\nservidor. Ahora exige el secreto KENRYU_ADMIN_TOKEN en la cabecera\nX-Admin-Token; si la variable no está configurada, las\nactualizaciones están desactivadas (403). Tras instalar, las DB en\nmemoria se invalidan para recargar los archivos nuevos en la\nsiguiente petición.",
+        "operationId": "install_update_endpoint_api_v1_updates__source__install_post",
+        "parameters": [
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reverse": {
+      "get": {
+        "summary": "Reverse",
+        "description": "Búsqueda inversa: qué miRNAs (familias TargetScan locales) tienen\na `gene` como diana predicha.",
+        "operationId": "reverse_api_v1_reverse_get",
+        "parameters": [
+          {
+            "name": "gene",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Gene"
+            }
+          },
+          {
+            "name": "species",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "human",
+              "title": "Species"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compare": {
+      "post": {
+        "summary": "Compare",
+        "description": "Compare several panels (local data only): each panel's core genes,\nthe union, the intersection of all panels, and every pairwise overlap.",
+        "operationId": "compare_api_v1_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/batch": {
+      "post": {
+        "summary": "Batch",
+        "description": "Batch of panels from a file: CSV with a `panel,mirna` header (one\nrow per miRNA), or plain text with one panel per line\n(`Name: mir1, mir2` or just `mir1, mir2`). Local data only.",
+        "operationId": "batch_api_v1_batch_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_batch_api_v1_batch_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analyze": {
+      "post": {
+        "summary": "Analyze",
+        "operationId": "analyze_api_v1_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalysisRequest": {
+        "properties": {
+          "mirnas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Mirnas"
+          },
+          "years": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Years",
+            "default": 10
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "strict",
+              "n-1",
+              "n-2"
+            ],
+            "title": "Mode",
+            "default": "strict"
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month"
+          },
+          "offline": {
+            "type": "boolean",
+            "title": "Offline",
+            "default": false
+          },
+          "species": {
+            "type": "string",
+            "title": "Species",
+            "default": "human"
+          },
+          "require_experimental": {
+            "type": "boolean",
+            "title": "Require Experimental",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "mirnas"
+        ],
+        "title": "AnalysisRequest"
+      },
+      "Body_batch_api_v1_batch_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_batch_api_v1_batch_post"
+      },
+      "CompareRequest": {
+        "properties": {
+          "panels": {
+            "items": {
+              "$ref": "#/components/schemas/PanelItem"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Panels"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "strict",
+              "n-1",
+              "n-2"
+            ],
+            "title": "Mode",
+            "default": "strict"
+          }
+        },
+        "type": "object",
+        "required": [
+          "panels"
+        ],
+        "title": "CompareRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PanelItem": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": "panel"
+          },
+          "mirnas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Mirnas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mirnas"
+        ],
+        "title": "PanelItem"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

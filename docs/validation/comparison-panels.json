@@ -1,0 +1,110 @@
+{
+  "reference": {
+    "lipid": [
+      "hsa-miR-33a-5p",
+      "hsa-miR-144-3p",
+      "hsa-miR-758-3p",
+      "hsa-miR-106b-5p",
+      "hsa-miR-33b-5p"
+    ],
+    "cancer": [
+      "hsa-miR-21-5p",
+      "hsa-miR-155-5p",
+      "hsa-let-7a-5p"
+    ],
+    "control": [
+      "hsa-miR-375",
+      "hsa-miR-29a-3p",
+      "hsa-miR-21-5p"
+    ]
+  },
+  "random": [
+    {
+      "id": "R1",
+      "seed": 101,
+      "size": 2,
+      "mirnas": [
+        "hsa-miR-181a-5p",
+        "hsa-miR-448-3p"
+      ]
+    },
+    {
+      "id": "R2",
+      "seed": 102,
+      "size": 3,
+      "mirnas": [
+        "hsa-miR-145-5p",
+        "hsa-miR-487a-3p",
+        "hsa-miR-532-3p"
+      ]
+    },
+    {
+      "id": "R3",
+      "seed": 103,
+      "size": 5,
+      "mirnas": [
+        "hsa-miR-342-3p",
+        "hsa-miR-544a-5p",
+        "hsa-miR-652-3p",
+        "hsa-miR-655-3p",
+        "hsa-miR-7-5p"
+      ]
+    },
+    {
+      "id": "R4",
+      "seed": 104,
+      "size": 5,
+      "mirnas": [
+        "hsa-miR-10a-5p",
+        "hsa-miR-182-5p",
+        "hsa-miR-190a-5p",
+        "hsa-miR-670-3p",
+        "hsa-miR-877-5p"
+      ]
+    },
+    {
+      "id": "R5",
+      "seed": 105,
+      "size": 5,
+      "mirnas": [
+        "hsa-let-7a-5p",
+        "hsa-miR-137-3p",
+        "hsa-miR-25-3p",
+        "hsa-miR-448-3p",
+        "hsa-miR-452-5p"
+      ]
+    },
+    {
+      "id": "R6",
+      "seed": 106,
+      "size": 8,
+      "mirnas": [
+        "hsa-miR-106a-5p",
+        "hsa-miR-126-3p",
+        "hsa-miR-19a-3p",
+        "hsa-miR-365a-3p",
+        "hsa-miR-369-3p",
+        "hsa-miR-383-5p",
+        "hsa-miR-423-3p",
+        "hsa-miR-615-3p"
+      ]
+    },
+    {
+      "id": "R7",
+      "seed": 107,
+      "size": 10,
+      "mirnas": [
+        "hsa-miR-196a-5p",
+        "hsa-miR-217-3p",
+        "hsa-miR-329-3p",
+        "hsa-miR-371a-5p",
+        "hsa-miR-448-3p",
+        "hsa-miR-488-3p",
+        "hsa-miR-503-5p",
+        "hsa-miR-668-3p",
+        "hsa-miR-875-5p",
+        "hsa-miR-876-5p"
+      ]
+    }
+  ]
+}

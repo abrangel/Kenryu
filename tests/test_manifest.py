@@ -90,6 +90,20 @@ def test_cli_determinism_end_to_end(tmp_path):
     assert "Manifiesto de ejecución" in (out1 / "report.md").read_text()
 
 
+def test_manifest_commit_is_the_real_head():
+    """The manifest must name the code that actually ran, not a stale
+    build_info.json (the local one still said 1.54/e7d6eb0 while HEAD
+    had moved on)."""
+    import subprocess
+    from pathlib import Path
+    head = subprocess.check_output(
+        ["git", "rev-parse", "--short", "HEAD"],
+        cwd=Path(__file__).resolve().parent.parent, text=True).strip()
+    data = _analyze(LIPID)
+    assert data["execution_manifest"]["commit"] == head
+    assert data["commit"] == head
+
+
 def test_manifest_in_empty_intersection_response():
     data = _analyze(EMPTY_PAIR)
     assert data["common_genes"] == []

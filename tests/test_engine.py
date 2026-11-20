@@ -1125,8 +1125,10 @@ def test_annotate_enrichment_groups_marks_redundant_terms_without_touching_pvalu
 def test_health_reports_commit_hash_from_build_info(tmp_path, monkeypatch):
     # Unreleased: /health identifica el código exacto con el hash corto
     # de GitHub, leído de local_db/build_info.json (generado al sincronizar).
+    # El archivo solo vale si su versión coincide con el motor: un
+    # build_info.json viejo (p. ej. 1.54) no debe ganarle al HEAD real.
     info = tmp_path / "build_info.json"
-    info.write_text(json.dumps({"commit": "abc1234", "version": "1.54"}))
+    info.write_text(json.dumps({"commit": "abc1234", "version": ke.APP_VERSION}))
     monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
     with TestClient(ke.app) as client:
         r = client.get("/health")
@@ -1134,9 +1136,36 @@ def test_health_reports_commit_hash_from_build_info(tmp_path, monkeypatch):
     assert r.json()["commit"] == "abc1234"
 
 
+def test_health_ignores_stale_build_info(tmp_path, monkeypatch):
+    # El build_info.json local todavía decía 1.54/e7d6eb0 con el HEAD ya
+    # en otra versión: un archivo con versión distinta se ignora y se
+    # usa el HEAD real de git.
+    import subprocess
+    from pathlib import Path
+    head = subprocess.check_output(
+        ["git", "rev-parse", "--short", "HEAD"],
+        cwd=Path(__file__).resolve().parent.parent, text=True).strip()
+    info = tmp_path / "build_info.json"
+    info.write_text(json.dumps({"commit": "e7d6eb0", "version": "1.54"}))
+    monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
+    with TestClient(ke.app) as client:
+        r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["commit"] == head
+
+
+def _no_git(monkeypatch):
+    # Simula un entorno sin git (contenedor del Space): git rev-parse
+    # no está disponible y no hay HEAD del que tirar.
+    def _raise(*args, **kwargs):
+        raise FileNotFoundError("git not found")
+    monkeypatch.setattr(ke.subprocess, "run", _raise)
+
+
 def test_health_reports_unknown_commit_without_build_info(tmp_path, monkeypatch):
-    # Sin build_info.json no se inventa nada: "unknown".
+    # Sin build_info.json ni git no se inventa nada: "unknown".
     monkeypatch.setattr(ke, "BUILD_INFO_PATH", tmp_path / "missing.json")
+    _no_git(monkeypatch)
     with TestClient(ke.app) as client:
         r = client.get("/health")
     assert r.status_code == 200
@@ -1145,7 +1174,7 @@ def test_health_reports_unknown_commit_without_build_info(tmp_path, monkeypatch)
 
 def test_analyze_includes_commit_hash(tmp_path, monkeypatch):
     info = tmp_path / "build_info.json"
-    info.write_text(json.dumps({"commit": "deadbee"}))
+    info.write_text(json.dumps({"commit": "deadbee", "version": ke.APP_VERSION}))
     monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
     with TestClient(ke.app) as client:
         r = client.post("/api/v1/analyze", json={
@@ -1157,6 +1186,7 @@ def test_analyze_includes_commit_hash(tmp_path, monkeypatch):
 
 def test_analyze_unknown_commit_without_build_info(tmp_path, monkeypatch):
     monkeypatch.setattr(ke, "BUILD_INFO_PATH", tmp_path / "missing.json")
+    _no_git(monkeypatch)
     with TestClient(ke.app) as client:
         r = client.post("/api/v1/analyze", json={
             "mirnas": ["hsa-miR-33a-5p"], "years": 10, "mode": "strict",
