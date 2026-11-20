@@ -15,6 +15,9 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ### Added
 - docs/validation/: specificity of the 19 lipid-panel terms (version, date).
+- Commit hash: `/health` and every analysis JSON now report `"commit"`,
+  the short GitHub hash read from `local_db/build_info.json` (written
+  by the sync step); `"unknown"` when the file is absent or malformed.
 
 ## [1.54] — 2026-11-19
 

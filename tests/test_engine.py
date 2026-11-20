@@ -7,8 +7,10 @@ the engine: tests assert the behaviour the thesis documents.
 Run:  pytest -v
 """
 import base64
+import json
 
 import pytest
+from fastapi.testclient import TestClient
 
 import kenryu_engine as ke
 
@@ -1126,3 +1128,46 @@ def test_annotate_specificity_uses_raw_term_for_translated_terms():
     ]
     ke.annotate_enrichment_specificity(terms, cancer)
     assert [t["specificity"] for t in terms] == [0.0, 0.0, 0.01]
+
+
+def test_health_reports_commit_hash_from_build_info(tmp_path, monkeypatch):
+    # Unreleased: /health identifica el código exacto con el hash corto
+    # de GitHub, leído de local_db/build_info.json (generado al sincronizar).
+    info = tmp_path / "build_info.json"
+    info.write_text(json.dumps({"commit": "abc1234", "version": "1.54"}))
+    monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
+    with TestClient(ke.app) as client:
+        r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["commit"] == "abc1234"
+
+
+def test_health_reports_unknown_commit_without_build_info(tmp_path, monkeypatch):
+    # Sin build_info.json no se inventa nada: "unknown".
+    monkeypatch.setattr(ke, "BUILD_INFO_PATH", tmp_path / "missing.json")
+    with TestClient(ke.app) as client:
+        r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["commit"] == "unknown"
+
+
+def test_analyze_includes_commit_hash(tmp_path, monkeypatch):
+    info = tmp_path / "build_info.json"
+    info.write_text(json.dumps({"commit": "deadbee"}))
+    monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-33a-5p"], "years": 10, "mode": "strict",
+            "offline": True})
+    assert r.status_code == 200
+    assert r.json()["commit"] == "deadbee"
+
+
+def test_analyze_unknown_commit_without_build_info(tmp_path, monkeypatch):
+    monkeypatch.setattr(ke, "BUILD_INFO_PATH", tmp_path / "missing.json")
+    with TestClient(ke.app) as client:
+        r = client.post("/api/v1/analyze", json={
+            "mirnas": ["hsa-miR-33a-5p"], "years": 10, "mode": "strict",
+            "offline": True})
+    assert r.status_code == 200
+    assert r.json()["commit"] == "unknown"

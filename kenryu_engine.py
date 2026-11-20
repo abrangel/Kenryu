@@ -37,6 +37,26 @@ class AnalysisRequest(BaseModel):
     require_experimental: bool = False
 
 BASE_DIR = Path(__file__).resolve().parent
+
+# Unreleased: hash corto del commit de GitHub que produjo este servicio.
+# Lo escribe el paso de sincronización en local_db/build_info.json con
+# `git rev-parse --short HEAD` (el hash de GitHub, nunca el del Space).
+# Si el archivo no existe o está mal formado, load_commit_hash()
+# devuelve "unknown": nunca se inventa un valor.
+BUILD_INFO_PATH = BASE_DIR / "local_db" / "build_info.json"
+_COMMIT_RE = re.compile(r"[0-9a-f]{7,40}")
+
+
+def load_commit_hash():
+    """Short GitHub commit hash of the code running here, or "unknown"."""
+    try:
+        data = json.loads(BUILD_INFO_PATH.read_text(encoding="utf-8"))
+        commit = data.get("commit") if isinstance(data, dict) else None
+        if isinstance(commit, str) and _COMMIT_RE.fullmatch(commit):
+            return commit
+    except Exception:
+        pass
+    return "unknown"
 # Directorio de datos: contiene targetscan_full.txt.zip y los archivos
 # hsa-miR-*.txt de ejemplo. Compatible hacia atrás: si data/ no existe
 # se cae a BASE_DIR (estructura antigua).
@@ -1633,6 +1653,7 @@ LEGACY_MODE_WARNING = (
 @app.get("/health")
 async def health():
     return {"status": "OK", "version": APP_VERSION,
+            "commit": load_commit_hash(),
             "db_families": len(TARGETSCAN_DB),
             "raw_files": len(list(RAW_DATA_DIR.glob("*.txt"))) if RAW_DATA_DIR.exists() else 0,
             "data_sources": loaded_data_versions(),
@@ -1940,6 +1961,7 @@ async def analyze(req: AnalysisRequest):
             loaded_data_versions(), evidence_by_mirna)
         return {
             "engine_version": APP_VERSION,
+            "commit": load_commit_hash(),
             "data_versions": loaded_data_versions(),
             "mirtarbase_mode": mirtarbase_mode(),
             "warnings": ([LEGACY_MODE_WARNING] if mirtarbase_mode() == "legacy" else []),
@@ -2287,6 +2309,7 @@ async def analyze(req: AnalysisRequest):
 
     return {
         "engine_version": APP_VERSION,
+        "commit": load_commit_hash(),
         "data_versions": loaded_data_versions(),
         "mirtarbase_mode": mirtarbase_mode(),
         "warnings": ([LEGACY_MODE_WARNING] if mirtarbase_mode() == "legacy" else []),
