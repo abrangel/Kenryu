@@ -95,3 +95,25 @@ def test_specificity_zero_renders_less_than_one_percent():
     js = _script_text()
     assert "'<1%'" in js
     assert "0% = específico" not in js
+
+
+def test_enrichr_section_labels_adjusted_p_exploratory():
+    """Unreleased (2026-11-19): the live Enrichr adjusted p is not a
+    standard FDR at small list sizes, so the UI must label it as
+    exploratory and render the Enrichr terms in their own section,
+    separate from the local (method) enrichment."""
+    text = _script_text()
+    assert "p ajustado de Enrichr (exploratorio)" in text
+    assert "enrichment_enrichr" in text
+    assert "Enrichr (exploratorio)" in text
+
+
+def test_index_html_has_enrichr_exploratory_container():
+    """Unreleased (2026-11-19): the page has a separate container for
+    the Enrichr cross-check, so the two routes never share a table."""
+    from fastapi.testclient import TestClient
+    with TestClient(ke.app) as client:
+        r = client.get("/")
+    assert r.status_code == 200
+    assert "enrich-container-enrichr" in r.text
+    assert "Enrichr (exploratorio)" in r.text

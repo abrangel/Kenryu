@@ -14,6 +14,11 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   the correction is recorded here and in `docs/validation/README.md`.
 
 ### Added
+- Enrichment: the LOCAL Fisher test (TargetScan-universe background)
+  is now the method; the live Enrichr route is a separate
+  `enrichment_enrichr` list in the analyze response, rendered in its
+  own UI section as "p ajustado de Enrichr (exploratorio)". New helper
+  `compute_enrichment_routes` (3 tests) + 2 frontend tests.
 - docs/validation/: specificity of the 19 lipid-panel terms (version, date),
   re-estimated with 10,000 draws: 12 specific (below 0.03), 7 near the
   0.05 threshold (0.03–0.07, numbers only, no binary label).

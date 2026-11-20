@@ -267,7 +267,36 @@ function renderDashboard(data) {
         html += '</tbody></table>';
         enEl.innerHTML = html;
       } else {
-        enEl.innerHTML = '<div style="color:var(--text-faint); padding:20px; text-align:center;">Sin resultados de enriquecimiento funcional significativo.</div>';
+        enEl.innerHTML = '<div style="color:var(--text-faint); padding:20px; text-align:center;">Sin resultados de enriquecimiento funcional significativo en la ruta local.</div>';
+      }
+    }
+
+    // Unreleased (2026-11-19): la ruta viva de Enrichr es una
+    // comprobación exploratoria, en su propia sección. Su p ajustado no
+    // es un FDR estándar con listas pequeñas, así que la columna se
+    // rotula como exploratoria y nunca como significancia.
+    const enrEl = document.getElementById('enrich-container-enrichr');
+    if (enrEl) {
+      if (data.enrichment_enrichr && data.enrichment_enrichr.length) {
+        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p ajustado de Enrichr (exploratorio)</th><th title="Fracción de listas aleatorias de genes del mismo tamaño, extraídas del universo de TargetScan, en las que este término aparece por azar. 100% = genérico; <1% = específico.">Especificidad</th></tr></thead><tbody>`;
+        data.enrichment_enrichr.forEach(item => {
+          const pvalVal = (item.Pval !== undefined && item.Pval !== null)
+            ? (typeof item.Pval === 'number' ? item.Pval.toExponential(2) : item.Pval)
+            : '—';
+          const specPct = (item.specificity !== undefined && item.specificity !== null && typeof item.specificity === 'number')
+            ? Math.round(item.specificity * 100)
+            : null;
+          const spec = specPct === null ? '—' : (specPct === 0 ? '<1%' : `${specPct}%`);
+          const specTitle = 'Fracción de listas aleatorias de genes del mismo tamaño, extraídas del universo de TargetScan, en las que este término aparece por azar. 100% = genérico; <1% = específico.';
+          html += `<tr><td><span style="font-weight:500;">${escapeHtml(item.Term || '—')}</span><br><small style="color:var(--text-dim);">${escapeHtml(item.ScientificDesc || '')}</small></td>
+            <td><span class="source-tag">${escapeHtml(item.Source || '—')}</span></td>
+            <td><span style="font-family:var(--font-mono); font-size:11px;">${pvalVal}</span></td>
+            <td><span style="font-family:var(--font-mono); font-size:11px;" title="${specTitle}">${spec}</span></td></tr>`;
+        });
+        html += '</tbody></table>';
+        enrEl.innerHTML = html;
+      } else {
+        enrEl.innerHTML = '<div style="color:var(--text-faint); padding:20px; text-align:center;">Sin términos de Enrichr en esta respuesta.</div>';
       }
     }
   } catch (err) {

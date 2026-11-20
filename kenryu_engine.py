@@ -580,6 +580,33 @@ def annotate_enrichment_specificity(enrichment, gene_list, n_panels=100):
 
 
 # ── ENRIQUECIMIENTO DIRECTO (BYPASS GSEApy) ──────────────────────────────────
+async def compute_enrichment_routes(gene_list: list, offline: bool, client: httpx.AsyncClient):
+    """Split the enrichment into its two routes (Unreleased, 2026-11-19).
+
+    The LOCAL Fisher test with the TargetScan-universe background is the
+    method; the live Enrichr route is an exploratory cross-check whose
+    adjusted p-values are not a standard FDR at small list sizes (see
+    docs/validation/calibration-enrichr-route.md: single-gene overlaps
+    already reach adjusted p < 0.05, and the values are incompatible
+    with a Benjamini-Hochberg correction over the whole library).
+    Offline mode returns the local list only.
+    Returns (local_terms, enrichr_terms)."""
+    load_gmt_libraries()
+    # Fondo del enriquecimiento local (v1.54): el universo de TargetScan
+    # — todos los genes con algún sitio predicho (13.035 humanos), no la
+    # unión del panel (v1.49, fondo dependiente del panel y sin potencia)
+    # ni la unión de cada GMT (~20k genes que el análisis nunca probó,
+    # que infla la significancia). La ruta viva de Enrichr usa el fondo
+    # propio de Enrichr (su API no admite un fondo personalizado); el
+    # local es el que controlamos.
+    targetscan_universe = set().union(*TARGETSCAN_DB.values()) if TARGETSCAN_DB else None
+    local_terms = local_enrichment(gene_list, GMT_LIBRARIES, background=targetscan_universe)
+    if offline:
+        return local_terms, []
+    enrichr_terms = await enrich_genes_direct(gene_list, client)
+    return local_terms, enrichr_terms
+
+
 async def enrich_genes_direct(gene_list: list, client: httpx.AsyncClient):
     """Llamada directa a la API de Enrichr con caché persistente."""
     if len(gene_list) < 3: return []
@@ -2015,6 +2042,7 @@ async def analyze(req: AnalysisRequest):
                 f"{len(gene_sets)-1} de los {len(gene_sets)} miRNAs."
             ),
             "enrichment": [],
+            "enrichment_enrichr": [],
             "venn_plot": None,
             "volcano_plot": None,
             "ppi_plot": None,
@@ -2030,36 +2058,22 @@ async def analyze(req: AnalysisRequest):
 
     # ── ENRIQUECIMIENTO FUNCIONAL (REESCRITO PARA ESTABILIDAD) ─────────────────
     enrichment_results = []
+    enrichment_enrichr = []
     gene_list_enr = prioritized_common[:300]
     enrichment_truncated = len(prioritized_common) > 300
     
     if len(gene_list_enr) >= 3:
-        load_gmt_libraries()
-        # Fondo del enriquecimiento local (v1.54): el universo de
-        # TargetScan — todos los genes con algún sitio predicho (13.035
-        # humanos), no la unión del panel (v1.49, fondo dependiente del
-        # panel y sin potencia: 0 términos para el panel de cáncer N-1)
-        # ni la unión de cada GMT (~20k genes que el análisis nunca
-        # probó, que infla la significancia). local_enrichment lo
-        # interseca por biblioteca con los genes de cada GMT. La ruta
-        # viva de Enrichr usa el fondo propio de Enrichr (su API no
-        # admite un fondo personalizado); el local es el que controlamos.
-        targetscan_universe = set().union(*db.values()) if db else None
+        enrichment_enrichr = []
         async with make_async_client(timeout=45.0) as client:
             try:
                 logger.info(f"🧪 Iniciando Enriquecimiento para {len(gene_list_enr)} genes...")
-                if req.offline:
-                    enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES,
-                                                      background=targetscan_universe)
-                    logger.info(f"📚 Enriquecimiento local (offline): {len(enrichr_terms)} rutas")
-                else:
-                    enrichr_terms = await enrich_genes_direct(gene_list_enr, client)
-                    if not enrichr_terms:
-                        enrichr_terms = local_enrichment(gene_list_enr, GMT_LIBRARIES,
-                                                          background=targetscan_universe)
-                        logger.info(f"📚 Enrichr vacío; usando enriquecimiento local: {len(enrichr_terms)} rutas")
-
-                if enrichr_terms:
+                # Unreleased (2026-11-19): la ruta local es el método y la
+                # viva de Enrichr es solo una comprobación exploratoria.
+                local_terms, enrichr_terms = await compute_enrichment_routes(
+                    gene_list_enr, req.offline, client)
+                logger.info(f"📚 Enriquecimiento local: {len(local_terms)} rutas; "
+                            f"Enrichr (exploratorio): {len(enrichr_terms)} rutas")
+                if local_terms:
                     # Procesamiento en PARALELO para PubMed y Traducción
                     async def process_row(term_data):
                         term = term_data['Term']
@@ -2076,7 +2090,7 @@ async def analyze(req: AnalysisRequest):
                                 pubmed, trans_term = await asyncio.gather(pubmed_task, trans_task)
                             except:
                                 pubmed, trans_term = [], term
-                        
+
                         return {
                             "Term": trans_term, "Source": gs_label, "Pval": float(pval),
                             "RawTerm": term,
@@ -2084,12 +2098,21 @@ async def analyze(req: AnalysisRequest):
                             "Evidence": pubmed[0] if pubmed else None,
                             "Evidences": [a['id'] for a in pubmed]
                         }
-                    
-                    tasks = [process_row(t) for t in enrichr_terms]
+
+                    tasks = [process_row(t) for t in local_terms]
                     enrichment_results = await asyncio.gather(*tasks)
-                    logger.info(f"✅ Enriquecimiento: {len(enrichment_results)} rutas, {sum(1 for e in enrichment_results if e['Evidence'])} con PubMed")
+                    logger.info(f"✅ Enriquecimiento local: {len(enrichment_results)} rutas, {sum(1 for e in enrichment_results if e['Evidence'])} con PubMed")
                 else:
-                    logger.warning("🔬 No se encontraron rutas significativas.")
+                    logger.warning("🔬 No se encontraron rutas significativas en la ruta local.")
+                # La ruta viva de Enrichr es una comprobación exploratoria:
+                # se lista aparte, sin las llamadas por término (PubMed y
+                # traducción), y su p ajustado se rotula como exploratorio.
+                enrichment_enrichr = [{
+                    "Term": t["Term"], "Source": t["Source"],
+                    "Pval": float(t["Pval"]), "RawTerm": t["RawTerm"],
+                    "ScientificDesc": "p ajustado de Enrichr (exploratorio)",
+                    "Evidence": None, "Evidences": [],
+                } for t in enrichr_terms]
             except Exception as e:
                 logger.error(f"❌ Error crítico enriquecimiento: {e}")
 
@@ -2097,6 +2120,8 @@ async def analyze(req: AnalysisRequest):
     # aleatorios del mismo tamaño aparece cada término.
     if enrichment_results:
         annotate_enrichment_specificity(enrichment_results, gene_list_enr)
+    if enrichment_enrichr:
+        annotate_enrichment_specificity(enrichment_enrichr, gene_list_enr)
 
     # ── DATOS REALES PARA LOS GRÁFICOS ────────────────────────────────────────
     # Volcán: conteos de PubMed (top 25 genes de la unión por nº de miRNAs).
@@ -2352,6 +2377,7 @@ async def analyze(req: AnalysisRequest):
         "functional_context": synthesis_obj["functional"],
         "references_text": synthesis_obj["references"],
         "enrichment": enrichment_results,
+        "enrichment_enrichr": enrichment_enrichr,
         "enrichment_truncated": enrichment_truncated,
         "enrichment_note": (
             f"Enriquecimiento calculado sobre los 300 genes priorizados de "
