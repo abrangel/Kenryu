@@ -15,8 +15,8 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ### Added
 - docs/validation/: specificity of the 19 lipid-panel terms (version, date),
-  re-estimated with 10,000 draws: 18 specific, 1 generic (Selenium);
-  Folate and Rett remain borderline ("límite").
+  re-estimated with 10,000 draws: 12 specific (below 0.03), 7 near the
+  0.05 threshold (0.03–0.07, numbers only, no binary label).
 - tests/fixtures/: synthetic miRTarBase official index (same schema, the
   7 thesis-panel pairs copied verbatim) so the official-format code path
   runs in CI; the 4 API tests that skipped in CI now run against it.

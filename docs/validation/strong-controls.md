@@ -11,6 +11,11 @@ enrichment (TargetScan-universe background) on it.
 - Date: 2026-11-19
 - Script: `strong_controls.py` (repo root); results:
   `docs/validation/strong-controls.json`
+- Pre-registration: the expected biology for each miRNA was fixed
+  in the script's CANDIDATES table before the run (commit 9976b84
+  contains the table with the expected terms), so the controls were
+  not fitted to the output — the script prints the expected biology,
+  then computes the enrichment and the verdict.
 
 ## TargetScan sensitivity (context, not a pass/fail)
 

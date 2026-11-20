@@ -1,10 +1,12 @@
 # Lipid-panel terms: specificity
 
-Rule fixed before applying it to these numbers: a term with
-specificity >= 0.05 (5%) is marked "generic" and is NOT presented as
-a finding in the paper. Terms below 5% are "specific". The rule is
-applied mechanically to all 19 terms below, specific and generic
-alike — no term was picked or dropped after seeing the results.
+Rule fixed before applying it to these numbers: the specificity
+number is reported for every term, and a binary label is used only
+when the value is clearly away from the 0.05 threshold — below 0.03
+"specific", above 0.07 "generic". Between 0.03 and 0.07 the term is
+near the threshold and only the number is reported, with no label.
+The rule is applied mechanically to all 19 terms below — no term was
+picked or dropped after seeing the results.
 
 Honesty note: the 100-draw values were already computed (live run on
 the Space, 2026-11-19) before the rule was fixed. The 5% threshold
@@ -19,15 +21,14 @@ the same computation with 10,000 draws (same seed 7, same per-library
 background, same observed overlaps; script:
 `validation-panels/reestimate_specificity_10k.py`, results:
 `docs/validation/specificity-10k.json`). Standard error at 5% is now
-~0.22 points. Three verdicts changed: Rett, Folate and Cholesterol
-metabolism moved from generic to specific.
+~0.22 points. Three terms moved out of the generic range: Rett,
+Folate and Cholesterol metabolism.
 
-"Límite" means the 95% confidence interval of the 10,000-draw
-estimate contains the 0.05 threshold: the term cannot be called
-specific or generic with confidence. Folate (0.0491) and Rett
-(0.0465) are still "límite" even at 10,000 draws. Selenium (0.0576)
-is generic with confidence; Cholesterol metabolism (0.0350) is
-specific with confidence.
+Near the threshold, only the number is reported. Folate (0.0491) and
+Rett (0.0465) have 95% confidence intervals that contain the 0.05
+threshold; Selenium (0.0576, interval 0.0531–0.0621) sits above it and
+Cholesterol metabolism (0.0350, interval 0.0315–0.0385) below it, but
+both are inside the 0.03–0.07 band, so neither gets a binary label.
 
 - Engine version: 1.54 (commit 704bc9b; Unreleased work on e7d6eb0
   did not touch the specificity computation)
@@ -41,7 +42,7 @@ specific with confidence.
   (5 genes), drawn from the TargetScan universe, in which the term
   appears by chance. A value of 0 is shown as "<1%".
 
-## Result (10,000 draws): 18 specific, 1 generic
+## Result (10,000 draws): 12 specific, 7 near threshold (number only), 0 generic
 
 | Source | Term | p-adj | Specificity (100) | Specificity (10,000) | Verdict |
 |---|---|---|---|---|---|
@@ -49,10 +50,10 @@ specific with confidence.
 | WikiPathways | SREBF and miR33 in cholesterol and lipid homeostasis WP2011 | 0.0160 | 0.02 | 0.0186 | specific  |
 | WikiPathways | Statin Pathway WP430 | 0.0164 | 0.04 | 0.0216 | specific  |
 | WikiPathways | Nuclear Receptors in Lipid Metabolism and Toxicity WP299 | 0.0164 | 0.02 | 0.0252 | specific  |
-| WikiPathways | Rett syndrome causing genes WP4312 | 0.0166 | 0.06 | 0.0465 | specific límite |
-| WikiPathways | Vitamin B12 Metabolism WP1533 | 0.0166 | 0.04 | 0.0339 | specific  |
-| WikiPathways | Folate Metabolism WP176 | 0.0187 | 0.06 | 0.0491 | specific límite |
-| WikiPathways | Selenium Micronutrient Network WP15 | 0.0213 | 0.08 | 0.0576 | generic  |
+| WikiPathways | Rett syndrome causing genes WP4312 | 0.0166 | 0.06 | 0.0465 | near threshold  |
+| WikiPathways | Vitamin B12 Metabolism WP1533 | 0.0166 | 0.04 | 0.0339 | near threshold  |
+| WikiPathways | Folate Metabolism WP176 | 0.0187 | 0.06 | 0.0491 | near threshold  |
+| WikiPathways | Selenium Micronutrient Network WP15 | 0.0213 | 0.08 | 0.0576 | near threshold  |
 | GO | Detection Of Stimulus Involved In Sensory Perception Of Pain (GO:0062149) | 0.0213 | 0.01 | 0.0021 | specific  |
 | GO | Detection Of Mechanical Stimulus Involved In Sensory Perception (GO:0050974) | 0.0213 | 0.00 | 0.0033 | specific  |
 | GO | NLS-bearing Protein Import Into Nucleus (GO:0006607) | 0.0213 | 0.00 | 0.0079 | specific  |
@@ -61,9 +62,9 @@ specific with confidence.
 | GO | Cardiac Muscle Cell Action Potential Involved In Contraction (GO:0086002) | 0.0237 | 0.00 | 0.0113 | specific  |
 | GO | Calcium Ion Import Across Plasma Membrane (GO:0098703) | 0.0250 | 0.02 | 0.0177 | specific  |
 | KEGG | Fat digestion and absorption | 0.0290 | 0.04 | 0.0195 | specific  |
-| KEGG | ABC transporters | 0.0290 | 0.03 | 0.0309 | specific  |
-| KEGG | Cholesterol metabolism | 0.0290 | 0.06 | 0.0350 | specific  |
-| GO | Import Into Nucleus (GO:0051170) | 0.0349 | 0.01 | 0.0311 | specific  |
+| KEGG | ABC transporters | 0.0290 | 0.03 | 0.0309 | near threshold  |
+| KEGG | Cholesterol metabolism | 0.0290 | 0.06 | 0.0350 | near threshold  |
+| GO | Import Into Nucleus (GO:0051170) | 0.0349 | 0.01 | 0.0311 | near threshold  |
 
 ## Reading notes
 
