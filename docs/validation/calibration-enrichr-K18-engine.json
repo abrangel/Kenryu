@@ -1,0 +1,4923 @@
+{
+  "version": "1.54",
+  "route": "live Enrichr",
+  "criterion": "engine: first 8 rows per library, row[6] adjusted p < 0.05",
+  "panels": 100,
+  "size": 18,
+  "seed": 11,
+  "false_positive_rate": {
+    "GO": 0.3,
+    "Reactome": 0.18,
+    "WikiPathways": 0.19,
+    "KEGG": 0.1
+  },
+  "false_positive_rate_any": 0.51,
+  "control_raw_p_fpr": {
+    "GO": 1.0,
+    "Reactome": 1.0,
+    "WikiPathways": 0.99,
+    "KEGG": 0.99
+  },
+  "lists": [
+    {
+      "index": 0,
+      "genes": [
+        "C5orf20",
+        "DHX37",
+        "DISP2",
+        "DNAI1",
+        "HEXIM1",
+        "NFIX",
+        "NLRP13",
+        "NME2",
+        "NXF1",
+        "PABPC4L",
+        "PLCH2",
+        "PLXNB2",
+        "RBM46",
+        "RRM1",
+        "SH3TC2",
+        "SLC35F6",
+        "ZNF274",
+        "ZNF839"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 76
+        },
+        "Reactome": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 15
+        },
+        "WikiPathways": {
+          "adj_top8": 5,
+          "raw_top8": 5,
+          "adj_all": 5,
+          "raw_all": 5
+        },
+        "KEGG": {
+          "adj_top8": 5,
+          "raw_top8": 6,
+          "adj_all": 5,
+          "raw_all": 6
+        }
+      }
+    },
+    {
+      "index": 1,
+      "genes": [
+        "ADAMTS2",
+        "ARCN1",
+        "B3GNT5",
+        "C21orf62",
+        "CLEC4G",
+        "CREB1",
+        "MAP3K12",
+        "NMT2",
+        "PREPL",
+        "PSTPIP2",
+        "SBK1",
+        "SHPRH",
+        "SLC23A3",
+        "SLC6A5",
+        "SP8",
+        "SPPL2A",
+        "TIMP4",
+        "UBQLN4"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 64
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 43
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 24
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        }
+      }
+    },
+    {
+      "index": 2,
+      "genes": [
+        "ABR",
+        "AMPD3",
+        "ANXA2",
+        "ATP6V1G3",
+        "DNAJB1",
+        "DPF3",
+        "FAM192A",
+        "FBLIM1",
+        "GSTCD",
+        "IGSF10",
+        "NCS1",
+        "NUDT5",
+        "PHOX2B",
+        "PPAP2A",
+        "RUSC2",
+        "SCT",
+        "SMG8",
+        "ZMYM4"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 68
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 24
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 3,
+      "genes": [
+        "AMN1",
+        "BID",
+        "C16orf80",
+        "C18orf21",
+        "FAM127A",
+        "FOCAD",
+        "GNAI2",
+        "GPRIN1",
+        "HOXD13",
+        "MEGF8",
+        "NR1H4",
+        "PNKP",
+        "RAC3",
+        "REEP5",
+        "SPSB1",
+        "STARD7",
+        "TMEM74",
+        "WDR20"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 105
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 30
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 18
+        },
+        "KEGG": {
+          "adj_top8": 4,
+          "raw_top8": 8,
+          "adj_all": 4,
+          "raw_all": 13
+        }
+      }
+    },
+    {
+      "index": 4,
+      "genes": [
+        "AAK1",
+        "ADD3",
+        "ASB9",
+        "BCKDHA",
+        "CATSPERG",
+        "CAV2",
+        "EIF4A1",
+        "EMC8",
+        "GRHL3",
+        "LGR4",
+        "LRRC7",
+        "MAP9",
+        "MASP1",
+        "MPP6",
+        "OPRK1",
+        "TEF",
+        "TMOD1",
+        "YIPF2"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 50
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 26
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 5,
+      "genes": [
+        "ADAMTS4",
+        "BOLA3",
+        "C1QTNF5",
+        "CCT5",
+        "CHIT1",
+        "DTD2",
+        "FEM1B",
+        "GDF11",
+        "HN1L",
+        "INPP5J",
+        "IRX3",
+        "MFNG",
+        "RGPD5",
+        "SLC35E3",
+        "TADA2B",
+        "TMEM62",
+        "WDR26",
+        "ZMYND8"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 60
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 20
+        },
+        "WikiPathways": {
+          "adj_top8": 1,
+          "raw_top8": 2,
+          "adj_all": 1,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 6,
+      "genes": [
+        "ACSL1",
+        "ATP8B2",
+        "CACNA2D2",
+        "CEP57",
+        "DCUN1D5",
+        "DLX6",
+        "DNAJB6",
+        "LRIG3",
+        "MPHOSPH9",
+        "NGDN",
+        "NUP50",
+        "PCNX",
+        "PLEKHA8",
+        "RBM3",
+        "SNRK",
+        "TCF19",
+        "TUBGCP6",
+        "ZBTB4"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 37
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 50
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 7,
+      "genes": [
+        "AAGAB",
+        "AFMID",
+        "AREL1",
+        "CACFD1",
+        "CCNI2",
+        "CNN1",
+        "DLG3",
+        "EIF5A2",
+        "ELP2",
+        "GDF11",
+        "HHIPL1",
+        "MAML1",
+        "MANBAL",
+        "MRC2",
+        "RNF8",
+        "SACS",
+        "SEC24A",
+        "SMPX"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 49
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 29
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 8
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 8,
+      "genes": [
+        "ACER3",
+        "ADAMTSL2",
+        "BPIFB4",
+        "BRI3",
+        "C20orf202",
+        "EIF2AK2",
+        "EMC10",
+        "FBXL3",
+        "FRS3",
+        "GUCY1B3",
+        "IL22",
+        "LRRC55",
+        "NDST3",
+        "RPGR",
+        "SEC13",
+        "SFTA3",
+        "SLCO5A1",
+        "ZDHHC1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 72
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 72
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        }
+      }
+    },
+    {
+      "index": 9,
+      "genes": [
+        "CDKN2D",
+        "CHODL",
+        "COX16",
+        "DGCR14",
+        "FAM107B",
+        "FHL5",
+        "HMGXB4",
+        "KRTDAP",
+        "LATS2",
+        "LRRC4B",
+        "NNT",
+        "PCDHA11",
+        "RNF168",
+        "RRBP1",
+        "SFXN2",
+        "SLC1A3",
+        "SLC2A4RG",
+        "TSC22D1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 67
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 13
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 10,
+      "genes": [
+        "APEX2",
+        "ARL15",
+        "C10orf62",
+        "CAMKK1",
+        "CBX4",
+        "CRIM1",
+        "DNAH5",
+        "DPYSL4",
+        "FOXF2",
+        "LSM14A",
+        "MRPL18",
+        "PCBP1",
+        "PML",
+        "RANBP6",
+        "SEMA3F",
+        "SLC35C2",
+        "TFAP2D",
+        "UBTD1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 62
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 31
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 11,
+      "genes": [
+        "BEAN1",
+        "CDK7",
+        "DCAF17",
+        "FAM109A",
+        "FAM72A",
+        "FPGT-TNNI3K",
+        "GSG1",
+        "LZTS3",
+        "MRE11A",
+        "PAQR4",
+        "PDLIM1",
+        "PPEF1",
+        "RBM33",
+        "SCARB2",
+        "SPOCK1",
+        "TMEM25",
+        "TRIM10",
+        "UBXN2B"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 35
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 24
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 12,
+      "genes": [
+        "ADCY9",
+        "ARID3B",
+        "ATXN10",
+        "BEST1",
+        "BRD7",
+        "DCHS2",
+        "ECM2",
+        "ELOF1",
+        "FGL2",
+        "GCNT2",
+        "GOLGA1",
+        "GOLM1",
+        "KTI12",
+        "MGMT",
+        "NFAT5",
+        "SHC2",
+        "SIAE",
+        "UTRN"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 54
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 25
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 12
+        }
+      }
+    },
+    {
+      "index": 13,
+      "genes": [
+        "ADPRH",
+        "ANO4",
+        "C2orf71",
+        "CEPT1",
+        "CILP",
+        "CLDN1",
+        "IMPAD1",
+        "KLHL18",
+        "NKPD1",
+        "P2RX7",
+        "PPM1M",
+        "PRMT2",
+        "RNASEH2B",
+        "RPN1",
+        "RTN3",
+        "SRP72",
+        "THSD7A",
+        "TWISTNB"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 74
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 19
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        }
+      }
+    },
+    {
+      "index": 14,
+      "genes": [
+        "AGRN",
+        "ANKRD45",
+        "BCL2L12",
+        "BMS1",
+        "BROX",
+        "BRWD3",
+        "CHRNB2",
+        "HMX3",
+        "HNRNPAB",
+        "HSPA13",
+        "KIAA2026",
+        "NNAT",
+        "PBX3",
+        "QPCTL",
+        "SCN3B",
+        "SLCO1A2",
+        "TMEM164",
+        "TTLL3"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 91
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 30
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 15,
+      "genes": [
+        "ANAPC1",
+        "ARHGAP39",
+        "C10orf107",
+        "C17orf97",
+        "CENPE",
+        "JAZF1",
+        "KDM4B",
+        "KRT81",
+        "MNX1",
+        "OTUB1",
+        "PHRF1",
+        "TEN1",
+        "TMEM229B",
+        "UBE2L3",
+        "UBE2L6",
+        "UBE2M",
+        "ZNF711",
+        "ZNF852"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 2,
+          "raw_top8": 8,
+          "adj_all": 2,
+          "raw_all": 35
+        },
+        "Reactome": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 47
+        },
+        "WikiPathways": {
+          "adj_top8": 3,
+          "raw_top8": 3,
+          "adj_all": 3,
+          "raw_all": 3
+        },
+        "KEGG": {
+          "adj_top8": 1,
+          "raw_top8": 3,
+          "adj_all": 1,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 16,
+      "genes": [
+        "ACTR2",
+        "ADAMTS13",
+        "BMPR1A",
+        "C12orf36",
+        "C21orf62",
+        "CCNB1",
+        "FRAT2",
+        "ILDR1",
+        "LMBR1",
+        "LPL",
+        "MMP13",
+        "RNF11",
+        "RPF2",
+        "SEZ6",
+        "SLC25A35",
+        "SMC4",
+        "STARD3",
+        "TSTA3"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 115
+        },
+        "Reactome": {
+          "adj_top8": 2,
+          "raw_top8": 8,
+          "adj_all": 2,
+          "raw_all": 45
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 14
+        },
+        "KEGG": {
+          "adj_top8": 1,
+          "raw_top8": 2,
+          "adj_all": 1,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 17,
+      "genes": [
+        "AIDA",
+        "AMOT",
+        "C17orf102",
+        "C1orf116",
+        "HMGB3",
+        "LSM6",
+        "NCS1",
+        "NR2F2",
+        "NTSR2",
+        "PARS2",
+        "POFUT1",
+        "POU4F2",
+        "PTP4A1",
+        "RP11-650K20.3",
+        "SEC13",
+        "TKTL2",
+        "UBA3",
+        "VASP"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 62
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 47
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 18,
+      "genes": [
+        "ACSM3",
+        "CCDC6",
+        "CLNK",
+        "CYB5A",
+        "E2F6",
+        "FAM133B",
+        "FOXN1",
+        "HDGFRP3",
+        "KRT86",
+        "PCIF1",
+        "PHACTR3",
+        "POU2F3",
+        "SGTB",
+        "SHE",
+        "ST13",
+        "TBC1D15",
+        "TMEM109",
+        "ZNF219"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 24
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 8
+        },
+        "WikiPathways": {
+          "adj_top8": 2,
+          "raw_top8": 2,
+          "adj_all": 2,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 19,
+      "genes": [
+        "DTD2",
+        "DUSP19",
+        "EML4",
+        "ERAS",
+        "FAT1",
+        "FKBP1C",
+        "IKBKG",
+        "JPH4",
+        "LRP4",
+        "MECOM",
+        "MYCL",
+        "NDUFA4L2",
+        "PHF20",
+        "SLC6A2",
+        "SSX4B",
+        "STRN",
+        "VPS37D",
+        "VSIG1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 2,
+          "raw_top8": 8,
+          "adj_all": 2,
+          "raw_all": 83
+        },
+        "Reactome": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 51
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 22
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 20,
+      "genes": [
+        "APPL2",
+        "BACE2",
+        "CCDC59",
+        "CHIC2",
+        "CHRDL1",
+        "CXorf36",
+        "EIF4B",
+        "EML2",
+        "GLIPR2",
+        "GLYATL3",
+        "HRAS",
+        "KCTD3",
+        "MKNK1",
+        "NKX2-3",
+        "OSBPL10",
+        "PGM1",
+        "RPL11",
+        "TNFRSF11A"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 75
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 123
+        },
+        "WikiPathways": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 35
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 13
+        }
+      }
+    },
+    {
+      "index": 21,
+      "genes": [
+        "ANKAR",
+        "AQR",
+        "BRIX1",
+        "GNAI1",
+        "GOLGA8A",
+        "HOXD4",
+        "HTR2C",
+        "LPPR1",
+        "NME4",
+        "PET100",
+        "PPDPF",
+        "SERTAD3",
+        "SLC25A32",
+        "SLC25A53",
+        "SYNPO2L",
+        "TBC1D17",
+        "TMEM98",
+        "TP53INP2"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 71
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 17
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 10
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 22,
+      "genes": [
+        "AFAP1L1",
+        "AKTIP",
+        "CHP2",
+        "CLDN23",
+        "DNAI1",
+        "FAM49B",
+        "GAR1",
+        "HLA-DQA2",
+        "KIAA0895",
+        "MED13L",
+        "NOTUM",
+        "RERG",
+        "RIPK1",
+        "SMIM21",
+        "SOX5",
+        "ZBTB33",
+        "ZNF185",
+        "ZNF776"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 79
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 31
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 10
+        }
+      }
+    },
+    {
+      "index": 23,
+      "genes": [
+        "ARIH2",
+        "C10orf126",
+        "CBX4",
+        "CCL8",
+        "DDR2",
+        "DSG4",
+        "DUOX2",
+        "FOXN4",
+        "KRTDAP",
+        "NFIL3",
+        "P4HA1",
+        "PRTFDC1",
+        "SLC35D3",
+        "SLC36A1",
+        "SMEK1",
+        "SPTBN1",
+        "TEAD3",
+        "TNXB"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 102
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 17
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 9
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 24,
+      "genes": [
+        "ACRV1",
+        "AP000695.1",
+        "CRNKL1",
+        "DDX19B",
+        "F2R",
+        "GHRH",
+        "KCNC3",
+        "OSM",
+        "PI4K2A",
+        "PPFIBP2",
+        "PRRX2",
+        "PTF1A",
+        "SHCBP1",
+        "TMED3",
+        "TNS4",
+        "VSTM2B",
+        "VWC2L",
+        "ZNF10"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 86
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 15
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 9
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 25,
+      "genes": [
+        "AC023590.1",
+        "C1QTNF6",
+        "CENPQ",
+        "DRAP1",
+        "EVI2B",
+        "LIG3",
+        "LSG1",
+        "MAGIX",
+        "MFSD5",
+        "NKX2-1",
+        "NOG",
+        "RAB6A",
+        "RHOG",
+        "SLC25A46",
+        "SPIN1",
+        "TMEM135",
+        "TRIM71",
+        "ZNF788"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 116
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 17
+        },
+        "WikiPathways": {
+          "adj_top8": 5,
+          "raw_top8": 8,
+          "adj_all": 5,
+          "raw_all": 8
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 26,
+      "genes": [
+        "C1orf123",
+        "CA1",
+        "CDCA2",
+        "EDNRB",
+        "EMC2",
+        "FBN3",
+        "HMG20A",
+        "IGSF5",
+        "KANK2",
+        "LYPD3",
+        "NUDT18",
+        "PIK3R1",
+        "PSMB9",
+        "SMPD1",
+        "SPATC1",
+        "TPR",
+        "TRIM55",
+        "ZNF740"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 6,
+          "raw_top8": 8,
+          "adj_all": 6,
+          "raw_all": 135
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 126
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 24
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 11
+        }
+      }
+    },
+    {
+      "index": 27,
+      "genes": [
+        "ADAP1",
+        "ALPK3",
+        "AP2B1",
+        "BACE1",
+        "C16orf47",
+        "EPHB2",
+        "G0S2",
+        "GLIS1",
+        "HTR4",
+        "JMJD8",
+        "KCNK3",
+        "MRPL17",
+        "NDFIP2",
+        "PCSK6",
+        "PJA2",
+        "RAB8B",
+        "TRABD2B",
+        "ZBED6"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 103
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 31
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 12
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 28,
+      "genes": [
+        "ANO5",
+        "CLDN11",
+        "COA3",
+        "DAB2",
+        "IQCK",
+        "MTUS2",
+        "NCOA4",
+        "ORAI3",
+        "PDZK1IP1",
+        "POLR3C",
+        "POU2AF1",
+        "PRR11",
+        "RP11-144F15.1",
+        "TBC1D10C",
+        "TEX264",
+        "TGOLN2",
+        "TRMT5",
+        "ZNF598"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 55
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 24
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 29,
+      "genes": [
+        "C19orf55",
+        "CTD-2616J11.4",
+        "ERO1L",
+        "FOXP4",
+        "GRAP2",
+        "HNRNPA2B1",
+        "NCK2",
+        "POC1A",
+        "PPP1R14C",
+        "PRADC1",
+        "RBM19",
+        "RBM5",
+        "RCC1",
+        "SMARCB1",
+        "SYNC",
+        "TGM2",
+        "TTC23L",
+        "WDR13"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 80
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 26
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        },
+        "KEGG": {
+          "adj_top8": 1,
+          "raw_top8": 1,
+          "adj_all": 1,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 30,
+      "genes": [
+        "AC000003.2",
+        "CCDC91",
+        "CLDND1",
+        "DVL1",
+        "EI24",
+        "GINS2",
+        "HIBCH",
+        "LIMCH1",
+        "LOXL3",
+        "MGAT4B",
+        "PHC3",
+        "PIM3",
+        "PPP1R9A",
+        "PSD2",
+        "PVALB",
+        "RNF115",
+        "SEPT12",
+        "SF3B4"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 65
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 21
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 31,
+      "genes": [
+        "ALG9",
+        "ARHGAP27",
+        "BBC3",
+        "C3orf65",
+        "CDC14A",
+        "CTTNBP2NL",
+        "GCNT2",
+        "MASTL",
+        "MDGA2",
+        "MIXL1",
+        "NRG1",
+        "PDLIM2",
+        "POLR1E",
+        "PSORS1C2",
+        "PTAFR",
+        "PTTG1",
+        "REEP1",
+        "THRB"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 124
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 42
+        },
+        "WikiPathways": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 14
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        }
+      }
+    },
+    {
+      "index": 32,
+      "genes": [
+        "AMIGO1",
+        "CBLN3",
+        "CDKN2AIP",
+        "CENPC",
+        "DNAJC2",
+        "FEM1A",
+        "FUT4",
+        "HS3ST4",
+        "ITGBL1",
+        "MPP1",
+        "MYO9B",
+        "OTOS",
+        "PAF1",
+        "PEF1",
+        "PPP2R5A",
+        "SIVA1",
+        "TMEM184C",
+        "ZNF185"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 60
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 43
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 33,
+      "genes": [
+        "ACTC1",
+        "AIP",
+        "ANXA11",
+        "CAPN10",
+        "CPLX1",
+        "DOCK4",
+        "FADS3",
+        "FBXO41",
+        "GPD2",
+        "ICMT",
+        "KIAA1239",
+        "PHF8",
+        "PHLPP2",
+        "RPA2",
+        "SLC11A1",
+        "TFAP2E",
+        "TRMT6",
+        "TTR"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 77
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 67
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 8
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        }
+      }
+    },
+    {
+      "index": 34,
+      "genes": [
+        "AK3",
+        "CDC42BPB",
+        "CRTC3",
+        "DSCR4",
+        "EDA2R",
+        "FKBP1C",
+        "LHFPL1",
+        "MIP",
+        "NANOS1",
+        "PLK2",
+        "PRKAG2",
+        "PRKG1",
+        "PSMG1",
+        "SHROOM4",
+        "SLC25A10",
+        "SLC5A1",
+        "TMEM170A",
+        "TPR"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 7,
+          "raw_top8": 8,
+          "adj_all": 7,
+          "raw_all": 131
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 64
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 8
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        }
+      }
+    },
+    {
+      "index": 35,
+      "genes": [
+        "CHRM3",
+        "DENND4A",
+        "ENSG00000270466",
+        "EPHB3",
+        "FAM174B",
+        "HOXC9",
+        "HPR",
+        "KCNJ2",
+        "PRKCA",
+        "PRRC1",
+        "PTPRF",
+        "RPUSD2",
+        "SELRC1",
+        "SGTA",
+        "SLC30A7",
+        "SLC39A7",
+        "SMAP1",
+        "UFL1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 128
+        },
+        "Reactome": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 55
+        },
+        "WikiPathways": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 21
+        },
+        "KEGG": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 12
+        }
+      }
+    },
+    {
+      "index": 36,
+      "genes": [
+        "C1orf170",
+        "C8A",
+        "C8orf4",
+        "CGB1",
+        "CHD8",
+        "DOK1",
+        "DOK5",
+        "EPHA8",
+        "FAM83F",
+        "FTSJ2",
+        "LSAMP",
+        "MRPL2",
+        "N4BP2",
+        "PTPRN2",
+        "TMEM255A",
+        "TSPAN14",
+        "ZMYM6NB",
+        "ZNF691"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 25
+        },
+        "Reactome": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 10
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 37,
+      "genes": [
+        "ADORA2B",
+        "C6orf89",
+        "CCM2",
+        "CDK4",
+        "DUSP6",
+        "DVL1",
+        "KAT2A",
+        "KIF11",
+        "KLHDC2",
+        "MCHR2",
+        "PKP1",
+        "RIMBP2",
+        "SLC30A9",
+        "SLC7A1",
+        "TCF25",
+        "TENM1",
+        "TMEM252",
+        "WDR31"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 2,
+          "raw_top8": 8,
+          "adj_all": 2,
+          "raw_all": 121
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 51
+        },
+        "WikiPathways": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 14
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 9
+        }
+      }
+    },
+    {
+      "index": 38,
+      "genes": [
+        "AKR1B1",
+        "AP3M1",
+        "BIRC2",
+        "CARNS1",
+        "CCL3",
+        "CNNM2",
+        "DHX35",
+        "DMRTA2",
+        "DNA2",
+        "PAWR",
+        "PBX1",
+        "PIK3R3",
+        "POGZ",
+        "RAD23B",
+        "RHOF",
+        "SH3GL3",
+        "TERT",
+        "WNT4"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 193
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 83
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 20
+        },
+        "KEGG": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 37
+        }
+      }
+    },
+    {
+      "index": 39,
+      "genes": [
+        "AXIN2",
+        "C10orf105",
+        "C6orf141",
+        "C7orf73",
+        "CHI3L1",
+        "CREBZF",
+        "CYTH3",
+        "ECI2",
+        "GPATCH11",
+        "IKBKB",
+        "LYRM9",
+        "MTERFD3",
+        "NTN1",
+        "OCIAD1",
+        "RP11-302B13.5",
+        "SYT15",
+        "TC2N",
+        "XPOT"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 75
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 34
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 30
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        }
+      }
+    },
+    {
+      "index": 40,
+      "genes": [
+        "ACVRL1",
+        "AQP12A",
+        "DENND4C",
+        "DUSP19",
+        "EIF4EBP1",
+        "KIAA1009",
+        "KIFC3",
+        "LAMP1",
+        "LDHC",
+        "MED15",
+        "METAP2",
+        "MXD4",
+        "NOMO1",
+        "POLE",
+        "SDHD",
+        "SLC6A16",
+        "TMEM165",
+        "UBR7"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 70
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 24
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 16
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 8
+        }
+      }
+    },
+    {
+      "index": 41,
+      "genes": [
+        "ADAMTS9",
+        "C17orf85",
+        "C5orf51",
+        "CTIF",
+        "DNAJC10",
+        "DPCR1",
+        "IFITM10",
+        "JAG1",
+        "MDP1",
+        "PITPNM3",
+        "PMP2",
+        "RIC8B",
+        "RPP25",
+        "SCRT2",
+        "SEPHS1",
+        "SLC35E2B",
+        "TMEM252",
+        "ZNF80"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 44
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 16
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 42,
+      "genes": [
+        "CCNG2",
+        "CHCHD1",
+        "CRYZ",
+        "DENR",
+        "FRS3",
+        "GNG5",
+        "IL6ST",
+        "LAMA4",
+        "MED21",
+        "MYH9",
+        "PTBP1",
+        "TLL1",
+        "UNC5A",
+        "UQCRB",
+        "WNT9B",
+        "XXbac-BPG32J3.20",
+        "YTHDC1",
+        "ZMYM2"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 80
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 100
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 11
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        }
+      }
+    },
+    {
+      "index": 43,
+      "genes": [
+        "ACPP",
+        "ARPC1B",
+        "BIRC2",
+        "CACNA1H",
+        "DHX9",
+        "EFTUD1",
+        "FAM169A",
+        "GINS2",
+        "HAT1",
+        "HEBP2",
+        "JDP2",
+        "KIAA1324L",
+        "MED26",
+        "OLFML3",
+        "SLC25A20",
+        "SMARCA4",
+        "STS",
+        "TRIM9"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 132
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 38
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 12
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 44,
+      "genes": [
+        "BTN3A1",
+        "CD300LB",
+        "DERL3",
+        "EMC10",
+        "ENPP6",
+        "ISPD",
+        "LUZP1",
+        "MAP1B",
+        "MED8",
+        "PHC2",
+        "POGK",
+        "PRPSAP2",
+        "RIC3",
+        "RNF183",
+        "SMURF1",
+        "SSTR3",
+        "TMEM169",
+        "WNT2"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 69
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 21
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 45,
+      "genes": [
+        "ACRV1",
+        "AIP",
+        "ARSA",
+        "C9orf64",
+        "CBFA2T2",
+        "CCL20",
+        "DPH2",
+        "FAM46B",
+        "FOXR2",
+        "FSCN1",
+        "LHFP",
+        "MBD4",
+        "NEFM",
+        "PKD1",
+        "SHOX",
+        "SORT1",
+        "UBQLN1",
+        "WNK3"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 124
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 21
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 8
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 46,
+      "genes": [
+        "BTD",
+        "CAB39",
+        "FKBP6",
+        "GLRA1",
+        "IVNS1ABP",
+        "MMAA",
+        "NELFE",
+        "PLCH2",
+        "PPIE",
+        "PTGR2",
+        "RAB40AL",
+        "RAB6B",
+        "RHBDL2",
+        "SCLT1",
+        "SMAD3",
+        "SNTG2",
+        "SULF2",
+        "WDR7"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 96
+        },
+        "Reactome": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 57
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 13
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 47,
+      "genes": [
+        "ARHGEF10L",
+        "ATP6AP1",
+        "CRYBB3",
+        "CXorf24",
+        "GPM6A",
+        "LRRC4",
+        "LRRC59",
+        "MAPKAPK3",
+        "MRC1L1",
+        "MUM1",
+        "OSBPL7",
+        "PEX5",
+        "PFN4",
+        "PRAM1",
+        "PTPN14",
+        "SCARF2",
+        "SCML2",
+        "SGK494"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 52
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 11
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 48,
+      "genes": [
+        "ADAM22",
+        "ALDH5A1",
+        "FBXW11",
+        "GDF10",
+        "GPC1",
+        "GPR141",
+        "GUCA2A",
+        "HNRNPLL",
+        "KRCC1",
+        "PCDH18",
+        "PRKG2",
+        "RBP2",
+        "RPS6",
+        "SPTBN2",
+        "STIP1",
+        "TPBGL",
+        "USP48",
+        "ZCWPW1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 45
+        },
+        "Reactome": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 50
+        },
+        "WikiPathways": {
+          "adj_top8": 4,
+          "raw_top8": 8,
+          "adj_all": 4,
+          "raw_all": 14
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 8
+        }
+      }
+    },
+    {
+      "index": 49,
+      "genes": [
+        "ARFIP2",
+        "ARRB1",
+        "ASF1B",
+        "BPTF",
+        "CPSF6",
+        "EVA1C",
+        "HOXD11",
+        "HSPA6",
+        "LY9",
+        "MAPK15",
+        "METTL24",
+        "MUC7",
+        "RP1L1",
+        "SLC52A3",
+        "TEAD1",
+        "TRIQK",
+        "USP9X",
+        "VSIG10"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 91
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 42
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        }
+      }
+    },
+    {
+      "index": 50,
+      "genes": [
+        "ARHGEF18",
+        "ARRDC4",
+        "C9orf69",
+        "CCL3L3",
+        "CLVS1",
+        "FBXO25",
+        "FBXW7",
+        "FKBP7",
+        "MNX1",
+        "OIP5",
+        "PALM",
+        "PPP1R1C",
+        "SEMA3G",
+        "SLC25A23",
+        "TMEM50B",
+        "TRAPPC10",
+        "TRIOBP",
+        "VTI1A"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 90
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 14
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 0,
+          "adj_all": 0,
+          "raw_all": 0
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 51,
+      "genes": [
+        "ASB3",
+        "CCT4",
+        "CDH19",
+        "CLCA2",
+        "COX7A2L",
+        "ECH1",
+        "G6PC",
+        "KIAA1671",
+        "KLHL6",
+        "MNAT1",
+        "NDUFS7",
+        "NPC1",
+        "NPEPPS",
+        "PRELID1",
+        "RPA2",
+        "SDK2",
+        "SMCHD1",
+        "SUCLG2"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 100
+        },
+        "Reactome": {
+          "adj_top8": 6,
+          "raw_top8": 8,
+          "adj_all": 6,
+          "raw_all": 97
+        },
+        "WikiPathways": {
+          "adj_top8": 2,
+          "raw_top8": 8,
+          "adj_all": 2,
+          "raw_all": 12
+        },
+        "KEGG": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 18
+        }
+      }
+    },
+    {
+      "index": 52,
+      "genes": [
+        "CCDC85A",
+        "CELF3",
+        "CHST12",
+        "FAM72A",
+        "GRAMD4",
+        "HK1",
+        "KLRC4",
+        "MPP1",
+        "PASD1",
+        "PIKFYVE",
+        "PLCB3",
+        "PRM1",
+        "SLC25A35",
+        "TCF12",
+        "TYRO3",
+        "UPF3A",
+        "ZMYM2",
+        "ZNF420"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 72
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 31
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 9
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 13
+        }
+      }
+    },
+    {
+      "index": 53,
+      "genes": [
+        "DNAH5",
+        "DNAJA2",
+        "FAM83G",
+        "FGFRL1",
+        "GGA1",
+        "GLDN",
+        "GNB1",
+        "KIF5A",
+        "PIK3C2A",
+        "RFTN2",
+        "RYK",
+        "SFRP1",
+        "SLC5A10",
+        "SPINK7",
+        "TEK",
+        "TMEM127",
+        "TRPV6",
+        "VPS29"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 8,
+          "raw_top8": 8,
+          "adj_all": 51,
+          "raw_all": 159
+        },
+        "Reactome": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 62
+        },
+        "WikiPathways": {
+          "adj_top8": 8,
+          "raw_top8": 8,
+          "adj_all": 9,
+          "raw_all": 15
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 9
+        }
+      }
+    },
+    {
+      "index": 54,
+      "genes": [
+        "ACER2",
+        "ALDH5A1",
+        "APBA1",
+        "APOA5",
+        "ATXN7",
+        "BNC1",
+        "CALCOCO1",
+        "DPP6",
+        "ESRRG",
+        "FTSJ2",
+        "GFER",
+        "GNAL",
+        "MSX1",
+        "PTPMT1",
+        "SLC24A3",
+        "SLC35A1",
+        "TCP11L2",
+        "VWA3A"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 77
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 24
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 55,
+      "genes": [
+        "BRI3BP",
+        "C1GALT1",
+        "CD320",
+        "CHCHD5",
+        "CSK",
+        "EIF5A",
+        "FAM210A",
+        "ITFG3",
+        "KAT6B",
+        "KIAA0754",
+        "LDHD",
+        "PAPD5",
+        "PCDHA4",
+        "PEX26",
+        "RABEP2",
+        "SLC39A2",
+        "TANC1",
+        "URGCP"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 32
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 27
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 56,
+      "genes": [
+        "COL2A1",
+        "COQ2",
+        "EMC1",
+        "FRRS1",
+        "GRHL2",
+        "IGF2BP2",
+        "KXD1",
+        "LYN",
+        "MSH6",
+        "NELFE",
+        "NFYB",
+        "RAB37",
+        "SCD",
+        "SLC25A15",
+        "SPOCK3",
+        "USP4",
+        "ZBTB2",
+        "ZBTB22"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 148
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 67
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 12
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 57,
+      "genes": [
+        "C10orf62",
+        "C16orf70",
+        "C8orf4",
+        "DHODH",
+        "IFNAR2",
+        "L3HYPDH",
+        "MTMR3",
+        "MYL6",
+        "NTMT1",
+        "PCDHGA12",
+        "PTPRU",
+        "RETSAT",
+        "RHBDL2",
+        "RP11-480I12.4",
+        "SPOPL",
+        "TENM3",
+        "USP19",
+        "WDR5B"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 44
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 14
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 58,
+      "genes": [
+        "ACBD4",
+        "BTBD7",
+        "C14orf37",
+        "EMC2",
+        "GPAM",
+        "HAT1",
+        "HGFAC",
+        "HMGB2",
+        "IL17A",
+        "NUDT14",
+        "PF4",
+        "SEMA4B",
+        "STAMBPL1",
+        "TK2",
+        "TLR3",
+        "TRPV4",
+        "XKR8",
+        "ZFP91"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 8,
+          "raw_top8": 8,
+          "adj_all": 48,
+          "raw_all": 147
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 27
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 9
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 59,
+      "genes": [
+        "CCR3",
+        "CLLU1",
+        "EPM2AIP1",
+        "GNG12",
+        "HIF1AN",
+        "ID4",
+        "IKZF2",
+        "KIF16B",
+        "KRT23",
+        "NAT8L",
+        "NDNF",
+        "PRKD1",
+        "RHOV",
+        "SASH1",
+        "SRPRB",
+        "TFAP2E",
+        "TMPRSS11BNL",
+        "TSHR"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 90
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 49
+        },
+        "WikiPathways": {
+          "adj_top8": 7,
+          "raw_top8": 8,
+          "adj_all": 7,
+          "raw_all": 13
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        }
+      }
+    },
+    {
+      "index": 60,
+      "genes": [
+        "AKIRIN1",
+        "C17orf53",
+        "DOT1L",
+        "ERMN",
+        "FGF5",
+        "HSCB",
+        "KLHL1",
+        "KLHL6",
+        "KRCC1",
+        "LRRTM3",
+        "MAP2K1",
+        "MARCH6",
+        "NR6A1",
+        "POLR2D",
+        "RPRD1A",
+        "TARDBP",
+        "TTC4",
+        "UBQLN2"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 80
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 105
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 35
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 13
+        }
+      }
+    },
+    {
+      "index": 61,
+      "genes": [
+        "AICDA",
+        "ATP2B2",
+        "C1orf94",
+        "COX7B",
+        "DCLRE1B",
+        "DCTN4",
+        "ERMN",
+        "GOLGA8J",
+        "KRTAP2-4",
+        "LYPD3",
+        "NOS1",
+        "POLK",
+        "PTGS1",
+        "PTX4",
+        "RECK",
+        "REPS1",
+        "RWDD2A",
+        "WDR59"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 72
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 27
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 10
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 15
+        }
+      }
+    },
+    {
+      "index": 62,
+      "genes": [
+        "AIF1L",
+        "BACE1",
+        "C14orf37",
+        "C17orf47",
+        "CAPN7",
+        "CRIPT",
+        "GJB1",
+        "GTPBP4",
+        "HIPK2",
+        "IPO9",
+        "MRPS17",
+        "PXMP4",
+        "RAB11FIP1",
+        "RGS8",
+        "RP4-559A3.7",
+        "SPATA8",
+        "UBE2L3",
+        "ZNF607"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 71
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 16
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 0,
+          "adj_all": 0,
+          "raw_all": 0
+        }
+      }
+    },
+    {
+      "index": 63,
+      "genes": [
+        "AL590822.1",
+        "C17orf78",
+        "C8orf86",
+        "CLSTN1",
+        "ERF",
+        "FCGRT",
+        "HOXA7",
+        "ITFG1",
+        "MRPL4",
+        "PDE3A",
+        "PPM1E",
+        "SLC6A19",
+        "SOX21",
+        "SPOCK1",
+        "TNFSF12-TNFSF13",
+        "USP13",
+        "XPO7",
+        "XYLT1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 56
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 64,
+      "genes": [
+        "ARHGEF7",
+        "BNC1",
+        "CHRNB4",
+        "INSL5",
+        "ISPD",
+        "KCTD18",
+        "MAML3",
+        "MFSD7",
+        "NRG3",
+        "PDCD10",
+        "PER2",
+        "PSMD1",
+        "SIX4",
+        "STX1B",
+        "SYPL1",
+        "TMEM86A",
+        "TRIM27",
+        "WBP2NL"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 125
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 106
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        }
+      }
+    },
+    {
+      "index": 65,
+      "genes": [
+        "ABHD4",
+        "ACOT13",
+        "AKR1B1",
+        "C1orf43",
+        "CCDC112",
+        "CNKSR2",
+        "FCHSD2",
+        "KCNN3",
+        "KLHL15",
+        "LINC00998",
+        "MPZL3",
+        "MRPL2",
+        "NUP188",
+        "PPP1R3D",
+        "PTP4A3",
+        "SMG8",
+        "TMTC2",
+        "UGT1A1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 43
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 47
+        },
+        "WikiPathways": {
+          "adj_top8": 8,
+          "raw_top8": 8,
+          "adj_all": 9,
+          "raw_all": 9
+        },
+        "KEGG": {
+          "adj_top8": 1,
+          "raw_top8": 6,
+          "adj_all": 1,
+          "raw_all": 6
+        }
+      }
+    },
+    {
+      "index": 66,
+      "genes": [
+        "ATP6V1C2",
+        "CCL22",
+        "CSRP2",
+        "CWC22",
+        "EDARADD",
+        "GJD2",
+        "GRINA",
+        "HEY2",
+        "HIVEP1",
+        "HTT",
+        "LGR5",
+        "LUC7L2",
+        "MSRB1",
+        "OSBPL1A",
+        "PRKAB2",
+        "SLC7A6OS",
+        "TDRD6",
+        "TTPA"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 97
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 33
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 11
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        }
+      }
+    },
+    {
+      "index": 67,
+      "genes": [
+        "ADIPOR1",
+        "AP001652.1",
+        "B3GALNT2",
+        "CBLN4",
+        "CPED1",
+        "DDX3X",
+        "DHX35",
+        "DSCAML1",
+        "EPB41L5",
+        "HNRNPR",
+        "KIF6",
+        "NRDE2",
+        "PARVB",
+        "RPL36A-HNRNPH2",
+        "RSBN1L",
+        "SORT1",
+        "VPS26A",
+        "ZFY"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 2,
+          "raw_top8": 8,
+          "adj_all": 2,
+          "raw_all": 92
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 9
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 68,
+      "genes": [
+        "CYTH3",
+        "DIAPH1",
+        "EVI5",
+        "FAM217A",
+        "GOLGA7B",
+        "HNRNPA3",
+        "MCCC2",
+        "NDUFA4L2",
+        "OSBPL9",
+        "PAQR7",
+        "PLEKHA3",
+        "RAB30",
+        "RAB9A",
+        "SASH1",
+        "SCYL2",
+        "SLC29A4",
+        "TPM2",
+        "WDFY4"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 8,
+          "raw_top8": 8,
+          "adj_all": 26,
+          "raw_all": 63
+        },
+        "Reactome": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 24
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        }
+      }
+    },
+    {
+      "index": 69,
+      "genes": [
+        "ARPC3",
+        "C2orf82",
+        "CHFR",
+        "EPC1",
+        "ERLEC1",
+        "FXR1",
+        "JMJD8",
+        "LRRC16A",
+        "MARCH4",
+        "MCF2",
+        "PCBP3",
+        "PCDHGA11",
+        "POLR1A",
+        "PRDM4",
+        "RAB15",
+        "ST18",
+        "ZC3HAV1L",
+        "ZSWIM4"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 69
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 14
+        },
+        "WikiPathways": {
+          "adj_top8": 1,
+          "raw_top8": 3,
+          "adj_all": 1,
+          "raw_all": 3
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 70,
+      "genes": [
+        "ACSF2",
+        "ATP5A1",
+        "CPZ",
+        "CRBN",
+        "FAM57B",
+        "FER",
+        "GLCCI1",
+        "LASP1",
+        "MMACHC",
+        "MRPL17",
+        "NKAP",
+        "OSTM1",
+        "SERINC1",
+        "SRRM1",
+        "TNNI2",
+        "ZCCHC14",
+        "ZFAND6",
+        "ZNF592"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 47
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 14
+        },
+        "WikiPathways": {
+          "adj_top8": 3,
+          "raw_top8": 4,
+          "adj_all": 3,
+          "raw_all": 4
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 71,
+      "genes": [
+        "ABCA2",
+        "ASH2L",
+        "CEP68",
+        "CMIP",
+        "COL2A1",
+        "DDIT3",
+        "EDAR",
+        "FTSJ1",
+        "GAREML",
+        "ICAM3",
+        "POLR1D",
+        "POLR2D",
+        "PRRT2",
+        "RNASE13",
+        "SLC10A3",
+        "SLIT3",
+        "UGT1A8",
+        "ZBTB8A"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 84
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 69
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 12
+        },
+        "KEGG": {
+          "adj_top8": 1,
+          "raw_top8": 5,
+          "adj_all": 1,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 72,
+      "genes": [
+        "C15orf53",
+        "C16orf52",
+        "C8orf46",
+        "CEBPD",
+        "COG1",
+        "GDF5",
+        "HFE",
+        "KDM3B",
+        "OLFM3",
+        "PARM1",
+        "PLA2G10",
+        "PRDX4",
+        "PTPRR",
+        "RPUSD2",
+        "SHISA4",
+        "TIPRL",
+        "TPBG",
+        "UST"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 115
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 14
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 73,
+      "genes": [
+        "AF196779.12",
+        "AP2M1",
+        "C22orf31",
+        "CREB3",
+        "DLK1",
+        "DNM1L",
+        "EIF1",
+        "HNF4G",
+        "HPS3",
+        "MINOS1",
+        "MNAT1",
+        "NCOA5",
+        "PEX14",
+        "PPP4R1L",
+        "PTPRQ",
+        "TCF21",
+        "ZNF280C",
+        "ZNF654"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 4,
+          "raw_top8": 8,
+          "adj_all": 4,
+          "raw_all": 88
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 49
+        },
+        "WikiPathways": {
+          "adj_top8": 2,
+          "raw_top8": 6,
+          "adj_all": 2,
+          "raw_all": 6
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 8
+        }
+      }
+    },
+    {
+      "index": 74,
+      "genes": [
+        "BCL11B",
+        "BRI3BP",
+        "BTBD6",
+        "CAPZA2",
+        "CLDN12",
+        "HIST1H1C",
+        "HMGXB3",
+        "KIR2DL4",
+        "MAML1",
+        "MED19",
+        "NT5E",
+        "OCM2",
+        "RASL10B",
+        "STX8",
+        "STYX",
+        "TAF9B",
+        "TFAP4",
+        "TOP2A"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 94
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 31
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        }
+      }
+    },
+    {
+      "index": 75,
+      "genes": [
+        "ACP6",
+        "ACTR1B",
+        "CCDC71",
+        "CDC14A",
+        "FAM53B",
+        "GSG1L",
+        "LIMD1",
+        "NEUROG1",
+        "NR4A3",
+        "P4HB",
+        "REST",
+        "SPPL3",
+        "TMSB4Y",
+        "TNFRSF4",
+        "TRAPPC12",
+        "USP28",
+        "ZCCHC11",
+        "ZNF423"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 170
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 26
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        }
+      }
+    },
+    {
+      "index": 76,
+      "genes": [
+        "C1QTNF2",
+        "COLEC10",
+        "DMD",
+        "DUSP12",
+        "EFS",
+        "FOXP3",
+        "GRB10",
+        "HAND2",
+        "ISL2",
+        "LHPP",
+        "MAD2L1",
+        "PTGDR",
+        "RASAL2",
+        "SIAH3",
+        "SLC30A5",
+        "STX1B",
+        "VANGL1",
+        "VSNL1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 152
+        },
+        "Reactome": {
+          "adj_top8": 2,
+          "raw_top8": 8,
+          "adj_all": 2,
+          "raw_all": 36
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 10
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 77,
+      "genes": [
+        "C2orf72",
+        "C5orf28",
+        "CAD",
+        "CCAR2",
+        "CLDN22",
+        "GJB6",
+        "HMCES",
+        "IL2RB",
+        "ING5",
+        "LIAS",
+        "LPO",
+        "NFKBIZ",
+        "OPN1MW2",
+        "RECQL",
+        "SLC18A1",
+        "SMG9",
+        "TRMU",
+        "TUBB2A"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 81
+        },
+        "Reactome": {
+          "adj_top8": 3,
+          "raw_top8": 8,
+          "adj_all": 3,
+          "raw_all": 31
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        }
+      }
+    },
+    {
+      "index": 78,
+      "genes": [
+        "ANKRD13B",
+        "AP1AR",
+        "C20orf202",
+        "CACNA1A",
+        "CDH12",
+        "CEP85L",
+        "CRAMP1L",
+        "DDX26B",
+        "DDX52",
+        "DNM2",
+        "F2RL2",
+        "MBTPS2",
+        "NUDCD1",
+        "SACS",
+        "SLC37A4",
+        "TAZ",
+        "TMEM236",
+        "TMEM87B"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 63
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 21
+        },
+        "WikiPathways": {
+          "adj_top8": 5,
+          "raw_top8": 7,
+          "adj_all": 5,
+          "raw_all": 7
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 79,
+      "genes": [
+        "BNIP3",
+        "CITED4",
+        "CNTN1",
+        "EEFSEC",
+        "INF2",
+        "JAZF1",
+        "LRRC40",
+        "MEGF9",
+        "MICALL1",
+        "MTHFR",
+        "MYOD1",
+        "PCCA",
+        "PLXDC2",
+        "SLC22A9",
+        "SOGA3",
+        "THTPA",
+        "YPEL1",
+        "ZC3H18"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 84
+        },
+        "Reactome": {
+          "adj_top8": 8,
+          "raw_top8": 8,
+          "adj_all": 9,
+          "raw_all": 19
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 15
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 80,
+      "genes": [
+        "ADAMTS9",
+        "ADRBK1",
+        "DMPK",
+        "FBXW11",
+        "FXYD3",
+        "HIST1H2BG",
+        "HSD17B10",
+        "IMPDH1",
+        "JOSD2",
+        "MAT2A",
+        "PRKCE",
+        "SETD9",
+        "SH3BP5L",
+        "ST18",
+        "TMEM136",
+        "TSPAN31",
+        "ZNF625",
+        "ZNF667"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 80
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 26
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 11
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        }
+      }
+    },
+    {
+      "index": 81,
+      "genes": [
+        "CALD1",
+        "CARTPT",
+        "CRHR1",
+        "EDNRB",
+        "FNTA",
+        "GSG1L",
+        "HAPLN3",
+        "INPPL1",
+        "LIN52",
+        "NDRG2",
+        "PLEKHG5",
+        "PTBP1",
+        "RAVER2",
+        "SGPL1",
+        "SPATA16",
+        "TNP1",
+        "YIPF6",
+        "ZNF622"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 85
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 26
+        },
+        "WikiPathways": {
+          "adj_top8": 4,
+          "raw_top8": 8,
+          "adj_all": 4,
+          "raw_all": 8
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 82,
+      "genes": [
+        "ALDH2",
+        "CLEC4F",
+        "DRGX",
+        "DSP",
+        "FAM196B",
+        "KHDRBS2",
+        "PI4K2A",
+        "PNOC",
+        "POLR1E",
+        "RAB30",
+        "RGS7",
+        "RNF149",
+        "SH2D1A",
+        "SLC2A3",
+        "SSRP1",
+        "TMEM56",
+        "TNP1",
+        "TOR1A"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 8,
+          "raw_top8": 8,
+          "adj_all": 25,
+          "raw_all": 73
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 30
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 10
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 10
+        }
+      }
+    },
+    {
+      "index": 83,
+      "genes": [
+        "C16orf80",
+        "C2orf43",
+        "CDH11",
+        "CHRFAM7A",
+        "DSG2",
+        "FBXO44",
+        "GAP43",
+        "IL24",
+        "INTS7",
+        "KLF9",
+        "MOB3C",
+        "NME1-NME2",
+        "NUCKS1",
+        "PALMD",
+        "RNF40",
+        "TMED1",
+        "TTC4",
+        "ZHX3"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 62
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 11
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 84,
+      "genes": [
+        "ABHD3",
+        "B4GALT2",
+        "CDC42",
+        "CHN1",
+        "CNEP1R1",
+        "CXCL9",
+        "FAM72D",
+        "GADL1",
+        "GPR89C",
+        "IQCB1",
+        "PTPRR",
+        "QRICH1",
+        "RBMS3",
+        "RBP4",
+        "RHOXF1",
+        "SEC14L5",
+        "TEKT1",
+        "USP10"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 86
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 43
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 15
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 12
+        }
+      }
+    },
+    {
+      "index": 85,
+      "genes": [
+        "ANKRA2",
+        "BTF3",
+        "CIDEB",
+        "CTRC",
+        "DDX6",
+        "DIP2A",
+        "FAR1",
+        "HIST1H3J",
+        "KLHL4",
+        "KLK11",
+        "MCOLN2",
+        "NOS1",
+        "RAB24",
+        "RNF138",
+        "SCLT1",
+        "SRSF6",
+        "WDR41",
+        "ZNF33B"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 96
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 8
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        }
+      }
+    },
+    {
+      "index": 86,
+      "genes": [
+        "ADCY3",
+        "ANKRD32",
+        "CD109",
+        "CLMN",
+        "CRIP2",
+        "DUS2",
+        "LPAR6",
+        "LRRC58",
+        "MICAL3",
+        "OGFOD3",
+        "PRDX3",
+        "RYR3",
+        "SHMT1",
+        "SMG9",
+        "SYN3",
+        "UBE2V1",
+        "VWC2",
+        "WWP1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 8,
+          "raw_top8": 8,
+          "adj_all": 33,
+          "raw_all": 74
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 47
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 13
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 13
+        }
+      }
+    },
+    {
+      "index": 87,
+      "genes": [
+        "AP5M1",
+        "ASPN",
+        "CEP97",
+        "CMIP",
+        "DAPK2",
+        "FBXO33",
+        "GABRE",
+        "INO80D",
+        "IRF4",
+        "MED26",
+        "PPAT",
+        "RHBDL3",
+        "RIBC1",
+        "SMPD3",
+        "SYDE2",
+        "TRIM46",
+        "ZNF396",
+        "ZNF583"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 65
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 12
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 10
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        }
+      }
+    },
+    {
+      "index": 88,
+      "genes": [
+        "CALCOCO2",
+        "GOLGA8M",
+        "KCNAB3",
+        "MCM5",
+        "MEIS1",
+        "METTL9",
+        "MGMT",
+        "NUDT14",
+        "OPN5",
+        "PCDHGC4",
+        "PHC1",
+        "RFT1",
+        "SCYL3",
+        "SLC25A16",
+        "TGM7",
+        "THEMIS2",
+        "VGLL3",
+        "WDR26"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 34
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 18
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 89,
+      "genes": [
+        "AKIRIN2",
+        "ATF5",
+        "CCL16",
+        "CCR10",
+        "GUCA2A",
+        "HTRA2",
+        "ILF3",
+        "MPZL2",
+        "MYLIP",
+        "MYO1F",
+        "MYOT",
+        "PPIE",
+        "PPP2R5A",
+        "PPP6R1",
+        "RGMA",
+        "SIDT2",
+        "TSC22D4",
+        "TULP1"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 71
+        },
+        "Reactome": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 40
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 90,
+      "genes": [
+        "ASB2",
+        "BHLHB9",
+        "CAPN7",
+        "CDH20",
+        "FBRS",
+        "FBXO39",
+        "HIF1AN",
+        "ICAM5",
+        "LHX9",
+        "MAP3K8",
+        "NFRKB",
+        "PABPC4L",
+        "PIK3R1",
+        "SAMD14",
+        "SCIN",
+        "TLN1",
+        "VHL",
+        "ZNF664"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 106
+        },
+        "Reactome": {
+          "adj_top8": 1,
+          "raw_top8": 8,
+          "adj_all": 1,
+          "raw_all": 123
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 34
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 17
+        }
+      }
+    },
+    {
+      "index": 91,
+      "genes": [
+        "BDH1",
+        "CTD-2330K9.3",
+        "ESCO1",
+        "FAM220A",
+        "FAM83B",
+        "HIST1H2AK",
+        "KSR1",
+        "MAP2",
+        "MRPL17",
+        "PPT1",
+        "PVRL4",
+        "QRICH1",
+        "RER1",
+        "SOX9",
+        "SRM",
+        "STRADB",
+        "TTPAL",
+        "USP28"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 140
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 23
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 9
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 92,
+      "genes": [
+        "AAMP",
+        "AKAP5",
+        "BMP2K",
+        "C9orf72",
+        "CDC42",
+        "CDCA8",
+        "CENPT",
+        "FBXO30",
+        "GUCD1",
+        "HAX1",
+        "MRPL2",
+        "NNMT",
+        "PPARGC1A",
+        "PSMD14",
+        "RGS18",
+        "RNF222",
+        "TSTA3",
+        "ZNF80"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 8,
+          "raw_top8": 8,
+          "adj_all": 10,
+          "raw_all": 146
+        },
+        "Reactome": {
+          "adj_top8": 7,
+          "raw_top8": 8,
+          "adj_all": 7,
+          "raw_all": 124
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 24
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 93,
+      "genes": [
+        "ANGPTL3",
+        "ARHGEF38",
+        "B3GALT6",
+        "CLEC11A",
+        "CYP8B1",
+        "FAM149B1",
+        "HIST1H2AJ",
+        "HIST1H4L",
+        "HOXA7",
+        "IFT46",
+        "KIAA1586",
+        "MAP7D1",
+        "NDEL1",
+        "NKAP",
+        "NOV",
+        "PRKRA",
+        "RPS2",
+        "TIGD7"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 65
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 27
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 94,
+      "genes": [
+        "ADAT2",
+        "ATP6V0E1",
+        "CLNK",
+        "CYP51A1",
+        "DPH3",
+        "E2F8",
+        "EFNB2",
+        "GTF2I",
+        "HPR",
+        "IFNLR1",
+        "KIAA0825",
+        "OSTC",
+        "OSTM1",
+        "PHF21A",
+        "SLC8A2",
+        "TIMM10",
+        "ZHX1",
+        "ZHX3"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 5,
+          "raw_top8": 8,
+          "adj_all": 5,
+          "raw_all": 77
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 25
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        }
+      }
+    },
+    {
+      "index": 95,
+      "genes": [
+        "ARPP19",
+        "CARM1",
+        "CHM",
+        "DNAJC21",
+        "DYRK4",
+        "FAM229A",
+        "GJB7",
+        "HIST1H2AE",
+        "HOMEZ",
+        "IQCJ-SCHIP1",
+        "MPZL2",
+        "PRR11",
+        "RBM47",
+        "SLC4A1",
+        "SP9",
+        "TMEM100",
+        "TNN",
+        "TSFM"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 58
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 20
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 1,
+          "adj_all": 0,
+          "raw_all": 1
+        }
+      }
+    },
+    {
+      "index": 96,
+      "genes": [
+        "C11orf44",
+        "CD53",
+        "CYB561",
+        "DENND2C",
+        "DPYSL2",
+        "ETS1",
+        "FAM217B",
+        "GCLM",
+        "HIST1H3A",
+        "MLLT6",
+        "NEUROD4",
+        "PIGK",
+        "STK38",
+        "THSD4",
+        "TM4SF5",
+        "TMX4",
+        "TRIAP1",
+        "ZNF136"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 54
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 16
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 12
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 3,
+          "adj_all": 0,
+          "raw_all": 3
+        }
+      }
+    },
+    {
+      "index": 97,
+      "genes": [
+        "CCNC",
+        "CGB1",
+        "DEFB118",
+        "EYA4",
+        "FAM117B",
+        "GIT1",
+        "GLYATL3",
+        "GTF3C2",
+        "HDGF",
+        "LCNL1",
+        "POLR1C",
+        "PPP2CB",
+        "RTN3",
+        "SMEK1",
+        "STAMBP",
+        "STX6",
+        "SUCLA2",
+        "ZNF710"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 60
+        },
+        "Reactome": {
+          "adj_top8": 5,
+          "raw_top8": 8,
+          "adj_all": 5,
+          "raw_all": 75
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 7,
+          "adj_all": 0,
+          "raw_all": 7
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 5,
+          "adj_all": 0,
+          "raw_all": 5
+        }
+      }
+    },
+    {
+      "index": 98,
+      "genes": [
+        "AC026310.1",
+        "ARHGEF15",
+        "BRCC3",
+        "BTF3",
+        "C1QTNF6",
+        "C20orf194",
+        "CTDNEP1",
+        "FKBP6",
+        "GPM6B",
+        "MRS2",
+        "NCOA7",
+        "NUAK2",
+        "PREP",
+        "PRM1",
+        "PSMC6",
+        "RHOBTB2",
+        "RPUSD1",
+        "SCUBE2"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 40
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 60
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 2,
+          "adj_all": 0,
+          "raw_all": 2
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 4,
+          "adj_all": 0,
+          "raw_all": 4
+        }
+      }
+    },
+    {
+      "index": 99,
+      "genes": [
+        "AMBRA1",
+        "ANKRD46",
+        "COL4A1",
+        "DDX31",
+        "DKFZP434E1119",
+        "DNA2",
+        "FCRLB",
+        "GNG10",
+        "GPR124",
+        "LRRC1",
+        "NT5DC3",
+        "RAB2A",
+        "RPRD1B",
+        "SLC19A2",
+        "TYK2",
+        "VAX2",
+        "VWA1",
+        "ZNF706"
+      ],
+      "significant": {
+        "GO": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 60
+        },
+        "Reactome": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 80
+        },
+        "WikiPathways": {
+          "adj_top8": 0,
+          "raw_top8": 8,
+          "adj_all": 0,
+          "raw_all": 12
+        },
+        "KEGG": {
+          "adj_top8": 0,
+          "raw_top8": 6,
+          "adj_all": 0,
+          "raw_all": 6
+        }
+      }
+    }
+  ]
+}

@@ -54,10 +54,39 @@ library: with BH, the adjusted p at rank 8 is at most p₈ × m / 8, so
 0.02515 ≤ 0.00499 × m / 8 gives m ≥ 40 — and with m = 5,400 terms an
 adjusted p of 0.025 would require a term with p / rank ≈ 4.7 × 10⁻⁶,
 which single-gene overlaps cannot produce (the smallest raw p here
-is 0.0017). The values are compatible with a correction over far
-fewer tests, without knowing how many. The mechanism is unexplained;
-the paper reports the observation with the date and the library
-versions and does not claim a mechanism.
+is 0.0017).
+
+### A consistent mechanism: BH over only the terms with an overlap
+
+The author reproduced the list against the local GO library
+(5,407 terms; universe 14,698 genes) and found a mechanism that
+fits: 48 of the 5,407 terms have at least one overlapping gene; BH
+over all 5,407 tests gives an adjusted p of 1.0 for the top 8, while
+BH over only the 48 terms with an overlap gives 0.034, identical
+across the top 8 — the same pattern Enrichr shows (0.02515) — and
+the 8 terms come out in the same order as Enrichr's, except the
+8th. The raw p differs slightly (0.0024 vs Enrichr's 0.0017)
+because Enrichr's gene universe is larger, and the earlier bound
+m ≥ 40 is consistent with m = 48. The same replica was run
+independently against the repository's local GO library
+(`docs/validation/replica_bh_overlap.py`, 2026-11-19): identical
+result — 48 terms, raw p 0.002379, BH over the 48 = 0.0342 in the
+top 8, same order for the first 7, 8th term differs (ours:
+Negative Regulation Of Viral Life Cycle; Enrichr: Regulation Of
+Necroptotic Process). Note also that the API returned 48 rows for
+this list and the website shows 48 entries — the same count as the
+terms with an overlap.
+
+So the adjusted p behaves like a BH correction computed only over
+the terms that have at least one gene in common with the list, not
+over the whole library. This is a hypothesis consistent with one
+list and two independent replicas; it is NOT confirmed, and the
+definitive answer belongs to the maintainers (a draft question is
+in `joss-resubmission/email-enrichr-maintainers-DRAFT.md`). It is
+also the same pattern KENRYU itself had before v1.45: H-05 was
+exactly this — BH over only the terms with an overlap — corrected
+to BH over all non-empty terms. An easy mistake to make, which we
+also made and corrected; the paper says so, without accusation.
 
 ## Consequence (holds whatever the exact rates turn out to be)
 
@@ -95,8 +124,26 @@ Reactome 0.98, WikiPathways 0.89, KEGG 0.95 — barely higher, which is
 consistent with the adjusted p behaving like a correction over far
 fewer tests than the whole library.
 
-## 18-gene lists (cancer-like): PENDING
+## 18-gene lists (cancer-like): DONE 2026-11-19
 
-100 random 18-gene lists, seed 11, re-running 2026-11-19 with the
-engine's criterion. To be filled in when the run finishes; it decides
-the wording of the cancer panel's 3 terms.
+100 random 18-gene lists, seed 11, engine criterion (first 8 rows,
+adjusted p < 0.05):
+
+| Library | FPR (engine) | Significant terms in the top 8 (total over 100 lists) |
+|---|---|---|
+| GO Biological Process | 0.30 | 102 (~1.0 per list) |
+| Reactome | 0.18 | 50 |
+| WikiPathways | 0.19 | 66 |
+| KEGG | 0.10 | 21 |
+
+**51 of 100 random lists came back with at least one "significant"
+term in some library** — about ten times the 5% a calibrated method
+should give. Control with the raw p-value instead of the adjusted
+one: GO 1.00, Reactome 1.00, WikiPathways 0.99, KEGG 0.99. The
+adjustment does cut that rate, but only to 0.10–0.30 per library
+(0.51 in any library) — still 2–10× the 5% a calibrated method
+should give. The cancer panel's three terms (Developmental Biology
+0.0176, Recycling Pathway of L1 0.0424, Signaling by TGFBR3
+0.0424) therefore cannot be presented as significant findings;
+they are reported as exploratory, with their specificity values
+(<1%, <1%, 0.01) as the guard.

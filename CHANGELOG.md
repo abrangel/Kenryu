@@ -22,6 +22,15 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 - docs/validation/: specificity of the 19 lipid-panel terms (version, date),
   re-estimated with 10,000 draws: 12 specific (below 0.03), 7 near the
   0.05 threshold (0.03–0.07, numbers only, no binary label).
+- docs/validation/calibration-enrichr-route.md: K18-engine run (100
+  18-gene lists): FPR 30% GO, 18% Reactome, 19% WikiPathways, 10%
+  KEGG, 51% any library. Mechanism hypothesis: the Enrichr adjusted
+  p behaves like BH over only the terms with an overlapping gene
+  (author's replica + independent replica, `replica_bh_overlap.py`:
+  48 terms, BH-over-48 = 0.0342, same order as Enrichr except the
+  8th) — consistent, not confirmed; the same pattern KENRYU had
+  before v1.45 (H-05). paper.md now carries the K18 numbers and the
+  hypothesis (1,743 words).
 - tests/fixtures/: synthetic miRTarBase official index (same schema, the
   7 thesis-panel pairs copied verbatim) so the official-format code path
   runs in CI; the 4 API tests that skipped in CI now run against it.

@@ -119,11 +119,21 @@ async def main():
     ap.add_argument("--delay", type=float, default=1.0)
     ap.add_argument("--out", required=True)
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--population", choices=["targetscan", "gmt-union"],
+                    default="targetscan",
+                    help="gene population the random lists are drawn from: "
+                    "the TargetScan universe (13,035 human genes) or the "
+                    "union of the local GMT libraries (17,436 genes, the "
+                    "whole-genome proxy)")
     args = ap.parse_args()
 
     ke.TARGETSCAN_DB = ke.load_local_data()
-    universe = sorted(set().union(*ke.TARGETSCAN_DB.values()))
-    print(f"universe: {len(universe)} human genes")
+    ke.load_gmt_libraries()
+    if args.population == "gmt-union":
+        universe = sorted(set().union(*[set(v) for lib in ke.GMT_LIBRARIES.values() for v in lib.values()]))
+    else:
+        universe = sorted(set().union(*ke.TARGETSCAN_DB.values()))
+    print(f"population: {args.population} | universe: {len(universe)} genes")
 
     done = []
     if args.resume and os.path.exists(args.out):
@@ -178,6 +188,8 @@ async def main():
     summary = {"version": "1.54", "route": "live Enrichr",
                "criterion": ("engine: first 8 rows per library, "
                              "row[6] adjusted p < 0.05"),
+               "population": args.population,
+               "population_size": len(universe),
                "panels": args.panels, "size": args.size, "seed": args.seed,
                "false_positive_rate": fpr, "false_positive_rate_any": fpr_any,
                "control_raw_p_fpr": fpr_raw, "lists": done}
