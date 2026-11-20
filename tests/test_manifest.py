@@ -74,10 +74,18 @@ def test_cli_determinism_end_to_end(tmp_path):
     assert d1["convergence"] == d2["convergence"]
     assert d1["execution_manifest"] == d2["execution_manifest"]
     assert d1["common_genes"] == d2["common_genes"]
-    # Prioritized order, not alphabetical: ABCA1 (validated by 2 panel
-    # miRNAs) first, SNTB2/TSC22D2 (weak support) next, KPNA3/SCN1A
-    # (predicted only) last.
-    assert d1["common_genes"] == ["ABCA1", "SNTB2", "TSC22D2", "KPNA3", "SCN1A"]
+    # The order depends on the validation data available, exactly as
+    # in test_cli_offline: with the official miRTarBase index the
+    # order is prioritized (ABCA1 validated by 2 panel miRNAs first,
+    # SNTB2/TSC22D2 with weak support next, KPNA3/SCN1A predicted
+    # only last); without it (CI: the index is gitignored, and the
+    # Harmonizome GMT is not in the repo either) no gene has
+    # validation data, so the order falls back to alphabetical.
+    from pathlib import Path
+    official = Path(__file__).resolve().parent.parent / "local_db" / "mirtarbase_official.json.gz"
+    expected = (["ABCA1", "SNTB2", "TSC22D2", "KPNA3", "SCN1A"] if official.exists()
+                else ["ABCA1", "KPNA3", "SCN1A", "SNTB2", "TSC22D2"])
+    assert d1["common_genes"] == expected
     # The kept report carries the manifest, not just the JSON.
     assert "Manifiesto de ejecución" in (out1 / "report.md").read_text()
 
