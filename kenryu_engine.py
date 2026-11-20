@@ -301,6 +301,7 @@ from kenryu_core import (
     prioritize_genes,
     reverse_lookup,
     term_specificity,
+    group_redundant_terms,
 )
 from kenryu_updater import (
     DATA_SOURCES,
@@ -548,11 +549,11 @@ async def safe_pubmed_request(client: httpx.AsyncClient, url: str, params: dict,
             await asyncio.sleep(1)
     return None
 
-def annotate_enrichment_specificity(enrichment, gene_list, n_panels=100):
+def annotate_enrichment_specificity(enrichment, gene_list):
     """Add a 'specificity' field to each enrichment term (v1.54): the
-    fraction of random gene lists of the same size, drawn from the
-    TargetScan universe, whose overlap with the term is >= the observed
-    overlap. 1.0 = the term appears by chance as often as observed
+    exact probability (hypergeometric tail, unreleased 2026-11-19) that a
+    random gene list of the same size, drawn from the TargetScan
+    universe, overlaps the term at least as much as observed. 1.0 = the term appears by chance as often as observed
     (generic, e.g. "regulation of transcription"); 0.0 = it never
     appears by chance (specific). Terms not found in the local GMT
     libraries get None. Mutates the items in place and returns them."""
@@ -575,7 +576,36 @@ def annotate_enrichment_specificity(enrichment, gene_list, n_panels=100):
         bg = ts_universe & set().union(*lib.values())
         observed = len(gene_set & term_genes)
         item["specificity"] = term_specificity(
-            term_genes, bg, len(gene_list), observed, n_panels=n_panels)
+            term_genes, bg, len(gene_list), observed)
+    return enrichment
+
+
+def annotate_enrichment_groups(enrichment, gene_list):
+    """Mark redundant enrichment terms (unreleased, 2026-11-19). Terms
+    whose panel hit sets overlap (overlap coefficient >= 0.75) collapse
+    into the most significant one. Adds to each item `is_group_representative`
+    (bool); representatives also get `group_size` and `group_members`
+    (names); members get `group_of`. No p-value changes and every item
+    stays in the response. Terms not found in the local GMT libraries stay
+    alone. Mutates the items in place and returns them."""
+    if not enrichment or not gene_list:
+        return enrichment
+    gene_set = set(gene_list)
+    hits = {}
+    for item in enrichment:
+        lib = GMT_LIBRARIES.get(item.get("Source"))
+        name = item.get("RawTerm") or item.get("Term")
+        genes = lib.get(name) if lib else None
+        if genes:
+            hits[(item.get("Source"), name)] = gene_set & set(genes)
+    for g in group_redundant_terms(enrichment, hits):
+        rep = g["representative"]
+        rep["is_group_representative"] = True
+        rep["group_size"] = 1 + len(g["members"])
+        rep["group_members"] = [m.get("Term") for m in g["members"]]
+        for m in g["members"]:
+            m["is_group_representative"] = False
+            m["group_of"] = rep.get("Term")
     return enrichment
 
 
@@ -2122,6 +2152,11 @@ async def analyze(req: AnalysisRequest):
         annotate_enrichment_specificity(enrichment_results, gene_list_enr)
     if enrichment_enrichr:
         annotate_enrichment_specificity(enrichment_enrichr, gene_list_enr)
+    # Unreleased: agrupar términos redundantes (mismos genes del panel).
+    if enrichment_results:
+        annotate_enrichment_groups(enrichment_results, gene_list_enr)
+    if enrichment_enrichr:
+        annotate_enrichment_groups(enrichment_enrichr, gene_list_enr)
 
     # ── DATOS REALES PARA LOS GRÁFICOS ────────────────────────────────────────
     # Volcán: conteos de PubMed (top 25 genes de la unión por nº de miRNAs).

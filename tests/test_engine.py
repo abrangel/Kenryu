@@ -1096,7 +1096,30 @@ def test_annotate_specificity_uses_raw_term_for_translated_terms():
          "Source": "Reactome", "Pval": 0.0424},
     ]
     ke.annotate_enrichment_specificity(terms, cancer)
-    assert [t["specificity"] for t in terms] == [0.0, 0.0, 0.01]
+    # Unreleased: valor exacto (cola hipergeométrica con el universo de
+    # TargetScan ∩ biblioteca, N=7337); antes 100 muestras daban 0,0/0,0/0,01.
+    assert [t["specificity"] for t in terms] == pytest.approx(
+        [0.006081, 0.003224, 0.004837], abs=1e-6)
+    assert all(t["specificity"] < 0.01 for t in terms)
+
+
+def test_annotate_enrichment_groups_marks_redundant_terms_without_touching_pvalues():
+    # Unreleased: dos términos de la misma biblioteca con los mismos genes
+    # del panel se agrupan; el p-valor de cada uno queda intacto.
+    ke.TARGETSCAN_DB = ke.load_local_data()
+    ke.load_gmt_libraries()
+    lib = ke.GMT_LIBRARIES["Reactome"]
+    names = list(lib)
+    a = names[0]
+    panel = sorted(lib[a])[:4]
+    twin = next(n for n in names[1:] if set(panel) <= set(lib[n]))
+    terms = [{"Term": a, "RawTerm": a, "Source": "Reactome", "Pval": 0.02},
+             {"Term": twin, "RawTerm": twin, "Source": "Reactome", "Pval": 0.03}]
+    ke.annotate_enrichment_groups(terms, panel)
+    assert terms[0]["is_group_representative"] is True
+    assert terms[0]["group_size"] == 2 and terms[0]["group_members"] == [twin]
+    assert terms[1]["is_group_representative"] is False and terms[1]["group_of"] == a
+    assert [t["Pval"] for t in terms] == [0.02, 0.03]
 
 
 def test_health_reports_commit_hash_from_build_info(tmp_path, monkeypatch):

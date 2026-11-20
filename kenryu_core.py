@@ -676,32 +676,74 @@ def fisher_enrichment(genes, library, background=None, top_n=8, p_adj_max=0.05):
 
 
 def term_specificity(term_genes, background, list_size, observed_overlap,
-                     n_panels=100, seed=7):
-    """Fraction of random gene lists of `list_size`, drawn from
-    `background`, whose overlap with the term is >= `observed_overlap`.
+                     n_panels=None, seed=None):
+    """Exact probability that a random gene list of `list_size`, drawn
+    from `background`, overlaps the term in at least `observed_overlap`
+    genes: the hypergeometric survival function P(X >= observed).
 
-    1.0 = the term appears by chance as often as observed (a generic
-    term such as "regulation of transcription" that shows up in most
-    random panels); 0.0 = it never appears by chance (specific).
-    Deterministic given the seed, so the value is reproducible. Returns
-    None when there is no background or no term genes to test. Pure.
-    The raw fraction is returned (no rounding): with 10,000 draws the
-    estimate resolves below the 5% generic threshold, and rounding
-    would blur it. Display layers round; this function does not."""
-    import random
-    bg = sorted(background) if background else []
-    if not bg or list_size <= 0 or n_panels <= 0:
+    Unreleased (2026-11-19): replaces the Monte Carlo estimate (100 draws,
+    1% resolution; 10,000 draws cost ~4 s per analysis). The quantity is
+    the same, so the exact value needs no seed and no sampling.
+
+    1.0 = the term appears by chance as often as observed (generic, e.g.
+    "regulation of transcription"); values near 0 = specific. Note that
+    this equals the one-sided Fisher p-value WITHOUT multiple-testing
+    adjustment, with `background` as the population: a guard against
+    generic terms, not a significance test. Returns None when there is no
+    background, no term genes inside it, or an empty list. Pure.
+    `n_panels` and `seed` are accepted and ignored (legacy callers)."""
+    from scipy.stats import hypergeom
+    bg = set(background) if background else set()
+    if not bg or list_size <= 0:
         return None
-    term = set(term_genes) & set(bg)
+    term = set(term_genes) & bg
     if not term:
         return None
-    rng = random.Random(seed)
-    k = min(list_size, len(bg))
-    hits = 0
-    for _ in range(n_panels):
-        if len(set(rng.sample(bg, k)) & term) >= observed_overlap:
-            hits += 1
-    return hits / n_panels
+    k = int(observed_overlap)
+    if k <= 0:
+        return 1.0
+    n = min(int(list_size), len(bg))
+    return float(hypergeom.sf(k - 1, len(bg), len(term), n))
+
+
+GROUP_OVERLAP_THRESHOLD = 0.75
+
+
+def group_redundant_terms(items, hits_by_key, threshold=GROUP_OVERLAP_THRESHOLD):
+    """Collapse enrichment terms that rest on (almost) the same panel genes.
+
+    `items`: enrichment dicts with Term/Source/Pval. `hits_by_key` maps
+    (Source, RawTerm-or-Term) to the set of panel genes that fall in the
+    term. Greedy, deterministic: terms are ordered by (Pval, Term); the
+    most significant ungrouped term becomes a representative and absorbs
+    every other ungrouped term whose hit set reaches an overlap
+    coefficient |A∩B| / min(|A|,|B|) >= `threshold` with the REPRESENTATIVE
+    (no chaining through members). Terms with unknown or empty hit sets
+    stay alone. No p-value is modified and the input is not mutated.
+    Returns [{"representative": item, "members": [items...]}...]."""
+    ordered = sorted(items, key=lambda it: (it.get("Pval", 1.0), it.get("Term", "")))
+
+    def hits_of(it):
+        key = (it.get("Source"), it.get("RawTerm") or it.get("Term"))
+        h = hits_by_key.get(key)
+        return set(h) if h else set()
+
+    groups, taken = [], set()
+    for idx, rep in enumerate(ordered):
+        if idx in taken:
+            continue
+        taken.add(idx)
+        rep_hits, members = hits_of(rep), []
+        if rep_hits:
+            for jdx in range(idx + 1, len(ordered)):
+                if jdx in taken:
+                    continue
+                other = hits_of(ordered[jdx])
+                if other and len(rep_hits & other) / min(len(rep_hits), len(other)) >= threshold:
+                    taken.add(jdx)
+                    members.append(ordered[jdx])
+        groups.append({"representative": rep, "members": members})
+    return groups
 
 
 def local_enrichment(genes, libraries, background=None, top_total=24):

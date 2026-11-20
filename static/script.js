@@ -18,6 +18,17 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+// Unreleased (2026-11-19): especificidad exacta (cola hipergeométrica: p de
+// Fisher sin ajustar, con el universo de TargetScan como población). Se
+// muestra "<1%" por debajo del 1% y un decimal entre 1% y 10%, para no
+// borrar el umbral del 5% (un 4,7% no debe leerse como 5%).
+const SPEC_TITLE = 'Probabilidad exacta de que listas aleatorias de genes del mismo tamaño, extraídas del universo de TargetScan, solapen con este término al menos tanto como la lista observada (cola hipergeométrica, sin ajustar por pruebas múltiples: guarda contra términos genéricos, no es una prueba de significancia). 100% = genérico; <1% = específico.';
+function fmtSpec(x) {
+  if (typeof x !== 'number' || !isFinite(x)) return '—';
+  if (x < 0.01) return '<1%';
+  if (x < 0.10) return `${(x * 100).toFixed(1)}%`;
+  return `${Math.round(x * 100)}%`;
+}
 let pageCount = 1;
 let sectionCount = 4;
 let isPreview = false;
@@ -230,8 +241,8 @@ function renderDashboard(data) {
     const enEl = document.getElementById('enrich-container');
     if (enEl) {
       if (data.enrichment && data.enrichment.length) {
-        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p-valor</th><th title="Fracción de listas aleatorias de genes del mismo tamaño, extraídas del universo de TargetScan, en las que este término aparece por azar. 100% = genérico; <1% = específico.">Especificidad</th><th>PubMed</th></tr></thead><tbody>`;
-        data.enrichment.forEach(item => {
+        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p-valor</th><th title="${SPEC_TITLE}">Especificidad</th><th>PubMed</th></tr></thead><tbody>`;
+        data.enrichment.filter(it => it.is_group_representative !== false).forEach(item => {
           const pvalVal = (item.Pval !== undefined && item.Pval !== null) 
             ? (typeof item.Pval === 'number' ? item.Pval.toExponential(2) : item.Pval)
             : '—';
@@ -252,13 +263,14 @@ function renderDashboard(data) {
           // Es un número del servidor, no texto libre: no necesita escape.
           // Unreleased: con 100 muestras la resolución es del 1%: un 0
           // observado se muestra como "<1%", nunca como "0%".
-          const specPct = (item.specificity !== undefined && item.specificity !== null && typeof item.specificity === 'number')
-            ? Math.round(item.specificity * 100)
-            : null;
-          const spec = specPct === null ? '—' : (specPct === 0 ? '<1%' : `${specPct}%`);
-          const specTitle = 'Fracción de listas aleatorias de genes del mismo tamaño, extraídas del universo de TargetScan, en las que este término aparece por azar. 100% = genérico; <1% = específico.';
+          const gm = Array.isArray(item.group_members) ? item.group_members : [];
+          const groupBadge = gm.length
+            ? `<br><small style="color:var(--text-faint);" title="${escapeHtml(gm.join('; '))}">+${gm.length} término${gm.length === 1 ? '' : 's'} similar${gm.length === 1 ? '' : 'es'} (mismos genes del panel)</small>`
+            : '';
+          const spec = fmtSpec(item.specificity);
+          const specTitle = SPEC_TITLE;
 
-          html += `<tr><td><span style="font-weight:500;">${escapeHtml(item.Term || '—')}</span><br><small style="color:var(--text-dim);">${escapeHtml(item.ScientificDesc || '')}</small></td>
+          html += `<tr><td><span style="font-weight:500;">${escapeHtml(item.Term || '—')}</span><br><small style="color:var(--text-dim);">${escapeHtml(item.ScientificDesc || '')}</small>${groupBadge}</td>
             <td><span class="source-tag">${escapeHtml(item.Source || '—')}</span></td>
             <td><span style="font-family:var(--font-mono); font-size:11px;">${pvalVal}</span></td>
             <td><span style="font-family:var(--font-mono); font-size:11px;" title="${specTitle}">${spec}</span></td>
@@ -278,17 +290,18 @@ function renderDashboard(data) {
     const enrEl = document.getElementById('enrich-container-enrichr');
     if (enrEl) {
       if (data.enrichment_enrichr && data.enrichment_enrichr.length) {
-        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p ajustado de Enrichr (exploratorio)</th><th title="Fracción de listas aleatorias de genes del mismo tamaño, extraídas del universo de TargetScan, en las que este término aparece por azar. 100% = genérico; <1% = específico.">Especificidad</th></tr></thead><tbody>`;
-        data.enrichment_enrichr.forEach(item => {
+        let html = `<table class="sci-table"><thead><tr><th>Ruta Biológica</th><th>Fuente</th><th>p ajustado de Enrichr (exploratorio)</th><th title="${SPEC_TITLE}">Especificidad</th></tr></thead><tbody>`;
+        data.enrichment_enrichr.filter(it => it.is_group_representative !== false).forEach(item => {
           const pvalVal = (item.Pval !== undefined && item.Pval !== null)
             ? (typeof item.Pval === 'number' ? item.Pval.toExponential(2) : item.Pval)
             : '—';
-          const specPct = (item.specificity !== undefined && item.specificity !== null && typeof item.specificity === 'number')
-            ? Math.round(item.specificity * 100)
-            : null;
-          const spec = specPct === null ? '—' : (specPct === 0 ? '<1%' : `${specPct}%`);
-          const specTitle = 'Fracción de listas aleatorias de genes del mismo tamaño, extraídas del universo de TargetScan, en las que este término aparece por azar. 100% = genérico; <1% = específico.';
-          html += `<tr><td><span style="font-weight:500;">${escapeHtml(item.Term || '—')}</span><br><small style="color:var(--text-dim);">${escapeHtml(item.ScientificDesc || '')}</small></td>
+          const gm = Array.isArray(item.group_members) ? item.group_members : [];
+          const groupBadge = gm.length
+            ? `<br><small style="color:var(--text-faint);" title="${escapeHtml(gm.join('; '))}">+${gm.length} término${gm.length === 1 ? '' : 's'} similar${gm.length === 1 ? '' : 'es'} (mismos genes del panel)</small>`
+            : '';
+          const spec = fmtSpec(item.specificity);
+          const specTitle = SPEC_TITLE;
+          html += `<tr><td><span style="font-weight:500;">${escapeHtml(item.Term || '—')}</span><br><small style="color:var(--text-dim);">${escapeHtml(item.ScientificDesc || '')}</small>${groupBadge}</td>
             <td><span class="source-tag">${escapeHtml(item.Source || '—')}</span></td>
             <td><span style="font-family:var(--font-mono); font-size:11px;">${pvalVal}</span></td>
             <td><span style="font-family:var(--font-mono); font-size:11px;" title="${specTitle}">${spec}</span></td></tr>`;

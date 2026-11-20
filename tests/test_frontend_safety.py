@@ -117,3 +117,25 @@ def test_index_html_has_enrichr_exploratory_container():
     assert r.status_code == 200
     assert "enrich-container-enrichr" in r.text
     assert "Enrichr (exploratorio)" in r.text
+
+
+def test_specificity_formatter_keeps_the_five_percent_threshold_readable():
+    # Unreleased: valor exacto. <1% por debajo del 1%, un decimal entre
+    # 1% y 10% (un 4,7% no debe leerse como 5%), entero a partir del 10%.
+    js = _script_text()
+    assert "function fmtSpec(" in js
+    assert "toFixed(1)" in js and "'<1%'" in js
+    assert "Math.round(item.specificity * 100)" not in js
+
+
+def test_specificity_header_and_tooltip_use_the_exact_wording():
+    js = _script_text()
+    assert js.count('title="${SPEC_TITLE}"') == 2          # las dos tablas
+    assert "cola hipergeométrica" in js and "no es una prueba de significancia" in js
+
+
+def test_group_badge_is_escaped_and_members_are_hidden_from_the_main_table():
+    js = _script_text()
+    assert js.count("is_group_representative !== false") == 2
+    assert "escapeHtml(gm.join('; '))" in js          # el título del badge se escapa
+    assert "Array.isArray(item.group_members)" in js   # y solo si es una lista

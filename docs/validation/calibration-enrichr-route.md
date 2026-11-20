@@ -113,8 +113,11 @@ the panel is too small for that test to have power. The lipid
 panel's support is at the gene level (ABCA1 with strong experimental
 evidence). The Enrichr terms are reported with the per-term
 specificity column as the guard: each term is rarely hit by a random
-list (12 of 19 below 0.03, 7 near the threshold reported as numbers
-only), even though some term or other is almost always hit.
+list (13 of 19 below 0.03, 6 near the threshold reported as numbers
+only), even though some term or other is almost always hit. The 19
+terms collapse into 3 groups resting on the same panel genes (see
+`docs/validation/lipid-terms-specificity.md`); they are not 19
+independent findings.
 
 ## 5-gene lists (thesis-like): engine criterion — DONE 2026-11-19
 
@@ -151,33 +154,36 @@ adjusted p < 0.05):
 | KEGG | 0.10 | 21 |
 
 **51 of 100 random lists came back with at least one "significant"
-term in some library** — about ten times the 5% a calibrated method
-should give. Control with the raw p-value instead of the adjusted
+term in some library.** The per-library rates are the ones compared
+to the calibrated 5%: 0.10–0.30, still 2–6× that. The any-library
+figure is not compared to 5% directly — with four calibrated
+libraries the expected value is ≈18.5% (1 − 0.95⁴) — so 0.51 is
+about 2.8× that. Control with the raw p-value instead of the adjusted
 one: GO 1.00, Reactome 1.00, WikiPathways 0.99, KEGG 0.99. The
-adjustment does cut that rate, but only to 0.10–0.30 per library
-(0.51 in any library) — still 2–10× the 5% a calibrated method
-should give. The cancer panel's three terms (Developmental Biology
+adjustment does cut that rate, but only to 0.10–0.30 per library.
+The cancer panel's three terms (Developmental Biology
 0.0176, Recycling Pathway of L1 0.0424, Signaling by TGFBR3
 0.0424) therefore cannot be presented as significant findings;
 they are reported as exploratory, with their specificity values
-(<1%, <1%, 0.01) as the guard.
+(0.61%, 0.32%, 0.48% exact) as the guard.
 
 ## 100-gene lists: DONE 2026-11-19 (30 lists, seed 13, TargetScan universe)
 
 The rate falls with list size, but does not reach the calibrated 5%
-at 100 genes either. With n=30 the 95% confidence intervals are
-wide (±9–18 points), so small differences are not interpretable —
-only the order of magnitude is.
+at 100 genes either. Intervals are exact Clopper–Pearson 95%
+intervals; with n=30 they are wide, so small differences are not
+interpretable — only the order of magnitude is.
 
-| Library | FPR (engine) | 95% CI |
+| Library | FPR (engine) | 95% CI (Clopper–Pearson) |
 |---|---|---|
-| GO Biological Process | 0.10 | 0.00–0.21 |
-| Reactome | 0.03 | 0.00–0.10 |
-| WikiPathways | 0.17 | 0.03–0.30 |
-| KEGG | 0.23 | 0.08–0.39 |
+| GO Biological Process | 0.10 | 0.02–0.27 |
+| Reactome | 0.03 | 0.00–0.17 |
+| WikiPathways | 0.17 | 0.06–0.35 |
+| KEGG | 0.23 | 0.10–0.42 |
 
 **11 of 30 random lists came back with at least one "significant"
-term in some library (0.37, 95% CI 0.19–0.54).** Control with the
+term in some library (0.37, 95% CI 0.20–0.56; the calibrated
+expectation for four libraries is ≈0.185).** Control with the
 raw p-value: GO 1.00, Reactome 1.00, WikiPathways 1.00, KEGG 0.97.
 
 Size trend (any library): 5 genes 1.00 → 18 genes 0.51 → 100 genes
@@ -186,11 +192,12 @@ almost every term has an overlap, so BH over the returned terms
 approaches BH over the whole library — but the data do not support
 a clean size threshold N below which the adjusted p "is not an
 FDR" and above which it is: at 100 genes the rate is still 0.37 in
-any library and no library is at 5% (Reactome 0.03 is the only one
-whose interval includes 0.05). The scoped claim stands: at the
-sizes tested (5, 18 and 100 genes) the adjusted p returned by the
-Enrichr API is not equivalent to a standard FDR. File:
-`calibration-enrichr-K100-engine.json`.
+any library, and GO (0.02–0.27) and Reactome (0.00–0.17) are both
+indistinguishable from 5% while WikiPathways (0.06–0.35), KEGG
+(0.10–0.42) and any library (0.20–0.56) sit above it. The scoped
+claim stands: at the sizes tested (5, 18 and 100 genes) the adjusted
+p returned by the Enrichr API is not equivalent to a standard FDR.
+File: `calibration-enrichr-K100-engine.json`.
 
 Same protocol, 50 lists each, but the random genes drawn from the
 union of the local GMT libraries (17,436 genes, the whole-genome

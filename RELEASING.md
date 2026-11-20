@@ -41,7 +41,20 @@ imports. The engine and the core move together. Before every sync:
    the import fails there, it will fail on the Space.
 3. After pushing, run an automatic `/health` check (version, commit
    hash, `mirtarbase_mode`) plus the two reference panels (lipid and
-   cancer) before calling the sync done.
-4. A separate test Space costs little and avoids breaking the public
+   cancer) before calling the sync done. **The two panels must run
+   from a script, not by hand** (a scripted check is repeatable and
+   leaves a log; a manual check leaves nothing).
+4. **Rollback:** before pushing, record the Space's current commit
+   (from the Space's commit history or the previous `build_info.json`
+   hash) so the previous version can be restored with a single
+   commit if the new sync breaks the service.
+5. **Verify the version:** after the sync, the commit reported by
+   `/health` must match the GitHub tag (or the Unreleased commit)
+   that was synced — never a stale or unknown hash.
+6. A separate test Space costs little and avoids breaking the public
    one. JOSS may open the service during review, so the public Space
    must never be left in "Runtime error" by a sync.
+7. Medium term: a workflow that performs the sync from CI after the
+   tests pass removes the manual error entirely (package built by
+   CI, import check and /health check as steps, rollback on
+   failure).

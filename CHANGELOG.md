@@ -4,6 +4,33 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Added
+- Exact specificity: `term_specificity` now returns the exact
+  hypergeometric tail (scipy), equal to the unadjusted one-sided
+  Fisher p-value with the TargetScan universe as population — no
+  sampling, no seed, no 4-second cost. Legacy `n_panels`/`seed`
+  arguments are accepted and ignored. The three cancer terms are now
+  0.61%, 0.32%, 0.48% (was 0.0/0.0/0.01 from 100 draws); the reading
+  does not change.
+- Redundant-term grouping: terms resting on (almost) the same panel
+  genes (overlap coefficient ≥ 0.75 on the panel genes in each term)
+  collapse into the most significant one. The response keeps every
+  term and adds `is_group_representative`, `group_size`,
+  `group_members` and `group_of`; no p-value is modified. The main
+  table shows only representatives, with a "+N similar terms" note.
+  On the 19 lipid-panel terms this gives 3 groups (lipid terms on
+  ABCA1, neuronal terms on SCN1A, nuclear-import terms on KPNA3).
+- Space sync checklist (`RELEASING.md`): rollback step, /health
+  commit must match the synced GitHub tag, reference panels run
+  from a script, and a CI-driven sync as the medium-term goal.
+
+### Fixed
+- Calibration intervals are now exact Clopper–Pearson intervals
+  (the K100 normal-approximation intervals understated the
+  uncertainty; GO's interval 0.02–0.27 also includes 0.05, not only
+  Reactome's). The any-library rate is not compared to 5%: with four
+  calibrated libraries the expected value is ≈18.5% (1 − 0.95⁴).
+
 ## [1.55] - 2026-11-19
 
 This release changes what users see as the enrichment result, so it

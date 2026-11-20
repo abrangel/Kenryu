@@ -1,3 +1,4 @@
+import pytest
 """Enrichment background: the TargetScan universe.
 
 The Fisher test's background must be the set of genes that could have
@@ -108,31 +109,25 @@ def test_local_enrichment_uses_targetscan_universe_per_library():
 
 
 def test_term_specificity_generic_vs_specific():
-    """v1.54: a term covering the whole background appears in every
-    random panel (specificity 1.0); a term with one gene in 10,000
-    never does (0.0); a 100-in-1000 term with 3-of-10 observed is
-    rare by chance (0.04 with the fixed seed)."""
+    """A term covering the whole background appears in every random list
+    (specificity 1.0); a 1-gene term in 10,000 genes almost never does
+    (exact 0.0005, not 0); 3-of-10 for a 100-in-1000 term is rare (exact
+    hypergeometric tail). Unreleased: exact value, no Monte Carlo."""
+    from scipy.stats import hypergeom
     from kenryu_core import term_specificity
     assert term_specificity(set(range(100)), set(range(100)), 5, 5) == 1.0
-    assert term_specificity({"g0"}, {f"g{i}" for i in range(10000)}, 5, 1) == 0.0
-    assert term_specificity({f"t{i}" for i in range(100)},
-                            {f"t{i}" for i in range(100)} | {f"f{i}" for i in range(900)},
-                            10, 3) == 0.04
+    assert term_specificity({"g0"}, {f"g{i}" for i in range(10000)}, 5, 1) == pytest.approx(0.0005, abs=1e-9)
+    bg = {f"t{i}" for i in range(100)} | {f"f{i}" for i in range(900)}
+    assert term_specificity({f"t{i}" for i in range(100)}, bg, 10, 3) == pytest.approx(
+        float(hypergeom.sf(2, 1000, 100, 10)), abs=1e-12)
     assert term_specificity({"A"}, set(), 5, 1) is None
     assert term_specificity(set(), {"A", "B"}, 5, 1) is None
 
 
-def test_term_specificity_not_rounded_at_10000_draws():
-    """Unreleased: with 10,000 draws the estimate keeps its full
-    precision — rounding to 2 decimals would blur the 5% generic
-    threshold (a true 0.068 must not read as 0.07, nor 0.047 as 0.05)."""
-    import random
+def test_term_specificity_is_not_rounded():
+    """The exact value keeps full precision: a true 0.0465 must not read
+    as 0.05 (the 5% generic threshold). Display layers decide the format."""
     from kenryu_core import term_specificity
-    term = {f"t{i}" for i in range(100)}
-    bg = term | {f"f{i}" for i in range(900)}
-    rng = random.Random(7)
-    hits = sum(1 for _ in range(10000)
-               if len(set(rng.sample(sorted(bg), 10)) & term) >= 3)
-    expected = hits / 10000
-    assert expected != round(expected, 2)  # the case discriminates
-    assert term_specificity(term, bg, 10, 3, n_panels=10000, seed=7) == expected
+    bg = {f"t{i}" for i in range(100)} | {f"f{i}" for i in range(900)}
+    v = term_specificity({f"t{i}" for i in range(100)}, bg, 10, 3)
+    assert v != round(v, 2) and 0.0 < v < 1.0
