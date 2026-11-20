@@ -14,7 +14,9 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   the correction is recorded here and in `docs/validation/README.md`.
 
 ### Added
-- docs/validation/: specificity of the 19 lipid-panel terms (version, date).
+- docs/validation/: specificity of the 19 lipid-panel terms (version, date),
+  re-estimated with 10,000 draws: 18 specific, 1 generic (Selenium);
+  Folate and Rett remain borderline ("límite").
 - Commit hash: `/health` and every analysis JSON now report `"commit"`,
   the short GitHub hash read from `local_db/build_info.json` (written
   by the sync step); `"unknown"` when the file is absent or malformed.

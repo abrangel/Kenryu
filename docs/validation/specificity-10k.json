@@ -1,0 +1,226 @@
+{
+  "version": "1.54",
+  "commit": "e7d6eb0",
+  "date": "2026-11-19",
+  "route": "live Enrichr",
+  "n_panels": 10000,
+  "seed": 7,
+  "panel": [
+    "ABCA1",
+    "KPNA3",
+    "SCN1A",
+    "SNTB2",
+    "TSC22D2"
+  ],
+  "terms": [
+    {
+      "source": "WikiPathways",
+      "term": "Metabolic pathway of LDL, HDL and TG, including diseases WP4522",
+      "p_adj": 0.015975781794622553,
+      "specificity_100": 0.03,
+      "specificity_10000": 0.0129,
+      "se_100": 0.0171,
+      "se_10000": 0.0011,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "WikiPathways",
+      "term": "SREBF and miR33 in cholesterol and lipid homeostasis WP2011",
+      "p_adj": 0.015975781794622553,
+      "specificity_100": 0.02,
+      "specificity_10000": 0.0186,
+      "se_100": 0.014,
+      "se_10000": 0.0014,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "WikiPathways",
+      "term": "Statin Pathway WP430",
+      "p_adj": 0.016447095938252956,
+      "specificity_100": 0.04,
+      "specificity_10000": 0.0216,
+      "se_100": 0.0196,
+      "se_10000": 0.0015,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "WikiPathways",
+      "term": "Nuclear Receptors in Lipid Metabolism and Toxicity WP299",
+      "p_adj": 0.016447095938252956,
+      "specificity_100": 0.02,
+      "specificity_10000": 0.0252,
+      "se_100": 0.014,
+      "se_10000": 0.0016,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "WikiPathways",
+      "term": "Rett syndrome causing genes WP4312",
+      "p_adj": 0.016585036257030044,
+      "specificity_100": 0.06,
+      "specificity_10000": 0.0465,
+      "se_100": 0.0237,
+      "se_10000": 0.0021,
+      "verdict_10k": "specific",
+      "verdict_changed": true
+    },
+    {
+      "source": "WikiPathways",
+      "term": "Vitamin B12 Metabolism WP1533",
+      "p_adj": 0.016585036257030044,
+      "specificity_100": 0.04,
+      "specificity_10000": 0.0339,
+      "se_100": 0.0196,
+      "se_10000": 0.0018,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "WikiPathways",
+      "term": "Folate Metabolism WP176",
+      "p_adj": 0.018734801614483192,
+      "specificity_100": 0.06,
+      "specificity_10000": 0.0491,
+      "se_100": 0.0237,
+      "se_10000": 0.0022,
+      "verdict_10k": "specific",
+      "verdict_changed": true
+    },
+    {
+      "source": "WikiPathways",
+      "term": "Selenium Micronutrient Network WP15",
+      "p_adj": 0.0213178505521487,
+      "specificity_100": 0.08,
+      "specificity_10000": 0.0576,
+      "se_100": 0.0271,
+      "se_10000": 0.0023,
+      "verdict_10k": "generic",
+      "verdict_changed": false
+    },
+    {
+      "source": "GO",
+      "term": "Detection Of Stimulus Involved In Sensory Perception Of Pain (GO:0062149)",
+      "p_adj": 0.021338390364866604,
+      "specificity_100": 0.01,
+      "specificity_10000": 0.0021,
+      "se_100": 0.0099,
+      "se_10000": 0.0005,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "GO",
+      "term": "Detection Of Mechanical Stimulus Involved In Sensory Perception (GO:0050974)",
+      "p_adj": 0.021338390364866604,
+      "specificity_100": 0.0,
+      "specificity_10000": 0.0033,
+      "se_100": 0.0,
+      "se_10000": 0.0006,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "GO",
+      "term": "NLS-bearing Protein Import Into Nucleus (GO:0006607)",
+      "p_adj": 0.021338390364866604,
+      "specificity_100": 0.0,
+      "specificity_10000": 0.0079,
+      "se_100": 0.0,
+      "se_10000": 0.0009,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "GO",
+      "term": "Cardiac Muscle Cell Contraction (GO:0086003)",
+      "p_adj": 0.021338390364866604,
+      "specificity_100": 0.0,
+      "specificity_10000": 0.0079,
+      "se_100": 0.0,
+      "se_10000": 0.0009,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "GO",
+      "term": "Cardiac Muscle Cell Action Potential (GO:0086001)",
+      "p_adj": 0.023680943957047316,
+      "specificity_100": 0.0,
+      "specificity_10000": 0.0129,
+      "se_100": 0.0,
+      "se_10000": 0.0011,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "GO",
+      "term": "Cardiac Muscle Cell Action Potential Involved In Contraction (GO:0086002)",
+      "p_adj": 0.023680943957047316,
+      "specificity_100": 0.0,
+      "specificity_10000": 0.0113,
+      "se_100": 0.0,
+      "se_10000": 0.0011,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "GO",
+      "term": "Calcium Ion Import Across Plasma Membrane (GO:0098703)",
+      "p_adj": 0.02501664462165847,
+      "specificity_100": 0.02,
+      "specificity_10000": 0.0177,
+      "se_100": 0.014,
+      "se_10000": 0.0013,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "KEGG",
+      "term": "Fat digestion and absorption",
+      "p_adj": 0.02902381344980258,
+      "specificity_100": 0.04,
+      "specificity_10000": 0.0195,
+      "se_100": 0.0196,
+      "se_10000": 0.0014,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "KEGG",
+      "term": "ABC transporters",
+      "p_adj": 0.02902381344980258,
+      "specificity_100": 0.03,
+      "specificity_10000": 0.0309,
+      "se_100": 0.0171,
+      "se_10000": 0.0017,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    },
+    {
+      "source": "KEGG",
+      "term": "Cholesterol metabolism",
+      "p_adj": 0.02902381344980258,
+      "specificity_100": 0.06,
+      "specificity_10000": 0.035,
+      "se_100": 0.0237,
+      "se_10000": 0.0018,
+      "verdict_10k": "specific",
+      "verdict_changed": true
+    },
+    {
+      "source": "GO",
+      "term": "Import Into Nucleus (GO:0051170)",
+      "p_adj": 0.0349202283503877,
+      "specificity_100": 0.01,
+      "specificity_10000": 0.0311,
+      "se_100": 0.0099,
+      "se_10000": 0.0017,
+      "verdict_10k": "specific",
+      "verdict_changed": false
+    }
+  ]
+}

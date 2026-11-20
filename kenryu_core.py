@@ -671,7 +671,10 @@ def term_specificity(term_genes, background, list_size, observed_overlap,
     term such as "regulation of transcription" that shows up in most
     random panels); 0.0 = it never appears by chance (specific).
     Deterministic given the seed, so the value is reproducible. Returns
-    None when there is no background or no term genes to test. Pure."""
+    None when there is no background or no term genes to test. Pure.
+    The raw fraction is returned (no rounding): with 10,000 draws the
+    estimate resolves below the 5% generic threshold, and rounding
+    would blur it. Display layers round; this function does not."""
     import random
     bg = sorted(background) if background else []
     if not bg or list_size <= 0 or n_panels <= 0:
@@ -685,7 +688,7 @@ def term_specificity(term_genes, background, list_size, observed_overlap,
     for _ in range(n_panels):
         if len(set(rng.sample(bg, k)) & term) >= observed_overlap:
             hits += 1
-    return round(hits / n_panels, 2)
+    return hits / n_panels
 
 
 def local_enrichment(genes, libraries, background=None, top_total=24):

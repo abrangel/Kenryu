@@ -120,3 +120,19 @@ def test_term_specificity_generic_vs_specific():
                             10, 3) == 0.04
     assert term_specificity({"A"}, set(), 5, 1) is None
     assert term_specificity(set(), {"A", "B"}, 5, 1) is None
+
+
+def test_term_specificity_not_rounded_at_10000_draws():
+    """Unreleased: with 10,000 draws the estimate keeps its full
+    precision — rounding to 2 decimals would blur the 5% generic
+    threshold (a true 0.068 must not read as 0.07, nor 0.047 as 0.05)."""
+    import random
+    from kenryu_core import term_specificity
+    term = {f"t{i}" for i in range(100)}
+    bg = term | {f"f{i}" for i in range(900)}
+    rng = random.Random(7)
+    hits = sum(1 for _ in range(10000)
+               if len(set(rng.sample(sorted(bg), 10)) & term) >= 3)
+    expected = hits / 10000
+    assert expected != round(expected, 2)  # the case discriminates
+    assert term_specificity(term, bg, 10, 3, n_panels=10000, seed=7) == expected
