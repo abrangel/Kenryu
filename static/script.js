@@ -134,6 +134,28 @@ function renderDashboard(data) {
       }).join('');
     }
 
+    // Prueba de convergencia (Unreleased): ¿es inusual el número de
+    // genes en común? p como rango entre tolerancias, nunca un solo valor.
+    const cvEl = document.getElementById('convergence-container');
+    if (cvEl) {
+      const cv = data.convergence;
+      if (cv) {
+        let html = '';
+        if (cv.skipped) {
+          html = `<div style="color:var(--text-dim); font-size:12px; line-height:1.6;">Prueba de convergencia no calculada (${escapeHtml(cv.skipped)}).</div>`;
+        } else {
+          const tolText = Object.entries(cv.p_by_tolerance).map(([t, p]) => `±${Math.round(parseFloat(t) * 100)}%: ${p.toFixed(3)}`).join(' · ');
+          html = `<div style="font-size:13px; line-height:1.6;">${cv.k_names} nombres de miRNA, ${cv.k_effective} familias efectivas, ${cv.genes_observed} genes en común.<br>p entre ${cv.p_min.toFixed(3)} y ${cv.p_max.toFixed(3)} (${tolText}; resolución ${cv.resolution.toFixed(4)}, ${cv.perms} permutaciones por tolerancia).<br><i>${escapeHtml(cv.label)}</i><br><span style="color:var(--text-dim); font-size:11px;">${escapeHtml(cv.limit)}</span></div>`;
+          if (cv.same_family_warning) {
+            html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">⚠️ Hay miRNAs de la misma familia: el panel tiene ${cv.k_names} nombres pero ${cv.k_effective} semillas independientes.</div>`;
+          }
+        }
+        cvEl.innerHTML = html;
+      } else {
+        cvEl.innerHTML = '<div style="color:var(--text-faint); padding:20px; text-align:center;">Sin prueba de convergencia en esta respuesta (versión anterior del motor).</div>';
+      }
+    }
+
     const setImg = (id, b64) => {
       const el = document.getElementById(id);
       if (el) {

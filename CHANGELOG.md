@@ -13,6 +13,17 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   at 0.05. The paper now says so and reports the effective size:
   the count is not evidence by itself; the value is in the
   per-gene evidence layer. Results in `docs/validation/convergence.md`.
+- Convergence test in the report (`convergence` field of
+  `/api/v1/analyze`, shown in the UI): 2,000 permutations per
+  tolerance, p as a range across ±10–50%, resolution shown next to
+  p, seed from the sorted family names, effective size with a
+  same-family warning, capped at 10 effective families. Tests in
+  `tests/test_convergence.py` (7 tests; suite 244).
+- Comparison table with only verified claims
+  (`docs/comparison.md`, sources + consultation date 20 November
+  2026): multiMiR, DIANA-miRPath v4.0, miRPathDB 2027, miRNet,
+  miRWalk 3.0, miEAA 2023. The paper's State of the field now
+  points to it (paper.md 1,625 words).
 
 ### Fixed
 - README (EN+ES): the lipid panel no longer says "Lipid pathways
@@ -21,6 +32,15 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   gives 0 terms and the Enrichr terms are exploratory, matching
   the paper.
 - paper.md: test count 220 → 237.
+- State of the field: DIANA-miRPath now cites v4.0 (one-sided
+  Fisher exact test; Wallenius as the bias option) — permutation
+  testing was the v3.0 alternative, not v4.0. The strong/weak split
+  is now presented as miRTarBase's own classification, inherited,
+  not a contribution. miRPathDB 2027 stays: the version exists
+  (Flotho et al., NAR advance article 17 Nov 2026, doi
+  10.1093/nar/gkag1178) — a correction claiming otherwise was
+  checked against the Oxford Academic page and rejected. miRNet's
+  "11 databases" (v1.0) verified in the primary source.
 
 ## [1.56] - 2026-11-19
 

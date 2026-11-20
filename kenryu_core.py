@@ -5,6 +5,7 @@ isolation. kenryu_engine.py re-exports these names, so existing imports
 (`kenryu_engine.deep_clean_mirna`, ...) keep working.
 """
 import base64
+import hashlib
 import io
 import logging
 import random
@@ -75,6 +76,108 @@ def consensus_genes(gene_sets: list, mode: str) -> set:
     threshold = max(1, n - 1) if mode == "n-1" else max(1, n - 2)
     all_genes = [g for s in gene_sets for g in s]
     return {g for g, c in Counter(all_genes).items() if c >= threshold}
+
+
+# ── PRUEBA DE CONVERGENCIA DEL PANEL ─────────────────────────────────────────
+CONVERGENCE_LABEL = ("No mide relevancia biológica, solo si el número "
+                     "de genes en común es inusual.")
+CONVERGENCE_LIMIT = ("El emparejamiento solo controla el número de "
+                     "dianas, no los genes que muchos miRNAs comparten.")
+CONVERGENCE_PERMS = 2000
+CONVERGENCE_TOLERANCES = (0.10, 0.25, 0.50)
+CONVERGENCE_MAX_FAMILIES = 10
+
+
+def _convergence_seed(labels):
+    """Deterministic seed from the sorted family names: the same panel
+    always gives the same number, on any machine (hashlib, not hash())."""
+    digest = hashlib.sha256("|".join(sorted(labels)).encode("utf-8")).hexdigest()
+    return int(digest[:8], 16)
+
+
+def panel_convergence(observed_sets, labels, all_families, mode="strict",
+                      perms=CONVERGENCE_PERMS,
+                      tolerances=CONVERGENCE_TOLERANCES,
+                      max_families=CONVERGENCE_MAX_FAMILIES):
+    """Empirical p for a panel's convergent-gene count (pure function).
+
+    Question: how many genes in common does this panel produce, and how
+    surprising is that number? The observed count is compared with
+    random miRNA-family panels, matching each observed family by target
+    count (tolerance), so a panel of "large" families is compared with
+    "large" families. The p is reported as a RANGE across the tolerances
+    (default +-10% to +-50%), never as a single value, with the
+    resolution 1/(perms+1) shown next to it.
+
+    observed_sets: one target set per miRNA name (duplicates allowed —
+    miR-33a and miR-33b share a family, so 5 names are 4 effective
+    families). labels: family name per set (same order). all_families:
+    the whole TargetScan family database (name -> genes).
+
+    The matching controls only the number of targets, not "popular"
+    genes with long 3'UTRs, which many miRNAs share — treat the exact
+    p with caution. The count is not evidence by itself; the value is
+    in the per-gene evidence layer.
+    """
+    n_names = len(observed_sets)
+    distinct, distinct_labels = [], []
+    for s, lab in zip(observed_sets, labels):
+        fs = frozenset(s)
+        if fs not in distinct:
+            distinct.append(fs)
+            distinct_labels.append(lab)
+    k_eff = len(distinct)
+    genes_observed = len(consensus_genes([set(s) for s in distinct], mode))
+    base = {
+        "k_names": n_names,
+        "k_effective": k_eff,
+        "same_family_warning": n_names > k_eff,
+        "genes_observed": genes_observed,
+        "perms": perms,
+        "resolution": 1 / (perms + 1),
+        "label": CONVERGENCE_LABEL,
+        "limit": CONVERGENCE_LIMIT,
+        "skipped": None,
+    }
+    if k_eff < 2:
+        return {**base, "p_by_tolerance": {}, "p_min": None, "p_max": None,
+                "skipped": "needs_at_least_two_families"}
+    if k_eff > max_families:
+        return {**base, "p_by_tolerance": {}, "p_min": None, "p_max": None,
+                "skipped": "too_many_families"}
+    fam_sets = {f: frozenset(g) for f, g in all_families.items() if g}
+    observed_keys = {f for f, s in fam_sets.items() if s in distinct}
+    seed = _convergence_seed(distinct_labels)
+    p_by_tol = {}
+    for tol in tolerances:
+        pools = []
+        for s in distinct:
+            n = len(s)
+            pool = [f for f, t in fam_sets.items()
+                    if f not in observed_keys
+                    and (1 - tol) * n <= len(t) <= (1 + tol) * n]
+            pools.append(pool)
+        if any(len(p) < 3 for p in pools):
+            continue  # tolerance skipped: too few size-matched families
+        rng = random.Random(seed)
+        ge = 0
+        for _ in range(perms):
+            chosen, used = [], set()
+            for pool in pools:
+                f = rng.choice(pool)
+                while f in used:
+                    f = rng.choice(pool)
+                used.add(f)
+                chosen.append(set(fam_sets[f]))
+            if len(consensus_genes(chosen, mode)) >= genes_observed:
+                ge += 1
+        p_by_tol[f"{tol:.2f}"] = (ge + 1) / (perms + 1)
+    if not p_by_tol:
+        return {**base, "p_by_tolerance": {}, "p_min": None, "p_max": None,
+                "skipped": "no_size_matched_families"}
+    return {**base, "p_by_tolerance": p_by_tol,
+            "p_min": min(p_by_tol.values()),
+            "p_max": max(p_by_tol.values())}
 
 
 def prioritize_genes(common_genes, gene_sets, remote_by_mirna):

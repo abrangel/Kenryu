@@ -282,6 +282,8 @@ async def translate_to_spanish(text: str, client: httpx.AsyncClient) -> str:
 # ── LIMPIEZA DE NOMBRES ─────────────────────────────────────────────────────
 # ── PURE HELPERS (live in kenryu_core.py, re-exported here) ─────────────
 from kenryu_core import (
+    CONVERGENCE_LABEL,
+    CONVERGENCE_LIMIT,
     build_export,
     build_synthesis,
     build_validation_report,
@@ -298,6 +300,7 @@ from kenryu_core import (
     load_mirtarbase_official_with_meta,
     local_enrichment,
     normalize_isomir,
+    panel_convergence,
     prioritize_genes,
     reverse_lookup,
     term_specificity,
@@ -511,6 +514,25 @@ def get_targets_local(mirna: str, db=None) -> set:
 
     logger.warning(f"⚠️ {mirna}: sin datos en DB local")
     return set()
+
+def family_labels_for_targets(mirnas, gene_sets, db):
+    """TargetScan family key per miRNA (same order as gene_sets), for the
+    convergence seed and for excluding observed families from the null
+    pools. The label is canonical PER SET: miRNAs with identical target
+    sets (miR-33a and miR-33b) share one label, so the seed depends on
+    the families, not on which name came first. A set that matches no
+    family key (e.g. individual raw files) falls back to the first
+    sorted cleaned miRNA name sharing that set — the label only needs
+    to be deterministic, not a true family name."""
+    groups = {}
+    for m, genes in zip(mirnas, gene_sets):
+        groups.setdefault(frozenset(genes), []).append(m)
+    canonical = {}
+    for target, names in groups.items():
+        match = sorted(k for k, v in db.items() if v and set(v) == set(target))
+        canonical[target] = (match[0] if match
+                             else sorted(deep_clean_mirna(n) for n in names)[0])
+    return [canonical[frozenset(g)] for g in gene_sets]
 
 async def fetch_mirtarbase(mirna: str, species: str = "hsa") -> set:
     m_name = clean_mirna_name_cloud(mirna, species)
@@ -2016,6 +2038,26 @@ async def analyze(req: AnalysisRequest):
     common = consensus_genes(gene_sets, mode)
     logger.info(f"🎯 Modo {mode.upper()}: {len(common)} genes")
 
+    # ── PRUEBA DE CONVERGENCIA (Unreleased) ──────────────────────────────────
+    # p empírico del número de genes en común contra paneles aleatorios de
+    # familias emparejadas por tamaño (ver panel_convergence). Solo tiene
+    # sentido sobre dianas TargetScan: si algún miRNA del panel no tiene
+    # datos locales, se omite con su motivo en lugar de comparar peras
+    # con manzanas.
+    if all(local_by_mirna[m] for m in found_names):
+        convergence = panel_convergence(
+            gene_sets, family_labels_for_targets(found_names, gene_sets, db),
+            db, mode=mode)
+    else:
+        convergence = {
+            "k_names": len(found_names), "k_effective": None,
+            "same_family_warning": False, "genes_observed": len(common),
+            "perms": 0, "resolution": None, "p_by_tolerance": {},
+            "p_min": None, "p_max": None,
+            "label": CONVERGENCE_LABEL, "limit": CONVERGENCE_LIMIT,
+            "skipped": "needs_local_targets",
+        }
+
     # Ronda 3 (v1.48): interruptor opcional "exigir evidencia experimental"
     # (apagado por defecto). Cuando está activo, el consenso solo conserva
     # genes con evidencia en miRTarBase (fuerte o débil) para al menos un
@@ -2045,6 +2087,7 @@ async def analyze(req: AnalysisRequest):
             "common_genes": [],
             "found_mirnas": found_names,
             "missing_mirnas": missing_mirnas,
+            "convergence": convergence,
             "single_mirna_warning": (
                 "El panel tiene un solo miRNA con datos: no hay convergencia "
                 "entre miRNAs; el resultado son todas sus dianas."
@@ -2396,6 +2439,7 @@ async def analyze(req: AnalysisRequest):
         "common_genes": prioritized_common,
         "found_mirnas": found_names,
         "missing_mirnas": missing_mirnas,
+        "convergence": convergence,
         "single_mirna_warning": (
             "El panel tiene un solo miRNA con datos: no hay convergencia "
             "entre miRNAs; el resultado son todas sus dianas."
