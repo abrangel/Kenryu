@@ -156,20 +156,41 @@ GMT_FILES = {
 }
 MIRTARBASE_GMT = "local_db/mirtarbase_gene_set_library.gmt.gz"
 MIRTARBASE_OFFICIAL = "local_db/mirtarbase_official.json.gz"
+MIRTARBASE_V10 = "local_db/mirtarbase_v10.json.gz"
+
+
+def mirtarbase_index_path():
+    """Which official index file the engine loads (v2.0, paso D/G).
+    KENRYU_MIRTARBASE_VERSION forces "9.0" or "10.0" (reproducing old
+    results needs 9.0); otherwise the v10.0 index is used when its file
+    is present — it is built on the user's machine from the user's own
+    download and is never committed nor shipped to the public Space
+    (step A), so a deployment without that file keeps serving v9.0."""
+    want = os.environ.get("KENRYU_MIRTARBASE_VERSION", "").strip()
+    if want == "9.0":
+        return BASE_DIR / MIRTARBASE_OFFICIAL
+    if want == "10.0":
+        return BASE_DIR / MIRTARBASE_V10
+    v10 = BASE_DIR / MIRTARBASE_V10
+    return v10 if v10.exists() else BASE_DIR / MIRTARBASE_OFFICIAL
 
 
 def load_mirtarbase_local():
     """Carga la librería local de miRTarBase (una sola vez). Prefiere el
-    índice oficial 9.0 (con niveles fuerte/débil); si no existe, usa el
+    índice oficial (con niveles fuerte/débil); si no existe, usa el
     GMT de Harmonizome (nivel "legacy", sin distinción de evidencia),
-    descargado bajo demanda y no incluido en el repo desde v1.52."""
+    descargado bajo demanda y no incluido en el repo desde v1.52. v2.0:
+    el índice 10.0 (mirtarbase_v10.json.gz) gana cuando existe; la
+    versión cargada queda en MIRTARBASE_META y en el manifiesto."""
     global MIRTARBASE_DB, MIRTARBASE_FORMAT, MIRTARBASE_META
     if not MIRTARBASE_DB:
-        official = BASE_DIR / MIRTARBASE_OFFICIAL
+        official = mirtarbase_index_path()
         if official.exists():
             MIRTARBASE_DB, MIRTARBASE_META = load_mirtarbase_official_with_meta(official)
             MIRTARBASE_FORMAT = "official"
-            logger.info(f"📚 miRTarBase local: índice oficial 9.0, {len(MIRTARBASE_DB)} miRNAs.")
+            logger.info(f"📚 miRTarBase local: índice oficial "
+                        f"{(MIRTARBASE_META or {}).get('version', '?')}, "
+                        f"{len(MIRTARBASE_DB)} miRNAs.")
         else:
             path = BASE_DIR / MIRTARBASE_GMT
             if path.exists():
@@ -845,15 +866,24 @@ def get_validated_evidence_checked(mirna, db, species="hsa"):
     an armed query whose exact name is not in the library falls back to
     the bare name; if that bare key is the other arm's, the evidence is
     dropped (it belongs to the other arm). An exact-name hit is the
-    miRNA's own evidence and is returned as-is."""
+    miRNA's own evidence and is returned as-is. Evidence that came from
+    the bare-name key is marked "bare_name": True (v2.0, paso D) so the
+    dossier labels it "brazo no especificado"."""
     name = clean_mirna_name_cloud(mirna, species)
     if name in db:
-        return get_validated_evidence(mirna, db, species)
+        ev = get_validated_evidence(mirna, db, species)
+        if not re.search(r"-(5p|3p)$", name, flags=re.IGNORECASE):
+            # The query itself is a bare name: the evidence does not say
+            # which arm (v2.0, paso D) — mark it like the fallback.
+            return {g: {**e, "bare_name": True} for g, e in ev.items()}
+        return ev
     ev = get_validated_evidence(mirna, db, species)
     if not ev:
         return {}
     base = re.sub(r"-(5p|3p)$", "", name, flags=re.IGNORECASE)
-    return ev if _validated_fallback_arm_ok(mirna, base) else {}
+    if not _validated_fallback_arm_ok(mirna, base):
+        return {}
+    return {g: {**e, "bare_name": True} for g, e in ev.items()}
 
 
 def get_validated_local_checked(mirna, db, species="hsa"):
@@ -1915,7 +1945,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.60"
+APP_VERSION = "2.0"
 
 
 @asynccontextmanager
@@ -2274,20 +2304,26 @@ def loaded_data_versions():
     if MIRTARBASE_FORMAT == "official":
         # The counts come from the loaded index's own metadata, so a
         # synthetic fixture can never claim the real file's numbers.
+        # The version comes from the index too (v2.0: 9.0 or 10.0).
         meta = MIRTARBASE_META or {}
+        version = meta.get("version", "miRTarBase 9.0")
         if meta.get("synthetic"):
             versions["mirtarbase"] = (
                 "miRTarBase official index (synthetic CI fixture, "
                 f"{meta.get('n_mirnas', 0)} miRNAs, {meta.get('pairs', 0)} pairs)")
         elif meta.get("rows_read") is not None:
             versions["mirtarbase"] = (
-                "miRTarBase 9.0 official index "
+                f"{version} official index "
                 f"({meta.get('built_from')}, {meta.get('rows_read'):,} rows, "
                 f"{meta.get('n_mirnas'):,} miRNAs, {meta.get('pairs'):,} pairs)")
         else:  # index without build metadata (defensive fallback)
-            versions["mirtarbase"] = ("miRTarBase 9.0 official index "
-                                      "(hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, "
-                                      "396,758 pairs)")
+            if "10.0" in version:
+                versions["mirtarbase"] = (f"{version} official index "
+                                          "(no build metadata)")
+            else:
+                versions["mirtarbase"] = (f"{version} official index "
+                                          "(hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, "
+                                          "396,758 pairs)")
     elif MIRTARBASE_FORMAT == "gmt":
         versions["mirtarbase"] = "Harmonizome GMT snapshot (legacy)"
     else:

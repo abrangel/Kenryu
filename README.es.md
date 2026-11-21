@@ -133,7 +133,7 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
 
 > **El motor:** Consultas en paralelo a bases de datos de alta fiabilidad.
 - **TargetScan 8.0:** Predicciones termodinámicas de unión (Base de datos local).
-- **miRTarBase 9.0:** Validación experimental de referencia (*gold-standard*) desde el índice local oficial (nivel de evidencia fuerte/débil + PMID por interacción); el GMT de Harmonizome se descarga bajo demanda como respaldo.
+- **miRTarBase 10.0:** Validación experimental de referencia (*gold-standard*) desde el índice local oficial (nivel de evidencia fuerte/débil + PMID por interacción; las filas solo-CLIP sin PMID se muestran sin puntos y nunca desbloquean «alta»); los nombres de miRNA sin brazo se marcan «brazo no especificado». El índice 9.0 sigue disponible (`KENRYU_MIRTARBASE_VERSION=9.0`) para reproducir resultados antiguos. El GMT de Harmonizome se descarga bajo demanda como respaldo.
 </details>
 
 <details>
@@ -318,7 +318,7 @@ Los microARNs (miRNAs) son reguladores post-transcripcionales que controlan la e
 | Fuente | Función | Tipo |
 |--------|----------|------|
 | 🧬 **TargetScanHuman v8.0** | Predicción termodinámica de sitios de unión | `Local (zip)` |
-| 🔬 **miRTarBase 9.0** (índice local oficial) | Validación experimental con nivel de evidencia (fuerte/débil) + PMID por interacción | `Índice local + GMT como respaldo` |
+| 🔬 **miRTarBase 10.0** (índice local oficial) | Validación experimental con nivel de evidencia (fuerte/débil/solo-CLIP) + PMID por interacción cuando existe | `Índice local + GMT como respaldo` |
 | 📊 **Enrichr** | Enriquecimiento funcional — KEGG / Reactome / WikiPathways / GO | `GMT locales + API en vivo` |
 | 📚 **NCBI PubMed eUtils** | Artículos científicos por gen + contexto con cascada y reintentos | `API remota` |
 | 🏥 **NCBI OMIM** | Enfermedades hereditarias asociadas por símbolo de gen | `API remota` |

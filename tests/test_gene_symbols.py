@@ -103,10 +103,16 @@ def test_mirtarbase_loader_maps_symbols():
     assert ev21["WASHC2A"]["level"] == "strong"
     assert sorted(ev21["WASHC2A"]["pmids"]) == [111, 222]
     # Real index, only when it is loaded (gitignored, absent in CI).
-    ke.load_mirtarbase_local()
-    if ke.MIRTARBASE_DB:
-        ev_real = ke.get_validated_evidence("hsa-miR-124-3p",
-                                            ke.MIRTARBASE_DB)
+    # v2.0: the AARS pair for hsa-miR-124-3p is absent from miRTarBase
+    # 10.0 (the raw CSV has 0 AARS rows — the gene is gone from the
+    # source), so this asserts the 9.0 file explicitly, not the loaded
+    # index.
+    import kenryu_core as kc
+    v9_path = REPO / "local_db" / "mirtarbase_official.json.gz"
+    if v9_path.exists():
+        db9 = ke._apply_symbol_map_to_mirtarbase(
+            kc.load_mirtarbase_official(v9_path))
+        ev_real = ke.get_validated_evidence("hsa-miR-124-3p", db9)
         assert "AARS1" in ev_real
         assert "AARS" not in ev_real
 
@@ -130,3 +136,27 @@ def test_ambiguous_and_current_symbols_untouched():
     # B3GNT1 is a TargetScan gene and is NOT replaced by B3GNT2/B4GAT1.
     universe = set().union(*db.values())
     assert "B3GNT1" in universe
+
+
+def test_collision_groups_are_same_gene():
+    """COLLISION RULE (2026-11-21): two old symbols may merge into
+    one current symbol only if they denote the same gene — the same
+    Ensembl ID. The builder records the check in the map file and
+    refuses to write the map otherwise, so this test pins the four
+    groups of the 2026-11-21 map: SEM1 <- {C7orf76, SHFM1},
+    WASHC2A <- {FAM21A, FAM21B}, PTPN20 <- {PTPN20A, PTPN20B},
+    SCX <- {SCXA, SCXB}. The WASHC2A/WASHC2C paralogs do not
+    cross: FAM21C is the prev symbol of WASHC2C (ENSG00000172661),
+    a different gene from WASHC2A (ENSG00000099290)."""
+    doc = _map()
+    assert set(doc["collisions"]) == {"SEM1", "WASHC2A", "PTPN20", "SCX"}
+    for target, check in doc["collision_ensembl"].items():
+        assert check["same_gene"] is True, target
+        assert len(check["ensembl_gene_id"]) == 1
+        assert check["ensembl_gene_id"][0] == check["target_ensembl_gene_id"]
+        assert sorted(check["members"]) == doc["collisions"][target]
+    # The paralog guard, directly: FAM21A/FAM21B denote WASHC2A,
+    # FAM21C denotes WASHC2C — never WASHC2A.
+    assert ke.map_gene_symbol("FAM21A") == "WASHC2A"
+    assert ke.map_gene_symbol("FAM21B") == "WASHC2A"
+    assert ke.map_gene_symbol("FAM21C") == "WASHC2C"

@@ -206,8 +206,10 @@ any library, and every library's interval (GO 0.02–0.27; Reactome
 0.00–0.12; WikiPathways and KEGG 0.04–0.31) includes 5%, while any
 library (0.10–0.42) still sits above 5% and now includes the
 calibrated four-library expectation of ≈0.185. The scoped claim
-stands: at the sizes tested (5, 19 and 100 genes) the adjusted p
-returned by the Enrichr API is not equivalent to a standard FDR.
+stands for the sizes with evidence: at 5 and 19 genes the adjusted
+p returned by the Enrichr API is not equivalent to a standard FDR.
+At 100 genes (n=30) the rates are consistent with calibrated, so
+no claim is made there either way.
 File: `calibration-enrichr-K100-engine.json`.
 
 Same protocol, 50 lists each, but the random genes drawn from the

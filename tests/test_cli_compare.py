@@ -22,8 +22,13 @@ def test_cli_offline(tmp_path):
     # v1.48 (Ronda 3): con el índice oficial de miRTarBase, NFIA tiene
     # validación experimental (n_val=2) y sube al primer puesto por
     # prioridad; con el GMT anterior (sin NFIA) el orden era alfabético.
+    # v2.0 (miRTarBase 10.0): SOX6 sube al segundo puesto — miR-21-5p →
+    # SOX6 pasó de "none" a fuerte (PMID 32757994; la fila v9.0 no
+    # tenía Support Type) — y GMFB baja al tercero.
     official = Path(__file__).resolve().parent.parent / "local_db" / "mirtarbase_official.json.gz"
-    expected = (["NFIA", "GMFB", "KLF12", "PDE3A", "SKI", "SOX6"] if official.exists()
+    v10 = Path(__file__).resolve().parent.parent / "local_db" / "mirtarbase_v10.json.gz"
+    expected = (["NFIA", "SOX6", "GMFB", "KLF12", "PDE3A", "SKI"] if v10.exists()
+                else ["NFIA", "GMFB", "KLF12", "PDE3A", "SKI", "SOX6"] if official.exists()
                 else ["GMFB", "KLF12", "NFIA", "PDE3A", "SKI", "SOX6"])
     assert data["common_genes"] == expected
     assert (out / "report.md").read_text().startswith("# KENRYU")

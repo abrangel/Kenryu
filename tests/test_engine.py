@@ -191,7 +191,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.60"
+    assert body["version"] == "2.0"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -533,7 +533,12 @@ def test_analyze_offline_cancer_panel_researches_prioritized_genes():
     # en el repo), todos los genes empatan a 0 validación y el tope de 5
     # cae a los 5 primeros alfabéticos, con 25 puntos ("baja", solo
     # TargetScan); los 14 restantes quedan sin evaluar.
-    if _OFFICIAL.exists():
+    if _V10.exists():
+        # v2.0 (miRTarBase 10.0): IL6R lost both its pairs — they are
+        # absent from the v10.0 raw file — so it drops out of the
+        # validated set and PURB enters on the alphabetical tiebreak.
+        expected = {"AAK1", "AGO4", "CHD7", "MEIS1", "PURB"}
+    elif _OFFICIAL.exists():
         expected = {"AAK1", "AGO4", "CHD7", "IL6R", "MEIS1"}
     elif _GMT.exists():
         expected = {"AGO4", "MEIS1", "PURB", "RPS6KA3", "WNK3"}
@@ -933,6 +938,10 @@ _OFFICIAL = ke.BASE_DIR / "local_db" / "mirtarbase_official.json.gz"
 # a fresh clone has NO local miRTarBase at all; tests that depend on the
 # fallback branch on whichever local source exists (official, GMT, none).
 _GMT = ke.BASE_DIR / "local_db" / "mirtarbase_gene_set_library.gmt.gz"
+# v2.0: the miRTarBase 10.0 index (built on the user's machine, never
+# committed) wins over the 9.0 file when present; tests asserting v10.0
+# behaviour branch on this path.
+_V10 = ke.BASE_DIR / "local_db" / "mirtarbase_v10.json.gz"
 
 
 
@@ -961,6 +970,7 @@ def test_analyze_legacy_mode_warns_and_caps_at_media(tmp_path, monkeypatch):
         b"hsa-miR-33a-5p\tMIRT000001\tABCA1\tSNTB2\n"
         b"hsa-miR-33b-5p\tMIRT000002\tABCA1\n"))
     monkeypatch.setattr(ke, "MIRTARBASE_OFFICIAL", str(tmp_path / "nope.json.gz"))
+    monkeypatch.setattr(ke, "MIRTARBASE_V10", str(tmp_path / "nope-v10.json.gz"))
     monkeypatch.setattr(ke, "MIRTARBASE_GMT", str(gmt))
     monkeypatch.setattr(ke, "MIRTARBASE_DB", {})
     monkeypatch.setattr(ke, "MIRTARBASE_FORMAT", None)

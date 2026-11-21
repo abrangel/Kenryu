@@ -222,10 +222,15 @@ def test_validated_fallback_other_arm_is_dropped():
                            "GENE3": {"level": "none"}}}
     assert ke.get_validated_local_checked("hsa-miR-107-5p", db) == set()
     assert ke.get_validated_local_checked("hsa-miR-107-3p", db) == {"ABCA1", "GENE2"}
-    # Real index, when present: the -3p arm keeps its 298 pairs.
+    # Real index, when present: the -3p arm keeps its pairs (298 in
+    # v9.0; 289 in v10.0 — 9 pairs fewer by recuration). The -5p arm
+    # keeps 0 in both versions: the guard still drops the swap.
     ke.load_mirtarbase_local()
     if ke.MIRTARBASE_DB:
-        assert len(ke.get_validated_local_checked("hsa-miR-107-3p", ke.MIRTARBASE_DB)) == 298
+        version = (ke.MIRTARBASE_META or {}).get("version", "")
+        expected = 289 if "10.0" in version else 298
+        assert len(ke.get_validated_local_checked("hsa-miR-107-3p", ke.MIRTARBASE_DB)) == expected
+        assert len(ke.get_validated_local_checked("hsa-miR-107-5p", ke.MIRTARBASE_DB)) == 0
 
 
 @_needs_arm_data()

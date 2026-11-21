@@ -735,7 +735,7 @@ def load_mirtarbase_official_with_meta(path):
         payload = json.load(fh)
     meta = {k: payload.get(k) for k in
             ("version", "source", "built_from", "built_at", "rows_read",
-             "pairs", "synthetic")}
+             "pairs", "synthetic", "levels")}
     meta["n_mirnas"] = len(payload.get("mirnas") or {})
     return payload.get("mirnas") or {}, meta
 
@@ -743,9 +743,11 @@ def load_mirtarbase_official_with_meta(path):
 def load_mirtarbase_official(path):
     """Load the local miRTarBase OFFICIAL index (v1.48, Ronda 3): the compact
     derived file built by build_mirtarbase_official.py from hsa_MTI.xlsx
-    (miRTarBase 9.0). Returns {miRNA: {gene: {"level", "pmids",
-    "experiments"}}}; level is "strong" (Functional MTI), "weak"
-    (Functional MTI (Weak): CLIP-seq, microarray, proteomics) or "none"
+    (miRTarBase 9.0) or hsa_MTI.csv (miRTarBase 10.0, v2.0). Returns
+    {miRNA: {gene: {"level", "pmids", "experiments"}}}; level is "strong"
+    (Functional MTI), "weak" (Functional MTI (Weak): CLIP-seq, microarray,
+    proteomics), "clip_only" (v2.0: Functional MTI (Weak) with NO PMID,
+    CLIP-only — visible, +0 points, never unlocks "alta") or "none"
     (only Non-Functional rows). Pure, no network."""
     return load_mirtarbase_official_with_meta(path)[0]
 
@@ -763,12 +765,33 @@ def _evidence_for_name(name, db):
             for g in entry}
 
 
+def validated_key_source(mirna, db, species="hsa"):
+    """Which index key supplied the evidence for this miRNA (v2.0, paso D):
+    "armed" (the key that matched carries a -5p/-3p arm), "bare" (the key
+    that matched carries NO arm — the evidence does not say which arm,
+    whether the query had an arm and fell back or the query itself was
+    bare), or None (no entry). Pure. The dossier marks bare-name
+    evidence as "brazo no especificado"."""
+    if not db:
+        return None
+    name = clean_mirna_name_cloud(mirna, species)
+    key = name if name in db else re.sub(r"-(5p|3p)$", "", name,
+                                         flags=re.IGNORECASE)
+    if key not in db:
+        return None
+    return "armed" if re.search(r"-(5p|3p)$", key, flags=re.IGNORECASE) else "bare"
+
+
 def get_validated_evidence(mirna, db, species="hsa"):
     """Validated targets WITH evidence for one miRNA from the local
     miRTarBase library. Tries the cleaned name and the name without the
     -5p/-3p suffix. Returns {gene: {"level", "pmids", "experiments"}}.
-    The library is human (hsa-); other species return empty here and
-    fall back to the live Harmonizome API."""
+    Level is "strong", "weak", "clip_only" (v2.0: weak rows with no PMID,
+    CLIP-only — visible, +0 points) or "none". Use
+    validated_key_source() to know whether the evidence came from the
+    armed name or from the bare-name fallback. The library is human
+    (hsa-); other species return empty here and fall back to the live
+    Harmonizome API."""
     if not db:
         return {}
     name = clean_mirna_name_cloud(mirna, species)
@@ -1153,6 +1176,13 @@ def build_evidence_tiers(predicted, evidence_level, research):
         exp_summary = ("Apoyo de alto rendimiento (miRTarBase, evidencia "
                        "débil: CLIP-seq, microarray o proteómica; "
                        "no demuestra unión directa)")
+    elif evidence_level == "clip_only":
+        # v2.0 (miRTarBase 10.0, paso D): evidencia débil SIN PMID, solo
+        # CLIP — visible en el dossier, sin puntos y sin desbloquear
+        # "alta". No se llama "validado": no hay referencia citable.
+        exp_summary = ("Solo CLIP sin PMID (miRTarBase, evidencia débil sin "
+                       "referencia citable; visible, sin puntos, no "
+                       "desbloquea «alta»)")
     elif evidence_level == "legacy":
         exp_summary = "Validado experimentalmente (miRTarBase, snapshot)"
     else:
@@ -1173,7 +1203,7 @@ def build_evidence_tiers(predicted, evidence_level, research):
                         if predicted else "Sin predicción TargetScan para el panel"),
         },
         "experimental": {
-            "present": evidence_level in ("strong", "weak", "legacy"),
+            "present": evidence_level in ("strong", "weak", "legacy", "clip_only"),
             "summary": exp_summary,
         },
         "disease": {"present": bool(diseases), "summary": disease_summary},
@@ -1192,12 +1222,15 @@ def validation_score(gene, research, predicted, validated):
     (functional assay) scores +30, "legacy" (the Harmonizome snapshot,
     which carries no evidence level) also scores +30 but does NOT unlock
     "alta", "weak" (CLIP-seq, microarray, proteomics) scores +15,
-    False/None/"none" scores +0. Weak evidence is high-throughput
-    support, not proof of direct binding: it adds points but does not
-    unlock "alta", which requires strong evidence (v1.53). Legacy
-    evidence is unverified-level support: it adds points but does not
-    unlock "alta" either (v1.54), so a reproduction without the official
-    index can never reach "alta" on unverified evidence."""
+    "clip_only" (v2.0: weak evidence with NO PMID, CLIP-only rows from
+    miRTarBase 10.0) scores +0 and is shown without points, False/None/
+    "none" scores +0. Weak evidence is high-throughput support, not proof
+    of direct binding: it adds points but does not unlock "alta", which
+    requires strong evidence (v1.53). Legacy evidence is unverified-level
+    support: it adds points but does not unlock "alta" either (v1.54), so
+    a reproduction without the official index can never reach "alta" on
+    unverified evidence. "clip_only" never unlocks "alta" either: without
+    a PMID there is no citable source for the interaction."""
     research = research or {}
     layers, missing = [], []
     score = 0
@@ -1221,6 +1254,10 @@ def validation_score(gene, research, predicted, validated):
         layers.append("miRTarBase (apoyo de alto rendimiento, evidencia débil)")
         score += _VALIDATION_WEIGHTS["validated_weak"]
         validated_level = "weak"
+    elif validated == "clip_only":
+        # v2.0: solo CLIP sin PMID — visible, sin puntos, nunca "alta".
+        layers.append("miRTarBase (solo CLIP sin PMID, visible sin puntos)")
+        validated_level = "clip_only"
     else:
         missing.append("miRTarBase (validado experimentalmente)")
         validated_level = None
@@ -1272,6 +1309,9 @@ def validation_score(gene, research, predicted, validated):
             + (("; nivel limitado a media: solo evidencia débil (apoyo de alto "
                 "rendimiento); \"alta\" exige evidencia fuerte de la interacción"
                 if validated_level == "weak" else
+                "; nivel limitado a media: solo CLIP sin PMID (sin referencia "
+                "citable); \"alta\" exige evidencia fuerte de la interacción"
+                if validated_level == "clip_only" else
                 "; nivel limitado a media: solo evidencia legacy (snapshot sin "
                 "nivel verificado); \"alta\" exige evidencia fuerte de la interacción"
                 if validated_level == "legacy" else
@@ -1281,7 +1321,7 @@ def validation_score(gene, research, predicted, validated):
     }
 
 
-_EVIDENCE_RANK = {"strong": 3, "weak": 2, "legacy": 1, "none": 0}
+_EVIDENCE_RANK = {"strong": 4, "weak": 3, "legacy": 2, "clip_only": 1, "none": 0}
 
 
 def _best_evidence(gene, evidence_by_mirna):
@@ -1306,15 +1346,18 @@ def _best_evidence(gene, evidence_by_mirna):
 def _evidence_by_mirna_table(gene, evidence_by_mirna, mirnas):
     """Per-miRNA evidence table for one gene: one row per panel miRNA,
     with its level, PMIDs and experiments ("none" when the miRNA has no
-    entry for the gene). This is what makes a "strong" claim auditable:
-    the best level across the panel (see _best_evidence) says nothing
-    about WHICH miRNA carries it — the table does."""
+    entry for the gene), plus "bare_name" (v2.0: True when the evidence
+    came from the bare-name index key — "brazo no especificado"). This
+    is what makes a "strong" claim auditable: the best level across the
+    panel (see _best_evidence) says nothing about WHICH miRNA carries
+    it — the table does."""
     table = {}
     for m in mirnas or []:
         ev = ((evidence_by_mirna or {}).get(m) or {}).get(gene) or {}
         table[m] = {"level": ev.get("level") or "none",
                     "pmids": sorted(ev.get("pmids") or []),
-                    "experiments": sorted(ev.get("experiments") or [])}
+                    "experiments": sorted(ev.get("experiments") or []),
+                    "bare_name": bool(ev.get("bare_name"))}
     return table
 
 

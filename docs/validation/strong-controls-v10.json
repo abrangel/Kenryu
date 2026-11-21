@@ -1,0 +1,294 @@
+{
+  "version": "1.54",
+  "pooled_sensitivity_strong": 0.5567651632970451,
+  "controls": [
+    {
+      "mirna": "hsa-miR-21-5p",
+      "expected": "apoptosis / PI3K-Akt / cancer (PTEN, PDCD4)",
+      "n_strong": 125,
+      "n_weak": 450,
+      "n_targetscan": 384,
+      "sensitivity_strong": 0.384,
+      "sensitivity_weak": 0.209,
+      "top_terms": [
+        {
+          "term": "MicroRNAs in cancer",
+          "source": "KEGG",
+          "p_adj": 2.0643538314827614e-12
+        },
+        {
+          "term": "Regulation Of Apoptotic Process (GO:0042981)",
+          "source": "GO",
+          "p_adj": 1.5423665517560022e-10
+        },
+        {
+          "term": "Signaling Pathways in Glioblastoma WP2261",
+          "source": "WikiPathways",
+          "p_adj": 2.00468533895669e-07
+        },
+        {
+          "term": "Positive Regulation Of Apoptotic Process (GO:0043065)",
+          "source": "GO",
+          "p_adj": 4.007298639885496e-07
+        },
+        {
+          "term": "Negative Regulation Of Cell Differentiation (GO:0045596)",
+          "source": "GO",
+          "p_adj": 1.4757878649448266e-06
+        }
+      ]
+    },
+    {
+      "mirna": "hsa-miR-33a-5p",
+      "expected": "cholesterol / lipid metabolism (ABCA1)",
+      "n_strong": 25,
+      "n_weak": 134,
+      "n_targetscan": 545,
+      "sensitivity_strong": 0.6,
+      "sensitivity_weak": 0.261,
+      "top_terms": [
+        {
+          "term": "PPARA Activates Gene Expression",
+          "source": "Reactome",
+          "p_adj": 4.293823503060813e-06
+        },
+        {
+          "term": "Regulation of Lipid Metabolism by PPARalpha",
+          "source": "Reactome",
+          "p_adj": 4.293823503060813e-06
+        },
+        {
+          "term": "Metabolism of Lipids",
+          "source": "Reactome",
+          "p_adj": 2.1364120062770656e-05
+        },
+        {
+          "term": "Metabolism of Steroids",
+          "source": "Reactome",
+          "p_adj": 0.00010106843086178565
+        },
+        {
+          "term": "Nuclear Receptors Meta-Pathway WP2882",
+          "source": "WikiPathways",
+          "p_adj": 0.0003912219068251056
+        }
+      ]
+    },
+    {
+      "mirna": "hsa-let-7a-5p",
+      "expected": "cell cycle / development (HMGA2, LIN28)",
+      "n_strong": 51,
+      "n_weak": 530,
+      "n_targetscan": 1207,
+      "sensitivity_strong": 0.627,
+      "sensitivity_weak": 0.308,
+      "top_terms": [
+        {
+          "term": "MicroRNAs in cancer",
+          "source": "KEGG",
+          "p_adj": 2.1179006526519066e-13
+        },
+        {
+          "term": "Positive Regulation Of Cell Population Proliferation (GO:0008284)",
+          "source": "GO",
+          "p_adj": 1.0813806681442652e-07
+        },
+        {
+          "term": "Regulation Of Cell Population Proliferation (GO:0042127)",
+          "source": "GO",
+          "p_adj": 3.884394422960132e-07
+        },
+        {
+          "term": "Positive Regulation Of Protein Phosphorylation (GO:0001934)",
+          "source": "GO",
+          "p_adj": 4.134373106175429e-07
+        },
+        {
+          "term": "Bladder cancer",
+          "source": "KEGG",
+          "p_adj": 2.559764498022966e-06
+        }
+      ]
+    },
+    {
+      "mirna": "hsa-miR-155-5p",
+      "expected": "immune response / inflammation (SOCS1)",
+      "n_strong": 101,
+      "n_weak": 746,
+      "n_targetscan": 555,
+      "sensitivity_strong": 0.545,
+      "sensitivity_weak": 0.172,
+      "top_terms": [
+        {
+          "term": "Regulation Of Transcription By RNA Polymerase II (GO:0006357)",
+          "source": "GO",
+          "p_adj": 4.27484864104479e-12
+        },
+        {
+          "term": "Regulation Of DNA-templated Transcription (GO:0006355)",
+          "source": "GO",
+          "p_adj": 5.010766793478127e-10
+        },
+        {
+          "term": "Positive Regulation Of DNA-templated Transcription (GO:0045893)",
+          "source": "GO",
+          "p_adj": 9.642039485452297e-10
+        },
+        {
+          "term": "Positive Regulation Of miRNA Metabolic Process (GO:2000630)",
+          "source": "GO",
+          "p_adj": 3.974574308694338e-09
+        },
+        {
+          "term": "Positive Regulation Of Transcription By RNA Polymerase II (GO:0045944)",
+          "source": "GO",
+          "p_adj": 1.2267497161080108e-08
+        }
+      ]
+    },
+    {
+      "mirna": "hsa-miR-34a-5p",
+      "expected": "cell cycle / p53 / apoptosis (BCL2, CDK4/6)",
+      "n_strong": 100,
+      "n_weak": 453,
+      "n_targetscan": 754,
+      "sensitivity_strong": 0.4,
+      "sensitivity_weak": 0.143,
+      "top_terms": [
+        {
+          "term": "MicroRNAs in cancer",
+          "source": "KEGG",
+          "p_adj": 3.9712247856411e-12
+        },
+        {
+          "term": "Regulation Of Cell Population Proliferation (GO:0042127)",
+          "source": "GO",
+          "p_adj": 2.2539418313302293e-11
+        },
+        {
+          "term": "Developmental Biology",
+          "source": "Reactome",
+          "p_adj": 1.8440659334865325e-10
+        },
+        {
+          "term": "Breast cancer",
+          "source": "KEGG",
+          "p_adj": 2.7782338828916657e-10
+        },
+        {
+          "term": "Pathways in cancer",
+          "source": "KEGG",
+          "p_adj": 2.7782338828916657e-10
+        }
+      ]
+    },
+    {
+      "mirna": "hsa-miR-17-5p",
+      "expected": "cell cycle (E2F)",
+      "n_strong": 80,
+      "n_weak": 1041,
+      "n_targetscan": 1385,
+      "sensitivity_strong": 0.7,
+      "sensitivity_weak": 0.409,
+      "top_terms": [
+        {
+          "term": "Pancreatic cancer",
+          "source": "KEGG",
+          "p_adj": 1.1383175758698554e-09
+        },
+        {
+          "term": "MicroRNAs in cancer",
+          "source": "KEGG",
+          "p_adj": 3.1983593703195184e-09
+        },
+        {
+          "term": "Pathways in cancer",
+          "source": "KEGG",
+          "p_adj": 1.1964228950687718e-08
+        },
+        {
+          "term": "Pancreatic adenocarcinoma pathway WP4263",
+          "source": "WikiPathways",
+          "p_adj": 7.493416028849644e-08
+        },
+        {
+          "term": "FoxO signaling pathway",
+          "source": "KEGG",
+          "p_adj": 1.2607598747435987e-07
+        }
+      ]
+    },
+    {
+      "mirna": "hsa-miR-16-5p",
+      "expected": "cell cycle / apoptosis (BCL2)",
+      "n_strong": 64,
+      "n_weak": 1402,
+      "n_targetscan": 1522,
+      "sensitivity_strong": 0.75,
+      "sensitivity_weak": 0.31,
+      "top_terms": [
+        {
+          "term": "MicroRNAs in cancer",
+          "source": "KEGG",
+          "p_adj": 3.8110868708452987e-16
+        },
+        {
+          "term": "PI3K-Akt signaling pathway",
+          "source": "KEGG",
+          "p_adj": 8.561431466572701e-13
+        },
+        {
+          "term": "Breast cancer",
+          "source": "KEGG",
+          "p_adj": 1.3910557791711723e-12
+        },
+        {
+          "term": "Pathways in cancer",
+          "source": "KEGG",
+          "p_adj": 3.930908245827361e-12
+        },
+        {
+          "term": "PI3K-Akt Signaling Pathway WP4172",
+          "source": "WikiPathways",
+          "p_adj": 6.882434189833271e-12
+        }
+      ]
+    },
+    {
+      "mirna": "hsa-miR-29a-3p",
+      "expected": "extracellular matrix / collagen",
+      "n_strong": 97,
+      "n_weak": 130,
+      "n_targetscan": 1263,
+      "sensitivity_strong": 0.66,
+      "sensitivity_weak": 0.554,
+      "top_terms": [
+        {
+          "term": "Small cell lung cancer",
+          "source": "KEGG",
+          "p_adj": 1.062211169984735e-12
+        },
+        {
+          "term": "Focal adhesion",
+          "source": "KEGG",
+          "p_adj": 1.5287388563153528e-11
+        },
+        {
+          "term": "AGE-RAGE signaling pathway in diabetic complications",
+          "source": "KEGG",
+          "p_adj": 2.8855872343475414e-11
+        },
+        {
+          "term": "Extracellular Matrix Organization",
+          "source": "Reactome",
+          "p_adj": 1.0783135002334679e-10
+        },
+        {
+          "term": "Focal Adhesion WP306",
+          "source": "WikiPathways",
+          "p_adj": 1.1670123591837683e-10
+        }
+      ]
+    }
+  ]
+}

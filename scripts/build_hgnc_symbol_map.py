@@ -14,7 +14,16 @@ Collisions: several old symbols can map to the same current symbol,
 and some targets are already TargetScan genes under their current
 name — the same gene under two symbols. Mapping merges them, so the
 universe shrinks. No key is itself a target (no chains), so one
-pass suffices. GUARD (2026-11-21): a gene that is itself an
+pass suffices. COLLISION RULE (2026-11-21): two old symbols may
+merge into one current symbol ONLY if they denote the same gene —
+the same Ensembl ID. Distinct genes colliding on one symbol (e.g.
+paralogs) must never merge; the builder refuses to write the map
+instead, so a human decides. Verified for the four groups in the
+2026-11-21 map: SEM1 <- {C7orf76, SHFM1} (ENSG00000127922),
+WASHC2A <- {FAM21A, FAM21B} (ENSG00000099290; the paralog
+WASHC2C is ENSG00000172661, prev symbol FAM21C — no cross-over),
+PTPN20 <- {PTPN20A, PTPN20B} (ENSG00000204179), SCX <- {SCXA,
+SCXB} (ENSG00000260428). GUARD (2026-11-21): a gene that is itself an
 Approved HGNC symbol is NEVER mapped — the string denotes that
 gene, not the prev/alias target (verified against the Ensembl IDs
 in the TargetScan source file: TargetScan's BCAM is ENSG00000187244
@@ -137,6 +146,38 @@ def main():
         by_target.setdefault(new, []).append(old)
     collisions = {t: sorted(v) for t, v in by_target.items()
                   if len(v) > 1}
+    # COLLISION RULE (2026-11-21): two old symbols may merge into
+    # one current symbol ONLY if they denote the same gene — the
+    # same Ensembl ID. Distinct genes colliding on one symbol must
+    # never merge; refuse to write the map so a human decides.
+    ensembl_of_row = {r["symbol"]: r.get("ensembl_gene_id") or ""
+                      for _, r in h.iterrows()}
+    denoted = {}  # old symbol -> {(approved, ensembl)} via prev/alias
+    for _, r in h.iterrows():
+        for col in ("prev_symbol", "alias_symbol"):
+            if pd.notna(r[col]):
+                for s in r[col].split("|"):
+                    denoted.setdefault(s, set()).add(
+                        (r["symbol"], r.get("ensembl_gene_id") or ""))
+    collision_ensembl = {}
+    for target, members in collisions.items():
+        ids = set()
+        for m in members:
+            ids |= {e for (_, e) in denoted.get(m, set()) if e}
+        target_ensembl = ensembl_of_row.get(target, "")
+        same = len(ids) == 1 and target_ensembl in ids
+        collision_ensembl[target] = {
+            "members": members,
+            "ensembl_gene_id": sorted(ids),
+            "target_ensembl_gene_id": target_ensembl,
+            "same_gene": same,
+        }
+        if not same:
+            raise SystemExit(
+                f"COLLISION: {target} <- {members} denote different "
+                f"genes (Ensembl {sorted(ids)}, target "
+                f"{target_ensembl}) — do not merge; remove them or "
+                f"keep them separate.")
     targets_in_universe = sorted(set(mapping.values()) & universe)
     mapped_universe = {mapping.get(g, g) for g in universe}
 
@@ -173,6 +214,7 @@ def main():
                  "genes are NOT mapped.",
         "counts": counts,
         "collisions": collisions,
+        "collision_ensembl": collision_ensembl,
         "targets_already_in_universe": targets_in_universe,
         "ambiguous_not_mapped": ambiguous,
         "mapping": mapping,

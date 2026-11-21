@@ -14,8 +14,18 @@ The output is a COMPACT DERIVED index, not the raw file:
                       "experiments": ["PAR-CLIP"]}}}}
 
 Level per (miRNA, gene): "strong" if any row has Support Type
-"Functional MTI"; "weak" if any has "Functional MTI (Weak)"; else "none"
-(only "Non-Functional MTI" rows, or rows with no Support Type).
+"Functional MTI" (and at least one of those rows carries a PMID);
+"weak" if any has "Functional MTI (Weak)" (and at least one of those
+rows carries a PMID); "clip_only" (v2.0) if the weak rows carry NO PMID
+and every experiment is a CLIP assay — visible in the dossier, +0
+points, never unlocks "alta"; else "none" (only "Non-Functional MTI"
+rows, or rows with no Support Type). Fail-first (v2.0): the build
+REFUSES to guess — a Functional MTI row without PMID, a weak row
+without PMID whose experiments are not all CLIP, or a Support Type
+the builder does not know all raise ValueError instead of being
+silently mapped. (Measured 2026-11-21: v9.0 has 0 weak rows without
+PMID and 0 strong rows without PMID; v10.0 has 1,411,229 weak rows
+without PMID, all CLIP-only, and 0 strong rows without PMID.)
 The xlsx repeats each interaction twice (once with a Support Type, once
 with None and "//Other" appended to Experiments); this script deduplicates
 by (miRNA, gene, PMID, experiment) and only takes experiment names from
@@ -44,6 +54,16 @@ from pathlib import Path
 
 STRONG = "Functional MTI"
 WEAK = "Functional MTI (Weak)"
+NON_FUNCTIONAL = "Non-Functional MTI"
+NON_FUNCTIONAL_WEAK = "Non-Functional MTI (Weak)"
+KNOWN_SUPPORT = {STRONG, WEAK, NON_FUNCTIONAL, NON_FUNCTIONAL_WEAK, ""}
+
+
+def _is_clip_only(experiments):
+    """True when every experiment is a CLIP assay (HITS-CLIP, PAR-CLIP,
+    CLIP-seq, ...). An empty experiment list is NOT clip-only: without
+    any assay named, the category is unknown and the build must fail."""
+    return bool(experiments) and all("CLIP" in e.upper() for e in experiments)
 
 DEFAULT_XLSX = sorted(
     Path.home().glob("workspace/browser_downloads/*/browser-download-*-hsa_MTI.xlsx")
@@ -99,7 +119,12 @@ def _norm_num(v):
 
 
 def build(xlsx_path, out_path, version="miRTarBase 9.0"):
-    # (mirna, gene) -> {"level": str, "pmids": set, "experiments": set}
+    # (mirna, gene) -> {"has_strong", "has_weak", "strong_pmids",
+    # "weak_pmids", "pmids", "experiments"}. The level is assigned at
+    # the END, from the per-support PMID sets: a "strong" claim needs a
+    # PMID on a Functional MTI row, a "weak" claim needs one on a
+    # Functional MTI (Weak) row. PMIDs from another support level never
+    # rescue a level (fail-first, v2.0).
     index = {}
     n_rows = 0
     n_recovered = 0
@@ -127,19 +152,33 @@ def build(xlsx_path, out_path, version="miRTarBase 9.0"):
             continue
         support = r.get("Support Type")
         support = support.strip() if isinstance(support, str) else ""
+        if support not in KNOWN_SUPPORT:
+            raise ValueError(
+                f"Support Type desconocido: {support!r} en {mirna} -> {gene} "
+                f"(fila {n_rows} de {xlsx_path}); el constructor no adivina "
+                f"niveles — añade el tipo a KNOWN_SUPPORT o corrige el archivo.")
         pmid = r.get("References (PMID)")
         experiments = r.get("Experiments")
         experiments = experiments.strip() if isinstance(experiments, str) else ""
         entry = index.setdefault(mirna, {}).setdefault(
-            gene, {"level": "none", "pmids": set(), "experiments": set()})
-        if support == STRONG:
-            entry["level"] = "strong"
-        elif support == WEAK and entry["level"] != "strong":
-            entry["level"] = "weak"
+            gene, {"has_strong": False, "has_weak": False,
+                   "strong_pmids": set(), "weak_pmids": set(),
+                   "pmids": set(), "experiments": set()})
+        pmid_int = None
         if isinstance(pmid, int):
-            entry["pmids"].add(pmid)
+            pmid_int = pmid
         elif isinstance(pmid, str) and pmid.strip().isdigit():
-            entry["pmids"].add(int(pmid.strip()))
+            pmid_int = int(pmid.strip())
+        if support == STRONG:
+            entry["has_strong"] = True
+            if pmid_int is not None:
+                entry["strong_pmids"].add(pmid_int)
+        elif support == WEAK:
+            entry["has_weak"] = True
+            if pmid_int is not None:
+                entry["weak_pmids"].add(pmid_int)
+        if pmid_int is not None:
+            entry["pmids"].add(pmid_int)
         # Only rows with a Support Type carry clean experiment names;
         # the duplicated None rows append "//Other". Experiments are
         # separated by "//" or ";" in the source file.
@@ -155,9 +194,27 @@ def build(xlsx_path, out_path, version="miRTarBase 9.0"):
         mirnas[mirna] = {}
         for gene, ev in genes.items():
             n_pairs += 1
-            level_counts[ev["level"]] += 1
+            if ev["has_strong"]:
+                if not ev["strong_pmids"]:
+                    raise ValueError(
+                        f"{mirna} -> {gene}: Functional MTI sin PMID en "
+                        f"ninguna fila; no se puede llamar 'strong'.")
+                level = "strong"
+            elif ev["has_weak"]:
+                if ev["weak_pmids"]:
+                    level = "weak"
+                elif _is_clip_only(ev["experiments"]):
+                    level = "clip_only"
+                else:
+                    raise ValueError(
+                        f"{mirna} -> {gene}: Functional MTI (Weak) sin PMID "
+                        f"y experimentos no todos CLIP "
+                        f"({sorted(ev['experiments'])}); categoría desconocida.")
+            else:
+                level = "none"
+            level_counts[level] += 1
             mirnas[mirna][gene] = {
-                "level": ev["level"],
+                "level": level,
                 "pmids": sorted(ev["pmids"]),
                 "experiments": sorted(ev["experiments"]),
             }
@@ -169,6 +226,7 @@ def build(xlsx_path, out_path, version="miRTarBase 9.0"):
         "built_at": datetime.now(timezone.utc).isoformat(),
         "rows_read": n_rows,
         "pairs": n_pairs,
+        "levels": dict(level_counts),
         "mirnas": mirnas,
     }
     out = Path(out_path)

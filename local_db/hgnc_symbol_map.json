@@ -35,6 +35,52 @@
       "SCXB"
     ]
   },
+  "collision_ensembl": {
+    "SEM1": {
+      "members": [
+        "C7orf76",
+        "SHFM1"
+      ],
+      "ensembl_gene_id": [
+        "ENSG00000127922"
+      ],
+      "target_ensembl_gene_id": "ENSG00000127922",
+      "same_gene": true
+    },
+    "WASHC2A": {
+      "members": [
+        "FAM21A",
+        "FAM21B"
+      ],
+      "ensembl_gene_id": [
+        "ENSG00000099290"
+      ],
+      "target_ensembl_gene_id": "ENSG00000099290",
+      "same_gene": true
+    },
+    "PTPN20": {
+      "members": [
+        "PTPN20A",
+        "PTPN20B"
+      ],
+      "ensembl_gene_id": [
+        "ENSG00000204179"
+      ],
+      "target_ensembl_gene_id": "ENSG00000204179",
+      "same_gene": true
+    },
+    "SCX": {
+      "members": [
+        "SCXA",
+        "SCXB"
+      ],
+      "ensembl_gene_id": [
+        "ENSG00000260428"
+      ],
+      "target_ensembl_gene_id": "ENSG00000260428",
+      "same_gene": true
+    }
+  },
   "targets_already_in_universe": [
     "AREG",
     "ARHGAP42",

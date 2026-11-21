@@ -13,6 +13,10 @@ local_db/analysis_cache.json
 # miRTarBase oficial (Ronda 3): el xlsx descargado y el índice derivado
 # son datos de ejecución, no se suben a git (ver DATA_LICENSES.md).
 local_db/mirtarbase_official.json.gz
+# v2.0: el índice 10.0 tampoco se sube — se construye en la máquina del
+# usuario desde su propia descarga (términos de v10.0 no verificables,
+# ver docs/validation/mirtarbase-v10-adoption.md, paso A).
+local_db/mirtarbase_v10.json.gz
 # El snapshot GMT de Harmonizome tampoco se sube: se descarga bajo
 # demanda con el actualizador (v1.52).
 local_db/mirtarbase_gene_set_library.gmt.gz

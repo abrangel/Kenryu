@@ -82,7 +82,7 @@ def test_evidence_by_mirna_table_covers_every_panel_mirna():
     assert abca1["hsa-miR-33a-5p"]["experiments"] == [
         "Luciferase reporter assay"]
     assert abca1["hsa-miR-144-3p"] == {"level": "none", "pmids": [],
-                                       "experiments": []}
+                                       "experiments": [], "bare_name": False}
     gene3 = report["genes"]["GENE3"]["evidence_by_mirna"]
     assert all(v["level"] == "none" for v in gene3.values())
 

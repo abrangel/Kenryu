@@ -54,6 +54,7 @@ import pytest as _pytest
 def synthetic_official_index(monkeypatch, tmp_path):
     fixture = REPO_ROOT / "tests" / "fixtures" / "mirtarbase_official_synthetic.json.gz"
     monkeypatch.setattr(ke, "MIRTARBASE_OFFICIAL", str(fixture))
+    monkeypatch.setattr(ke, "MIRTARBASE_V10", str(tmp_path / "nope-v10.json.gz"))
     monkeypatch.setattr(ke, "MIRTARBASE_GMT", str(tmp_path / "nope.gmt.gz"))
     monkeypatch.setattr(ke, "MIRTARBASE_DB", {})
     monkeypatch.setattr(ke, "MIRTARBASE_FORMAT", None)

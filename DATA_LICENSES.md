@@ -26,7 +26,7 @@ never committed: their files are gitignored.
 | **TargetScan v8.0** (family seeds) | `local_db/mir_family_info.txt` (extracted; the updater downloads `data/mir_family_info.txt.zip`) | Yes | Same terms as the predictions file above (same source, same citation). Columns: miR family, Seed+m8, Species ID, MiRBase ID, Mature sequence, Family Conservation?, MiRBase Accession. Used since v1.58 to verify -5p/-3p arms by seed (docs/validation/arm-resolution.md). |
 | **miRBase v22/v23.1** (miRNA names) | `local_db/mirbase_*.fa` | Yes | Public domain / CC0. |
 | **HGNC complete set** (gene symbols) | `local_db/hgnc_symbol_map.json` (derived map, 538 entries) | Yes | **CC0 1.0** (https://www.genenames.org/about/license/); attribution recommended, not mandatory. The raw complete set (45,395 records, downloaded 2026-11-21) is never committed; the derived map is rebuilt by `scripts/build_hgnc_symbol_map.py`. Applied at load since v1.59 to TargetScan sets and miRTarBase index keys (docs/validation/gene-symbol-audit.json). |
-| **miRTarBase 9.0 official** (validated targets, with evidence levels) | `local_db/mirtarbase_official.json.gz` (derived index) | No — download on demand | Built locally by `build_mirtarbase_official.py` from the user's own download of `hsa_MTI.xlsx` (miRTarBase 9.0, 957,040 human interactions). The derived index (396,758 pairs with strong/weak level + PMID + experiment) is runtime data, never committed. **Redistribution terms could not be verified: the official site (miRTarBase.cuhk.edu.cn) returned 404 on every page when checked on 2026-11-19.** The raw file is never committed; to reproduce, download `hsa_MTI.xlsx` from the official miRTarBase page and run the builder. Cite Huang et al. 2022 (Nucleic Acids Res. 50:D222–D230, doi:10.1093/nar/gkab1079). |
+| **miRTarBase 10.0 official** (validated targets, with evidence levels) | `local_db/mirtarbase_v10.json.gz` (derived index) | No — built on the user's machine | Built locally by `build_mirtarbase_official.py` from the user's own download of `hsa_MTI.csv` (miRTarBase 10.0, 4,004,967 rows, 1,730,805 human pairs). Levels: strong/weak with PMID, clip_only (weak, no PMID, CLIP-only: 1,411,229 pairs), none. The derived index is runtime data, never committed and never shipped to the public Space. **The v10.0 redistribution terms could not be verified: the live site returns 404 and the Wayback Machine holds no readable copy of the 2025 download page or LICENSE (checked 2026-11-21); the v9.0 LICENSE (academic use free, "AS IS") is archived.** The raw file is never committed; to reproduce, download `hsa_MTI.csv` from the official miRTarBase page and run the builder. Cite Cui et al. 2025 (Nucleic Acids Res. 53(D1):D147–D156, doi:10.1093/nar/gkae1072). The 9.0 index (`local_db/mirtarbase_official.json.gz`, 396,758 pairs) is kept alongside it for reproduction (`KENRYU_MIRTARBASE_VERSION=9.0`); cite Huang et al. 2022 (Nucleic Acids Res. 50:D222–D230, doi:10.1093/nar/gkab1079). |
 | **miRTarBase snapshot (Harmonizome)** | `local_db/mirtarbase_gene_set_library.gmt.gz` | No — download on demand | Harmonizome (Ma'ayan Lab) is distributed under **CC BY-NC-SA 4.0** (non-commercial, share-alike). Not bundled since v1.52: the updater downloads the GMT snapshot on demand (see the `mirtarbase` entry in `kenryu_updater.py`); used only when the official index is absent; it carries no evidence levels. |
 | **KEGG** | `local_db/gmt_KEGG_2021_Human.gmt` | No — download on demand | **Not bundled.** Kanehisa Laboratories prohibits redistributing or packaging local copies of KEGG in third-party repositories or services without an agreement with Pathway Solutions. The updater downloads the Enrichr KEGG_2021_Human gene-set library on demand, for local use only; the file is gitignored and never committed. KEGG enrichment is also available through the **live Enrichr path** (`POST /api/v1/analyze` with network access). |
 | **Reactome** | `local_db/gmt_Reactome_Pathways_2024.gmt` | Yes | **CC0 1.0** (via Enrichr gene-set library). |
@@ -40,23 +40,27 @@ restored on 2026-11-19 as a **download-on-demand** dataset: the updater
 fetches it from Enrichr at runtime, so the platform keeps KEGG
 enrichment without redistributing KEGG data.
 
-**miRTarBase 9.0 (official)** is not in the repository either: the raw
-`hsa_MTI.xlsx` and the derived index are runtime data. To reproduce the
+**miRTarBase 10.0 (official)** is not in the repository either: the raw
+`hsa_MTI.csv` and the derived index are runtime data. To reproduce the
 results in the paper, build the index yourself:
 
-1. Download `hsa_MTI.xlsx` (miRTarBase 9.0, Homo sapiens) from the
+1. Download `hsa_MTI.csv` (miRTarBase 10.0, Homo sapiens) from the
    official miRTarBase download page and place it in the repository root.
    (The site returned 404 on every page when last checked, November
-   2026; the file is the one the authors distribute as `hsa_MTI.xlsx`.)
-2. Run `python build_mirtarbase_official.py hsa_MTI.xlsx local_db/mirtarbase_official.json.gz`
-   — it writes the compact index (957,040 rows, 2,947 miRNAs, 396,758
-   unique pairs; 1,863 gene symbols recovered from Excel date-mangling).
-   Do NOT commit the raw xlsx or the derived index.
+   2026; the file is the one the authors distribute as `hsa_MTI.csv`.)
+2. Run `python build_mirtarbase_official.py hsa_MTI.csv local_db/mirtarbase_v10.json.gz`
+   — it writes the compact index (4,004,967 rows, 3,048 miRNAs,
+   1,730,805 unique pairs). Do NOT commit the raw csv or the derived
+   index, and do NOT ship the derived index to a public Space (the
+   v10.0 terms could not be verified — see the table above).
 3. Restart the service and check `GET /health`: `mirtarbase_mode` must
-   read `"official"` and `data_sources.mirtarbase` must name the 9.0
+   read `"official"` and `data_sources.mirtarbase` must name the 10.0
    official index. Without it the service runs in legacy mode (below):
    "legacy" evidence never reaches "alta", and the analysis response
-   carries a visible warning saying so.
+   carries a visible warning saying so. To reproduce the older
+   results instead, build the 9.0 index (`hsa_MTI.xlsx` →
+   `local_db/mirtarbase_official.json.gz`) and set
+   `KENRYU_MIRTARBASE_VERSION=9.0`.
 
 **miRTarBase snapshot (Harmonizome)** was removed from the repository
 on 2026-11-19 (v1.52) and restored as a **download-on-demand** dataset:

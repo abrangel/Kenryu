@@ -62,3 +62,32 @@ biology from strong targets), but the KEGG/Reactome cancer terms
 dominate because miRTarBase's validated literature is cancer-heavy.
 A control built from a miRNA whose literature is not cancer-biased
 would be a stronger test; none of the eight qualifies.
+
+## Re-run on miRTarBase 10.0 (v2.0, 2026-11-21)
+
+Same script, same pre-registered expected biology, against the
+v10.0 index. Results: `docs/validation/strong-controls-v10.json`.
+The verdicts use the same standard as the v9.0 run: the expected
+biology must show up in the significant terms, not just one or two
+stray terms among 24 cancer-dominated ones.
+
+| miRNA | strong | sens. strong | sens. weak | verdict | top terms |
+|---|---|---|---|---|---|
+| hsa-miR-21-5p | 125 | 0.384 | 0.209 | recovered | MicroRNAs in cancer; Regulation Of Apoptotic Process (GO:0042981); Signaling Pathways in Glioblastoma WP2261 |
+| hsa-miR-33a-5p | 25 | 0.600 | 0.261 | recovered | PPARA Activates Gene Expression; Regulation of Lipid Metabolism by PPARalpha; Metabolism of Lipids |
+| hsa-let-7a-5p | 51 | 0.627 | 0.308 | recovered | MicroRNAs in cancer; Positive Regulation Of Cell Population Proliferation (GO:0008284); Regulation Of Cell Population Proliferation (GO:0042127) |
+| hsa-miR-155-5p | 101 | 0.545 | 0.172 | partial | Regulation Of Transcription By RNA Polymerase II; Regulation Of DNA-templated Transcription; Positive Regulation Of DNA-templated Transcription |
+| hsa-miR-34a-5p | 100 | 0.400 | 0.143 | partial | MicroRNAs in cancer; Regulation Of Cell Population Proliferation; Developmental Biology |
+| hsa-miR-17-5p | 80 | 0.700 | 0.409 | recovered | Pancreatic cancer; MicroRNAs in cancer; Pathways in cancer |
+| hsa-miR-16-5p | 64 | 0.750 | 0.310 | recovered | MicroRNAs in cancer; PI3K-Akt signaling pathway; Breast cancer |
+| hsa-miR-29a-3p | 97 | 0.660 | 0.554 | recovered | Small cell lung cancer; Focal adhesion; AGE-RAGE signaling pathway in diabetic complications |
+
+**Still 6 of 8 recovered; the same two partial (miR-155, miR-34a).**
+miR-155 keeps exactly one immune term among its 24 significant
+terms ("Signaling by Interleukins"); miR-34a keeps two
+cell-cycle-related terms and no p53 or apoptosis term. Pooled
+TargetScan sensitivity on strong targets: **358 of 643 (0.557)**,
+vs 404 of 754 (0.536) on v9.0. The biggest single-miRNA move is
+miR-155-5p: 173 → 101 strong targets (recuration in v10.0). The
+paper's "6 of 8" claim stands under v10.0; its sensitivity figure
+is updated to 358/643.

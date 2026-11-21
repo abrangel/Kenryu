@@ -191,7 +191,7 @@ function renderDashboard(data) {
           // (fuerte / apoyo de alto rendimiento / solo predicho) con sus
           // PMIDs. Matiz 2 (v1.51): la evidencia débil no se llama
           // "validado": es apoyo de alto rendimiento.
-          const evLabel = {strong: 'fuerte', weak: 'apoyo de alto rendimiento', legacy: 'validado (snapshot)', none: 'solo predicho'}[gv.evidence_level] || '—';
+          const evLabel = {strong: 'fuerte', weak: 'apoyo de alto rendimiento', clip_only: 'solo CLIP sin PMID', legacy: 'validado (snapshot)', none: 'solo predicho'}[gv.evidence_level] || '—';
           const evPmids = (gv.mirtarbase_pmids || []).filter(p => Number.isInteger(p)).map(p => `<a href="https://pubmed.ncbi.nlm.nih.gov/${p}/" target="_blank" rel="noopener">${p}</a>`).join(', ');
           const evCell = `${escapeHtml(evLabel)}${evPmids ? `<br><span style="font-family:var(--font-mono); font-size:10px;">${evPmids}</span>` : ''}`;
           // Ronda 3 (v1.49): dossier de 4 niveles + enfermedades asociadas
@@ -427,17 +427,18 @@ async function openGenePanel(gene) {
   // por pareja: no dice que todos los miRNAs del panel lo regulen.
   const evTable = gv.evidence_by_mirna || {};
   const panelMirnas = (lastData?.validation?.mirnas || Object.keys(evTable));
-  const evLevelLabel = {strong: 'fuerte', weak: 'apoyo de alto rendimiento', legacy: 'validado (snapshot)', none: 'solo predicho'};
+  const evLevelLabel = {strong: 'fuerte', weak: 'apoyo de alto rendimiento', clip_only: 'solo CLIP sin PMID (sin puntos)', legacy: 'validado (snapshot)', none: 'solo predicho'};
   const evRows = panelMirnas.map(m => {
     const e = evTable[m] || {level: 'none', pmids: [], experiments: []};
     const pmids = (e.pmids || []).filter(p => Number.isInteger(p)).map(p => `<a href="https://pubmed.ncbi.nlm.nih.gov/${p}/" target="_blank" rel="noopener">${p}</a>`).join(', ');
     const exps = (e.experiments || []).map(escapeHtml).join('; ');
-    return `<tr><td style="font-family:var(--font-mono); font-size:11px;">${escapeHtml(m)}</td><td style="font-size:11px;">${escapeHtml(evLevelLabel[e.level] || '—')}</td><td style="font-family:var(--font-mono); font-size:10px;">${pmids || '—'}</td><td style="font-size:11px;">${exps || '—'}</td></tr>`;
+    const bare = e.bare_name ? ' <span style="color:var(--text-dim);">(brazo no especificado)</span>' : '';
+    return `<tr><td style="font-family:var(--font-mono); font-size:11px;">${escapeHtml(m)}${bare}</td><td style="font-size:11px;">${escapeHtml(evLevelLabel[e.level] || '—')}</td><td style="font-family:var(--font-mono); font-size:10px;">${pmids || '—'}</td><td style="font-size:11px;">${exps || '—'}</td></tr>`;
   }).join('');
   const evBlock = evRows ? `<div style="margin-bottom:20px; padding:15px; background:rgba(79,195,161,0.03); border-radius:8px; border-left:4px solid var(--teal);">
       <small style="color:var(--text-faint); font-family:var(--font-mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; display:block; margin-bottom:8px;">Evidencia por miRNA — qué miRNA valida este gen</small>
       <table class="sci-table" style="width:100%;"><thead><tr><th style="text-align:left;">miRNA</th><th style="text-align:left;">Nivel</th><th style="text-align:left;">PMIDs</th><th style="text-align:left;">Experimentos</th></tr></thead><tbody>${evRows}</tbody></table>
-      <div style="font-size:11px; color:var(--text-dim); margin-top:8px;">«Fuerte» significa que ese miRNA tiene evidencia fuerte para este gen; no dice que todos los miRNAs del panel lo regulen. La evidencia débil es apoyo de alto rendimiento y no demuestra unión directa.</div>
+      <div style="font-size:11px; color:var(--text-dim); margin-top:8px;">«Fuerte» significa que ese miRNA tiene evidencia fuerte para este gen; no dice que todos los miRNAs del panel lo regulen. La evidencia débil es apoyo de alto rendimiento y no demuestra unión directa. «Solo CLIP sin PMID» es evidencia débil sin referencia citable: se muestra, no suma puntos y nunca desbloquea «alta». «Brazo no especificado» significa que la evidencia viene de una entrada de miRTarBase sin -5p/-3p, así que no dice de qué brazo es.</div>
     </div>` : '';
   
   document.getElementById('gene-panel-body').innerHTML = `

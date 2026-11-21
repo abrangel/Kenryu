@@ -135,7 +135,7 @@ MicroRNAs (miRNAs) are post-transcriptional regulators that control the expressi
 
 > **The Engine:** Parallel querying of high-fidelity databases.
 - **TargetScan 8.0:** Thermodynamic binding predictions (Local Database).
-- **miRTarBase 9.0:** Gold-standard experimental validation from the official local index (strong/weak evidence level + PMID per interaction); the Harmonizome GMT is downloaded on demand as a fallback.
+- **miRTarBase 10.0:** Gold-standard experimental validation from the official local index (strong/weak evidence level + PMID per interaction; CLIP-only rows without PMID are shown without points and never unlock "high"); bare miRNA names are marked "arm not specified". The 9.0 index stays available (`KENRYU_MIRTARBASE_VERSION=9.0`) to reproduce old results. The Harmonizome GMT is downloaded on demand as a fallback.
 </details>
 
 <details>
@@ -330,7 +330,7 @@ MicroRNAs (miRNAs) are post-transcriptional regulators that control the expressi
 | Source | Function | Type |
 |--------|----------|------|
 | 🧬 **TargetScanHuman v8.0** | Thermodynamic prediction of binding sites | `Local (zip)` |
-| 🔬 **miRTarBase 9.0** (official local index) | Experimental interaction validation with evidence level (strong/weak) + PMID per interaction | `Local index + GMT fallback (download on demand)` |
+| 🔬 **miRTarBase 10.0** (official local index) | Experimental interaction validation with evidence level (strong/weak/clip-only) + PMID per interaction where it exists | `Local index + GMT fallback (download on demand)` |
 | 📊 **Enrichr** | Functional enrichment — KEGG / Reactome / WikiPathways / GO | `Local GMTs + live fallback` |
 | 📚 **NCBI PubMed eUtils** | Scientific articles per gene + context with cascade + retries | `Remote API` |
 | 🏥 **NCBI OMIM** | Associated hereditary diseases by gene symbol | `Remote API` |

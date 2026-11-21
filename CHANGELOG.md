@@ -4,6 +4,102 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [2.0] - 2026-11-21
+
+### Added
+- **miRTarBase 10.0 support (major version).** The official index is
+  now built from `hsa_MTI.csv` (miRTarBase 10.0, Cui et al., *Nucleic
+  Acids Res* 2025;53(D1):D147–D156, doi 10.1093/nar/gkae1072):
+  4,004,967 rows, 1,730,805 human pairs, 3,048 miRNAs (vs 396,758
+  pairs / 2,947 miRNAs in 9.0). The engine loads the v10.0 index
+  (`local_db/mirtarbase_v10.json.gz`) when its file is present and
+  falls back to the 9.0 index otherwise; `KENRYU_MIRTARBASE_VERSION`
+  forces `9.0` or `10.0` (reproducing old results needs 9.0). The
+  loaded version is fixed in the execution manifest, in /health and
+  in the dossier. The v10.0 adoption is documented step by step in
+  `docs/validation/mirtarbase-v10-adoption.md` (licence, level-change
+  matrix, base rate, levels, panels, performance).
+- **New evidence level "clip_only".** miRTarBase 10.0 adds 1,411,229
+  weak pairs with NO PMID — all of them CLIP-only (measured:
+  82.0% of all weak pairs, 81.5% of the whole index; in v9.0 that
+  figure was 0). They are shown in the dossier ("Solo CLIP sin PMID
+  … visible, sin puntos, no desbloquea «alta»") with +0 points and
+  never unlock "alta". Strong evidence (with PMID) still scores +30
+  and weak evidence with PMID +15. The constructor is fail-first:
+  an unknown Support Type, a Functional MTI row without PMID, or a
+  weak row without PMID whose experiments are not all CLIP all raise
+  instead of being silently mapped; a PMID on a weak row never
+  rescues a strong claim (per-support PMID sets are tracked
+  separately). 11 tests in `tests/test_mirtarbase_levels.py`.
+- **Bare miRNA names are marked.** Evidence that comes from a
+  miRTarBase key without a -5p/-3p arm is labelled "brazo no
+  especificado" in the dossier table (whether the query fell back
+  to the bare key or the query itself was bare, e.g. the control
+  panel's hsa-miR-375). v10.0 has 1,212 bare-name miRNAs (59.9% of
+  its pairs, vs 26.7% in v9.0).
+
+### Changed
+- **Reference panels, before/after (each change explained gene by
+  gene in the adoption doc).** Lipids: identical (5 genes; the 8
+  benchmark pairs and the ABCA1 five-miRNA check unchanged — the
+  thesis panel is untouched). Cancer: 19 genes; AGO4 best stays
+  strong (the miR-155-5p pair downgraded strong → weak, same PMID
+  20584899, but let-7a-5p → AGO4 is still strong); **IL6R drops
+  from weak (40/media) to none (25/baja)** — both its pairs are
+  absent from the v10.0 raw file — so the 5 researched genes are
+  now {AAK1, AGO4, CHD7, MEIS1, PURB} (PURB replaces IL6R on the
+  alphabetical tiebreak). Control: 6 genes; NFIA best stays strong
+  (miR-21-5p → NFIA strong → weak, PMID 24980967) with a new
+  miR-375 → NFIA clip_only; **SOX6 rises from none (25/baja) to
+  strong (55/media)** — miR-21-5p → SOX6 went from no Support Type
+  to "Functional MTI" (PMID 32757994) — so the prioritised order is
+  now [NFIA, SOX6, GMFB, KLF12, PDE3A, SKI]. No gene reaches "high"
+  on clip_only evidence. Positive controls re-run on v10.0: still
+  **6 of 8 recover their expected biology** (same two partial,
+  miR-155 and miR-34a); pooled TargetScan sensitivity on strong
+  targets 358/643 (0.557) vs 404/754 (0.536) on v9.0; miR-155-5p
+  drops 173 → 101 strong targets. miR-107-3p keeps 289 validated
+  pairs (was 298); the -5p arm still keeps 0 (the arm guard holds).
+  The AARS pair for hsa-miR-124-3p is absent from v10.0 entirely
+  (the raw CSV has 0 AARS rows).
+- **Licence (step A).** The v10.0 terms could not be verified: the
+  live site returns 404 and the Wayback Machine holds no readable
+  copy of the 2025 download page or LICENSE (the v9.0 LICENSE,
+  academic use free, "AS IS", is archived and readable; the v10.0
+  article is CC BY-NC 4.0, which covers the article, not
+  necessarily the data). So the v10.0 index is built on the user's
+  machine from the user's own download and is NEVER committed to
+  the repo and NEVER shipped in the Space sync package; the public
+  Space keeps serving v9.0 by default. The alternative — the Space
+  downloading the official CSV itself at runtime and building the
+  index there — is left open for the user to decide.
+- **Performance (step F, this VM, cold start).** With the v10.0
+  index the app takes 20.7 s to first /health (was 6.2 s) and peaks
+  at 1,397 MB RSS (was 477 MB); the index file is 8.3 MB gz (was
+  2.3 MB). Stable for local/CLI use; the public Space is unaffected
+  (it serves v9.0).
+- **HGNC collision groups verified (pre-2.0 uncommitted work).**
+  The 4 collision groups are the same gene by Ensembl ID (SEM1 ←
+  {C7orf76, SHFM1}, WASHC2A ← {FAM21A, FAM21B}, PTPN20 ←
+  {PTPN20A, PTPN20B}, SCX ← {SCXA, SCXB}); the paralogue WASHC2C
+  (FAM21C) maps to its own gene, never to WASHC2A. The builder now
+  records `collision_ensembl` in the map and refuses to write it if
+  a collision ever spans two different genes.
+- **Calibration wording.** The "uncalibrated" claim for the Enrichr
+  route is now scoped to 5- and 19-gene panels only, in `paper.md`
+  and in `docs/validation/calibration-enrichr-route.md`: at 100
+  genes (n=30) the result is indistinguishable from calibrated and
+  nothing is claimed either way.
+
+### Fixed
+- **Base rate (step C).** Of 10,000 random predicted pairs, weak
+  evidence is 12.90% in v10.0 (9.41% in v9.0) and CLIP-only is
+  10.91% — under the 20% threshold, so the adoption passes the
+  gate; but CLIP-only without PMID is 31.8% of all weak evidence
+  in v10.0 (0% in v9.0), which is why the separate level exists.
+  The rise in weak evidence comes entirely from the no-PMID mass;
+  weak evidence with PMID actually falls (9.41% → 8.80%).
+
 ## [1.60] - 2026-11-21
 
 ### Fixed
