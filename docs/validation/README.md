@@ -28,13 +28,13 @@ python validate_random_panels.py --panels 300 --size 2 --mode strict --seed 11 -
 python validate_random_panels.py --panels 200 --size 5 --mode strict --min-genes 4 --max-genes 6 --seed 3 --out /tmp/r_thesis.json
 ```
 
-## Results (2026-11-21, v1.59 data: HGNC symbol map applied; same TargetScan base and GMT libraries)
+## Results (2026-11-21, corrected HGNC symbol map: 498 entries; same TargetScan base and GMT libraries)
 
 | Scenario | GO (actual / TargetScan) | Reactome (actual / TargetScan) | WikiPathways (actual / TargetScan) |
 |---|---|---|---|
-| N-1, 5 miRNAs, 300 panels, median 16 genes | 13.0% / 8.3% | 15.7% / 11.7% | 5.7% / 3.7% |
-| Strict, 2 miRNAs, 300 panels, median 46 genes | 29.0% / 19.3% | 20.3% / 13.3% | 12.0% / 7.3% |
-| Thesis-like: strict, 5 miRNAs, 4–6 genes, 66 panels | 3.0% / 0.0% | 3.0% / 3.0% | 0% / 0% |
+| N-1, 5 miRNAs, 300 panels, median 16 genes | 12.7% / 8.0% | 16.0% / 11.7% | 5.7% / 3.7% |
+| Strict, 2 miRNAs, 300 panels, median 46 genes | 28.0% / 18.7% | 20.3% / 13.3% | 12.3% / 7.3% |
+| Thesis-like: strict, 5 miRNAs, 4–6 genes, 67 panels | 3.0% / 0.0% | 3.0% / 3.0% | 0% / 0% |
 
 The panel-union background (v1.49, third column in earlier versions of
 this table) is no longer computed: the TargetScan universe has been the
@@ -47,8 +47,10 @@ are a handful of panels — at most 7 of 300 in the TargetScan column
 (Strict K2 GO, 51 → 58), 3 of 300 in N-1 K5 GO (22 → 25), 1 panel in
 thesis-like GO (1 of 65 → 0 of 66) — and lie within sampling error.
 No rise is claimed. The runs were repeated 2026-11-21 with the
-prev-preference symbol map (543 entries); the numbers above are
-unchanged.
+corrected map (498 entries, Approved-symbol guard): the numbers
+moved by at most 3 panels (Strict K2 GO actual 87 → 84, TargetScan
+58 → 56; N-1 K5 GO TargetScan 25 → 24; thesis-like 66 → 67 panels,
+same rates), again within sampling error.
 Positive controls were weak (miR-17 recovers "cell cycle", E2F and TGF
 but its strongest terms are generic; let-7 recovers only "MAPK"; miR-34
 returns no terms) and are not presented as validation: they use

@@ -16,13 +16,36 @@
   "hgnc_downloaded": "2026-11-21",
   "hgnc_source": "https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt",
   "hgnc_licence": "CC0 1.0 (https://www.genenames.org/about/license/)",
-  "policy": "prev_symbol preferred over alias_symbol; an ambiguous previous symbol is discarded, never rescued by an alias; aliases used only when no previous symbol reaches the libraries",
-  "recoverable_unique_in_libraries": 532,
-  "recoverable_via_alias_only": 45,
+  "policy": "prev_symbol preferred over alias_symbol; an ambiguous previous symbol is discarded, never rescued by an alias; aliases used only when no previous symbol reaches the libraries; a gene that is itself an Approved HGNC symbol is never mapped",
+  "recoverable_unique_in_libraries": 487,
+  "recoverable_via_alias_only": 11,
   "recoverable_only_via_kegg": 11,
-  "ambiguous_several_in_libraries": 4,
-  "mapped_candidate_not_in_libraries": 311,
-  "unmapped_no_prev_or_alias": 1649,
+  "ambiguous_several_in_libraries": 3,
+  "approved_current_symbol_not_in_libraries": 1504,
+  "approved_current_examples": [
+    "AADACL3",
+    "AAGAB",
+    "AARD",
+    "ABCC12",
+    "ABCF3",
+    "ABHD13",
+    "ABHD14A",
+    "ABHD14A-ACY1",
+    "ABHD15",
+    "ABHD8",
+    "ABI3BP",
+    "ABTB1",
+    "ABTB2",
+    "ACAP3",
+    "ACRV1",
+    "ACTBL2",
+    "ACTL7A",
+    "ACTR3B",
+    "ACTR3C",
+    "ACTRT2"
+  ],
+  "mapped_candidate_not_in_libraries": 306,
+  "unmapped_no_prev_or_alias": 196,
   "recoverable_examples": [
     [
       "AAED1",
@@ -93,16 +116,16 @@
       "COA8"
     ],
     [
-      "APPL2",
-      "APLP2"
-    ],
-    [
       "AQPEP",
       "LVRN"
     ],
     [
       "AREGB",
       "AREG"
+    ],
+    [
+      "ASNA1",
+      "GET3"
     ]
   ],
   "ambiguous_examples": [
@@ -111,13 +134,6 @@
       [
         "B3GNT2",
         "B4GAT1"
-      ]
-    ],
-    [
-      "CHD5",
-      [
-        "CHD6",
-        "GET1"
       ]
     ],
     [

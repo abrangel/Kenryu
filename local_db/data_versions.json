@@ -34,7 +34,7 @@
     "download_url": "https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt",
     "latest_known": "2026-11-21 (download date; HGNC publishes no release number)",
     "local": "2026-11-21 (download date; 45,395 records)",
-    "note": "Symbol map (local_db/hgnc_symbol_map.json, 538 entries, built by scripts/build_hgnc_symbol_map.py): TargetScan genes absent from the enrichment libraries with a unique current HGNC symbol in the libraries (527 in GO/Reactome/WikiPathways + 11 via KEGG only). Applied at load to TargetScan sets and miRTarBase index keys since v1.59; ambiguous genes (9) are never mapped. Universe 13,035 -> 12,985 distinct symbols. HGNC data: CC0 1.0 (https://www.genenames.org/about/license/)."
+    "note": "Symbol map (local_db/hgnc_symbol_map.json, 498 entries, built by scripts/build_hgnc_symbol_map.py): TargetScan genes absent from the enrichment libraries with a unique current HGNC symbol in the libraries (487 in GO/Reactome/WikiPathways + 11 via KEGG only). Applied at load to TargetScan sets and miRTarBase index keys since v1.59; ambiguous genes (3) are never mapped, and neither are genes that are themselves Approved HGNC symbols (1,504 current genes the libraries lack stay untouched). Universe 13,035 -> 13,016 distinct symbols. HGNC data: CC0 1.0 (https://www.genenames.org/about/license/)."
   },
   "kegg": {
     "check_url": "https://maayanlab.cloud/Enrichr/datasetStatistics",

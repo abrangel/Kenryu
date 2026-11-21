@@ -191,7 +191,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.59"
+    assert body["version"] == "1.60"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -1101,8 +1101,10 @@ def test_annotate_specificity_uses_raw_term_for_translated_terms():
     # daban 0,0/0,0/0,01. El panel tiene 19 genes (LCOR, mapa HGNC).
     # Tras la política prev-sobre-alias (543 entradas): N=7531 para
     # Reactome (GPAT3, LORICRIN y SEPTIN2 entran en la biblioteca).
+    # Tras la guarda de símbolos aprobados (498 entradas): N=7523
+    # para Reactome; la primera especificidad pasa de 0,83% a 0,84%.
     assert [t["specificity"] for t in terms] == pytest.approx(
-        [0.008319, 0.003610, 0.005120], abs=1e-6)
+        [0.008368, 0.003617, 0.005131], abs=1e-6)
     assert all(t["specificity"] < 0.01 for t in terms)
 
 

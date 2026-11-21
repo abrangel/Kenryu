@@ -101,10 +101,19 @@ def main():
     # level (the three libraries, then KEGG-only), a unique prev
     # candidate wins; an ambiguous prev is discarded, never rescued
     # by an alias; aliases are used only when no previous symbol
-    # reaches that level.
+    # reaches that level. GUARD (2026-11-21): a gene that is itself
+    # an Approved HGNC symbol is NEVER mapped — the string denotes
+    # that gene, not the prev/alias target. Without the guard, 45
+    # current genes were wrongly renamed (e.g. BCAM -> BCAT2, while
+    # TargetScan's BCAM is ENSG00000187244 = HGNC BCAM itself,
+    # verified against the Ensembl IDs in the TargetScan source
+    # file). Such genes stay as they are: current genes the
+    # libraries simply do not hold.
     import pandas as pd
     h = pd.read_csv(args.hgnc, sep="\t", dtype=str)
     hgnc_date = args.download_date
+    approved = {r["symbol"] for _, r in h.iterrows()
+                if r["status"] == "Approved"}
     prev_map, alias_map = {}, {}
     for _, r in h.iterrows():
         for col, d in (("prev_symbol", prev_map),
@@ -112,8 +121,9 @@ def main():
             if pd.notna(r[col]):
                 for s in r[col].split("|"):
                     d.setdefault(s, set()).add(r["symbol"])
-    print(f"HGNC rows: {len(h)}; symbols with a prev entry: "
-          f"{len(prev_map)}, with an alias entry: {len(alias_map)}")
+    print(f"HGNC rows: {len(h)}; approved symbols: {len(approved)}; "
+          f"symbols with a prev entry: {len(prev_map)}, with an "
+          f"alias entry: {len(alias_map)}")
 
     def _in(cands, lib):
         return sorted(c for c in cands if c in lib)
@@ -121,7 +131,11 @@ def main():
     recoverable, ambiguous, unmapped, mapped_not_in_libs = [], [], [], []
     recoverable_kegg_only = 0
     recoverable_via_alias = 0
+    approved_current = []
     for g in sorted(absent):
+        if g in approved:
+            approved_current.append(g)
+            continue
         # Level 1: the three libraries, previous symbol first.
         in_libs = _in(prev_map.get(g, set()), union3)
         if len(in_libs) == 1:
@@ -170,6 +184,8 @@ def main():
     print(f"recoverable only via KEGG: {recoverable_kegg_only}")
     print(f"ambiguous (several candidates in libraries, discarded): "
           f"{len(ambiguous)}")
+    print(f"current Approved symbols the libraries lack (never "
+          f"mapped): {len(approved_current)}")
     print(f"mapped, candidate not in libraries: {len(mapped_not_in_libs)}")
     print(f"unmapped (no prev/alias entry): {len(unmapped)}")
 
@@ -201,11 +217,15 @@ def main():
         "policy": "prev_symbol preferred over alias_symbol; an "
                   "ambiguous previous symbol is discarded, never "
                   "rescued by an alias; aliases used only when no "
-                  "previous symbol reaches the libraries",
+                  "previous symbol reaches the libraries; a gene "
+                  "that is itself an Approved HGNC symbol is never "
+                  "mapped",
         "recoverable_unique_in_libraries": len(recoverable),
         "recoverable_via_alias_only": recoverable_via_alias,
         "recoverable_only_via_kegg": recoverable_kegg_only,
         "ambiguous_several_in_libraries": len(ambiguous),
+        "approved_current_symbol_not_in_libraries": len(approved_current),
+        "approved_current_examples": approved_current[:20],
         "mapped_candidate_not_in_libraries": len(mapped_not_in_libs),
         "unmapped_no_prev_or_alias": len(unmapped),
         "recoverable_examples": recoverable[:20],

@@ -4,30 +4,46 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.60] - 2026-11-21
+
 ### Fixed
-- **HGNC map policy: previous symbol preferred over alias.** The audit
-  (`scripts/audit_gene_symbols.py`) and the builder
-  (`scripts/build_hgnc_symbol_map.py`) merged `prev_symbol` and
-  `alias_symbol` into one candidate set. Now the previous symbol is
-  preferred: a unique prev candidate wins; an ambiguous previous
-  symbol is discarded, never rescued by an alias; aliases are used
-  only when no previous symbol reaches the libraries. The map grows
-  538 → 543 entries (532 in GO/Reactome/WikiPathways + 11 KEGG-only),
-  recovering AGPAT9 → GPAT3, LOR → LORICRIN, MPP6 → PALS2,
-  NOV → CCN3 and SEPT2 → SEPTIN2; 4 genes stay ambiguous and
-  unmapped (B3GNT1, CHD5, MUM1, QARS). The universe stays 12,985
-  distinct symbols (the 5 new targets were not in it). The audit
-  JSON now records the HGNC download date (2026-11-21) and the
-  policy. Reference panels unchanged; the cancer specificities move
-  in the fourth decimal (Reactome N 7,528 → 7,531): 0.83% / 0.36% /
-  0.51% rounded, unchanged. Local calibration re-run with the same
-  seeds (7, 11, 3): the TargetScan-column rates are identical
-  (N-1 K5 GO 8.3%, Strict K2 GO 19.3%, thesis-like GO 0.0%). Enrichr
-  calibration re-run with the same seeds (7, 11, 13): K5 95/85/86/63,
-  K19 27/19/22/14 (52% any), K100 13/10/13/10 (40% any) — the verdict
-  is unchanged (the route is uncalibrated at all sizes), and at
-  100 genes the any-library interval (0.23–0.59) now sits above the
-  calibrated expectation of ≈0.185.
+- **HGNC map policy: previous symbol preferred over alias; Approved
+  symbols never mapped.** The audit (`scripts/audit_gene_symbols.py`)
+  and the builder (`scripts/build_hgnc_symbol_map.py`) merged
+  `prev_symbol` and `alias_symbol` into one candidate set. Now the
+  previous symbol is preferred: a unique prev candidate wins; an
+  ambiguous previous symbol is discarded, never rescued by an alias;
+  aliases are used only when no previous symbol reaches the
+  libraries. And a gene that is itself an Approved HGNC symbol is
+  never mapped — the string denotes that gene, not another gene's
+  prev/alias entry. Without that guard, 45 current genes were
+  wrongly renamed (e.g. BCAM -> BCAT2, while TargetScan's BCAM is
+  ENSG00000187244 = HGNC BCAM itself, verified against the Ensembl
+  IDs in the TargetScan source file). The map is 498 entries (487
+  in GO/Reactome/WikiPathways + 11 KEGG-only), recovering AGPAT9 →
+  GPAT3, LOR → LORICRIN (renamed 2019-10-15), MPP6 → PALS2,
+  NOV → CCN3 and SEPT2 → SEPTIN2 — all five verified row by row
+  against the HGNC file; 3 genes stay ambiguous and unmapped
+  (B3GNT1, MUM1, QARS) and 1,504 current genes the libraries lack
+  stay untouched. The universe is 13,016 distinct symbols
+  (13,035 − 19: 15 merges into a symbol already present + 4
+  collision groups; no gene is lost — every dropped count is two
+  symbols of one gene). The audit JSON now records the HGNC
+  download date (2026-11-21) and the policy. Reference panels
+  unchanged; the cancer specificities are 0.84% / 0.36% / 0.51%
+  (Reactome N 7,523). Local calibration re-run with the same
+  seeds (7, 11, 3) and the corrected map: N-1 K5 GO 8.0%, Strict
+  K2 GO 18.7%, thesis-like GO 0.0% (TargetScan column; the moves
+  from the 543-entry map run are at most 3 panels, within sampling
+  error). Enrichr calibration re-run with the corrected map (same
+  seeds 7, 11, 13; population 13,016): K5 97/75/82/57, K19
+  29/18/28/14 (53% any), K100 10/0/13/13 (23% any) — the verdict
+  is unchanged (the route is uncalibrated at all sizes); at
+  100 genes the any-library interval (0.10–0.42) includes the
+  calibrated expectation of ≈0.185. The lists were redrawn from
+  the new population, so the comparison with the previous run is
+  not strictly paired; the largest move (Reactome K5, −10 pp) is
+  under 2 standard errors for n=100.
 - **Calibration wording.** The local-calibration doc no longer says
   the small rises "come from the symbol map": the re-runs use the
   same seeds, so the comparison is paired, and the differences are

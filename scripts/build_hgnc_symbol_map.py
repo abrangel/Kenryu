@@ -14,7 +14,11 @@ Collisions: several old symbols can map to the same current symbol,
 and some targets are already TargetScan genes under their current
 name — the same gene under two symbols. Mapping merges them, so the
 universe shrinks. No key is itself a target (no chains), so one
-pass suffices.
+pass suffices. GUARD (2026-11-21): a gene that is itself an
+Approved HGNC symbol is NEVER mapped — the string denotes that
+gene, not the prev/alias target (verified against the Ensembl IDs
+in the TargetScan source file: TargetScan's BCAM is ENSG00000187244
+= HGNC BCAM, not BCAT2).
 
 The map is a versioned data file (local_db/hgnc_symbol_map.json).
 HGNC publishes no release number: the version is the download date,
@@ -43,8 +47,8 @@ GMT_PATHS = {
 OUT = REPO / "local_db" / "hgnc_symbol_map.json"
 HGNC_URL = ("https://storage.googleapis.com/public-download-files/"
             "hgnc/tsv/tsv/hgnc_complete_set.txt")
-EXPECTED = {"entries": 543, "in_three_libraries": 532,
-            "kegg_only": 11, "ambiguous": 4}
+EXPECTED = {"entries": 498, "in_three_libraries": 487,
+            "kegg_only": 11, "ambiguous": 3}
 
 
 def main():
@@ -70,6 +74,8 @@ def main():
 
     import pandas as pd
     h = pd.read_csv(args.hgnc, sep="\t", dtype=str)
+    approved = {r["symbol"] for _, r in h.iterrows()
+                if r["status"] == "Approved"}
     prev_map, alias_map = {}, {}
     for _, r in h.iterrows():
         for col, d in (("prev_symbol", prev_map),
@@ -84,9 +90,15 @@ def main():
     # POLICY (2026-11-21): previous symbol preferred over alias, at
     # each level (the three libraries, then KEGG-only). An ambiguous
     # previous symbol is discarded, never rescued by an alias.
+    # GUARD: a gene that is itself an Approved symbol is never
+    # mapped — it denotes that gene, not the prev/alias target.
     mapping, ambiguous = {}, {}
     n_kegg_only = 0
+    n_approved_skipped = 0
     for g in sorted(absent):
+        if g in approved:
+            n_approved_skipped += 1
+            continue
         in3 = _in(prev_map.get(g, set()), u3)
         if len(in3) == 1:
             mapping[g] = in3[0]
@@ -132,6 +144,7 @@ def main():
               "in_three_libraries": len(mapping) - n_kegg_only,
               "kegg_only": n_kegg_only,
               "ambiguous": len(ambiguous),
+              "approved_current_skipped": n_approved_skipped,
               "distinct_targets": len(by_target),
               "collision_groups": len(collisions),
               "merged_entries": len(mapping) - len(by_target),

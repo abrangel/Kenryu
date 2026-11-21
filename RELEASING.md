@@ -9,6 +9,18 @@
   3. a version is frozen for citation (paper, Zenodo DOI).
 - Versions follow SemVer: MINOR for new capabilities, PATCH for fixes
   grouped into a release. Published tags are never moved or deleted.
+
+## Release cadence (2026-11-21)
+
+Six versions in three days (v1.55–v1.60) is another burst — the
+pattern the JOSS desk rejection flagged (a repo dump is not a
+history). Each had a reason (results changed), but the cadence
+itself is the problem. So: **v1.60 is the last release until the
+next big milestone** — the miRTarBase 2025 adoption, or the version
+frozen for the article. Everything else accumulates in
+[Unreleased], however long that takes. If the miRTarBase 2025
+adoption changes evidence levels, it may merit a major version
+(e.g. 2.0) — that decision is made at that milestone, not before.
 - Before tagging: full pytest, secret scan, and the calibration protocol
   (validate_random_panels.py) re-run if enrichment code changed. Record
   data versions and the run date in docs/validation/.
