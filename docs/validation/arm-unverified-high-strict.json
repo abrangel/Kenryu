@@ -1,0 +1,129 @@
+{
+  "mode": "strict",
+  "levels": {
+    "lipid": {
+      "ABCA1": {
+        "score": 100,
+        "level": "alta"
+      },
+      "SNTB2": {
+        "score": 65,
+        "level": "media"
+      },
+      "TSC22D2": {
+        "score": 65,
+        "level": "media"
+      },
+      "KPNA3": {
+        "score": 50,
+        "level": "media"
+      },
+      "SCN1A": {
+        "score": 60,
+        "level": "media"
+      }
+    },
+    "cancer": {
+      "AGO4": {
+        "score": 80,
+        "level": "alta"
+      },
+      "MEIS1": {
+        "score": 80,
+        "level": "alta"
+      },
+      "AAK1": {
+        "score": 65,
+        "level": "media"
+      },
+      "CHD7": {
+        "score": 75,
+        "level": "media"
+      },
+      "IL6R": {
+        "score": 65,
+        "level": "media"
+      },
+      "PURB": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "RDX": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "RPS6KA3": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "WNK3": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "ACVR2A": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "BNC2": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "BRWD3": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "DCUN1D3": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "FOXP1": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "KPNA4": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "SESN3": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "UBN2": {
+        "score": null,
+        "level": "not_evaluated"
+      },
+      "XKR4": {
+        "score": null,
+        "level": "not_evaluated"
+      }
+    },
+    "control": {
+      "NFIA": {
+        "score": 80,
+        "level": "alta"
+      },
+      "GMFB": {
+        "score": 55,
+        "level": "media"
+      },
+      "KLF12": {
+        "score": 55,
+        "level": "media"
+      },
+      "PDE3A": {
+        "score": 50,
+        "level": "media"
+      },
+      "SKI": {
+        "score": 60,
+        "level": "media"
+      },
+      "SOX6": {
+        "score": null,
+        "level": "not_evaluated"
+      }
+    }
+  },
+  "classifications": [],
+  "unverified_pairs": {}
+}

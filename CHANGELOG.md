@@ -1190,6 +1190,38 @@ reprodujo exactamente como decía la auditoría.
 ## [Unreleased]
 
 ### Added
+- Gene-symbol audit (`scripts/audit_gene_symbols.py`,
+  `docs/validation/gene-symbol-audit.json`, 2026-11-21): 2,496 of
+  13,035 TargetScan genes (19.1%) appear in none of the three local
+  enrichment libraries (GO, Reactome, WikiPathways; KEGG excluded —
+  against all four the count is 2,424). C-digit-orf names: 318.
+  KIAA/FAM/LOC: 232 (the audit's reported 246 could not be
+  reproduced under any definition tried: KIAA 68, FAM 164, LOC 0).
+  HGNC (complete set, CC0, downloaded 2026-11-21) recovers 527 of
+  the 2,496 with a unique current symbol in the libraries (21.1%;
+  11 more only via KEGG), 9 ambiguous, 311 mapped to symbols the
+  libraries do not hold, 1,649 unmapped. AARS → AARS1 test passes.
+  The recovery is appreciable: applying the mapping at load time is
+  the next milestone.
+
+### Fixed
+- **Historical effect of the arm fix (v1.58): results from versions
+  up to 1.57 are not reliable for the 29 blocked names.** Until
+  1.58, hsa-miR-519e-3p returned the miR-17 family's 1,385 genes,
+  and 28 more names resolved to the wrong arm or the wrong family.
+  Any result published or computed with ≤1.57 for those names must
+  be re-run on 1.58. The thesis panel is unaffected. Recorded in
+  paper.md (Validation and use) and `docs/validation/arm-resolution.md`.
+- Arm audit, second check (`scripts/audit_arm_unverified_high.py`,
+  `docs/validation/arm-unverified-high.json`, 2026-11-21): in the
+  three reference panels (lipid, cancer, control), NO gene reaches
+  "alta" only via validated pairs whose arm could not be verified —
+  and more precisely, the bare-name fallback never even triggers
+  there (every panel miRNA has an exact hit in the index: 185, 224,
+  58, 1,141, 103, 666, 970, 673, 512, 283 pairs). The "alta" genes
+  (ABCA1; AGO4, MEIS1; NFIA) rest on exact-name evidence. The
+  fail-open policy for unverifiable keys (kept, with a warning) is
+  locked in by a test, not just documented.
 - `CITATION.cff` so the software can be cited from GitHub.
 - Cancer-panel case study (`docs/case-study-cancer-panel.md`): second
   computational validation (18-gene Strict core, live run 2026-11-11).

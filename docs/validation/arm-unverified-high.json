@@ -1,0 +1,12 @@
+{
+  "panels": [
+    "cancer",
+    "control",
+    "lipid"
+  ],
+  "unverified_fallback_pairs": 0,
+  "unverified_fallback_strong_pairs": 0,
+  "unverified_pairs_by_mirna": {},
+  "genes_alta_only_via_unverified": [],
+  "verdict": "PASS: no gene reaches 'alta' only via unverified fallback pairs"
+}

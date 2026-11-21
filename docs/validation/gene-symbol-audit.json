@@ -1,0 +1,179 @@
+{
+  "targetscan_universe": 13035,
+  "libraries": {
+    "GO": 14698,
+    "Reactome": 11671,
+    "WikiPathways": 6201,
+    "KEGG": 8078
+  },
+  "absent_vs_union4": 2424,
+  "absent_vs_union3_no_kegg": 2496,
+  "union_used": "union-of-3-non-KEGG-GMTs",
+  "absent": 2496,
+  "absent_orf_like": 318,
+  "absent_kiaa_fam_loc": 232,
+  "hgnc_rows": 45395,
+  "hgnc_source": "https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt",
+  "hgnc_licence": "CC0 1.0 (https://www.genenames.org/about/license/)",
+  "recoverable_unique_in_libraries": 527,
+  "recoverable_only_via_kegg": 11,
+  "ambiguous_several_in_libraries": 9,
+  "mapped_candidate_not_in_libraries": 311,
+  "unmapped_no_prev_or_alias": 1649,
+  "recoverable_examples": [
+    [
+      "AAED1",
+      "PRXL2C"
+    ],
+    [
+      "AARS",
+      "AARS1"
+    ],
+    [
+      "ACN9",
+      "SDHAF3"
+    ],
+    [
+      "ACPL2",
+      "PXYLP1"
+    ],
+    [
+      "ACPP",
+      "ACP3"
+    ],
+    [
+      "ACPT",
+      "ACP4"
+    ],
+    [
+      "ACRC",
+      "GCNA"
+    ],
+    [
+      "ADC",
+      "AZIN2"
+    ],
+    [
+      "ADCK3",
+      "COQ8A"
+    ],
+    [
+      "ADRBK1",
+      "GRK2"
+    ],
+    [
+      "ADRBK2",
+      "GRK3"
+    ],
+    [
+      "AGPAT6",
+      "GPAT4"
+    ],
+    [
+      "AHSA2",
+      "AHSA2P"
+    ],
+    [
+      "ANKRD32",
+      "SLF1"
+    ],
+    [
+      "APOA1BP",
+      "NAXE"
+    ],
+    [
+      "APOPT1",
+      "COA8"
+    ],
+    [
+      "APPL2",
+      "APLP2"
+    ],
+    [
+      "AQPEP",
+      "LVRN"
+    ],
+    [
+      "AREGB",
+      "AREG"
+    ],
+    [
+      "ASNA1",
+      "GET3"
+    ]
+  ],
+  "ambiguous_examples": [
+    [
+      "AGPAT9",
+      [
+        "GPAT3",
+        "LPCAT1"
+      ]
+    ],
+    [
+      "B3GNT1",
+      [
+        "B3GNT2",
+        "B4GAT1"
+      ]
+    ],
+    [
+      "CHD5",
+      [
+        "CHD6",
+        "GET1"
+      ]
+    ],
+    [
+      "LOR",
+      [
+        "LORICRIN",
+        "LOXL2"
+      ]
+    ],
+    [
+      "MPP6",
+      [
+        "MPHOSPH6",
+        "PALS2"
+      ]
+    ],
+    [
+      "MUM1",
+      [
+        "IRF4",
+        "PWWP3A"
+      ]
+    ],
+    [
+      "NOV",
+      [
+        "CCN3",
+        "PLXNA1",
+        "RPL10"
+      ]
+    ],
+    [
+      "QARS",
+      [
+        "EPRS1",
+        "QARS1"
+      ]
+    ],
+    [
+      "SEPT2",
+      [
+        "SEPTIN2",
+        "SEPTIN6"
+      ]
+    ]
+  ],
+  "aars_test": {
+    "AARS_candidates": [
+      "AARS1"
+    ],
+    "AARS1_in_libraries": true,
+    "AARS_absent": true,
+    "pass": true
+  }
+}

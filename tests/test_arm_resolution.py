@@ -194,6 +194,20 @@ def test_letter_drop_collapse_is_blocked():
 
 
 @_needs_arm_data()
+def test_validated_fallback_unverifiable_key_is_kept():
+    """Fail-open, documented: when the bare key is not a TargetScan
+    family at all (viral, removed or renamed miRNAs), the seed cannot
+    be checked, so the experimental pairs are KEPT, with a warning —
+    experimental evidence is not dropped for an unanswerable question.
+    The reference-panel audit (scripts/audit_arm_unverified_high.py)
+    shows the fallback never even triggers there (every panel miRNA
+    has an exact hit in the index), so no gene reaches 'alta' via
+    unverified pairs. This test locks in the fail-open policy itself."""
+    db = {"hsa-miR-9999": {"GENEX": {"level": "strong"}}}
+    assert ke.get_validated_local_checked("hsa-miR-9999-5p", db) == {"GENEX"}
+
+
+@_needs_arm_data()
 def test_validated_fallback_other_arm_is_dropped():
     """The same swap lived in the miRTarBase lookup: hsa-miR-107-5p
     has no pairs of its own, so the bare-name fallback handed it the

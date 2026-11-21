@@ -92,6 +92,36 @@ now returns:
   — fail-open, loudly, never silently. The CLI report and the web UI
   show the same warning.
 
+## Second check: no "alta" from an unverified arm (2026-11-21)
+
+The fail-open rule (unverifiable fallback pairs are kept, with a
+warning) reintroduces a similar risk, so it was audited directly
+(`scripts/audit_arm_unverified_high.py`,
+`docs/validation/arm-unverified-high.json`): the three reference
+panels (lipid, cancer, control) were run through `/api/v1/analyze`
+twice — once with the v1.58 guard, once with a strict variant that
+keeps a fallback pair only when the seed positively verifies it — and
+the per-gene levels were compared.
+
+Result: **0 genes reach "alta" only via unverified pairs.** More
+precisely, the bare-name fallback never even triggers in the
+reference panels: every panel miRNA has an exact hit in the index
+(185, 224, 58, 1,141, 103, 666, 970, 673, 512, 283 pairs), so there
+are 0 unverified fallback pairs in them at all. The "alta" genes
+(ABCA1; AGO4, MEIS1; NFIA) rest on exact-name evidence. The fail-open
+policy itself is locked in by a test
+(`test_validated_fallback_unverifiable_key_is_kept`): a bare key that
+is not a TargetScan family keeps its pairs, with a warning.
+
+## Historical effect
+
+**Results from versions up to 1.57 are not reliable for the 29
+blocked names.** Until 1.58, hsa-miR-519e-3p returned the miR-17
+family's 1,385 genes, and 28 more names resolved to the wrong arm or
+the wrong family. Any result published or computed with ≤1.57 for
+those names must be re-run on 1.58. The thesis panel is unaffected.
+Recorded in the CHANGELOG and in paper.md (Validation and use).
+
 ## Limits
 
 - A **bare name** (no -5p/-3p, e.g. `hsa-miR-375`) is not checked: it
