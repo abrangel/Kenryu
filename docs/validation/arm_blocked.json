@@ -1,0 +1,176 @@
+[
+  {
+    "nombre": "hsa-miR-107-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-107",
+    "motivo": "family seed ['GCAGCAU'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-1193-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-1193",
+    "motivo": "family seed ['AGGUCAC'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-122b-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-122-5p",
+    "motivo": "family seed ['GGAGUGU'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-133b-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-133b",
+    "motivo": "family seed ['UUGGUCC'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-137-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-137",
+    "motivo": "family seed ['UAUUGCU'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-147b-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-147b",
+    "motivo": "family seed ['UGUGCGG'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-151b-3p",
+    "brazo_pedido": "3p",
+    "familia_TargetScan": "mir-151-3p",
+    "motivo": "family seed ['UAGACUG'] not in the 3p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-184-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-184",
+    "motivo": "family seed ['GGACGGA'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-217-3p",
+    "brazo_pedido": "3p",
+    "familia_TargetScan": "mir-217",
+    "motivo": "family seed ['ACUGCAU'] not in the 3p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-219b-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-219-5p",
+    "motivo": "family seed ['GAUUGUC'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-302f-3p",
+    "brazo_pedido": "3p",
+    "familia_TargetScan": "mir-302-3p",
+    "motivo": "family seed ['AAGUGCU'] not in the 3p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-320a-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-320",
+    "motivo": "family seed ['AAAGCUG'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-323b-3p",
+    "brazo_pedido": "3p",
+    "familia_TargetScan": "mir-323-3p",
+    "motivo": "family seed ['ACAUUAC'] not in the 3p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-326-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-326",
+    "motivo": "family seed ['CUCUGGG'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-346-3p",
+    "brazo_pedido": "3p",
+    "familia_TargetScan": "mir-346",
+    "motivo": "family seed ['GUCUGCC'] not in the 3p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-371b-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-371-5p",
+    "motivo": "family seed ['CUCAAAC'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-374c-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-374-5p",
+    "motivo": "family seed ['UAUAAUA'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-375-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-375",
+    "motivo": "family seed ['UUGUUCG'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-421-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-421",
+    "motivo": "family seed ['UCAACAG'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-429-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-429",
+    "motivo": "family seed ['AAUACUG'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-450b-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-450-5p",
+    "motivo": "family seed ['UUUGCGA'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-451b-3p",
+    "brazo_pedido": "3p",
+    "familia_TargetScan": "mir-451",
+    "motivo": "family seed ['AACCGUU'] not in the 3p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-451b-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-451",
+    "motivo": "family seed ['AACCGUU'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-519e-3p",
+    "brazo_pedido": "3p",
+    "familia_TargetScan": "mir-519-3p",
+    "motivo": "family seed ['AAAGUGC', 'AAGUGCA'] not in the 3p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-543-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-543",
+    "motivo": "family seed ['AACAUUC'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-665-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-665",
+    "motivo": "family seed ['CCAGGAG'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-760-5p",
+    "brazo_pedido": "5p",
+    "familia_TargetScan": "mir-760",
+    "motivo": "family seed ['GGCUCUG'] not in the 5p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-892a-3p",
+    "brazo_pedido": "3p",
+    "familia_TargetScan": "mir-892-3p",
+    "motivo": "family seed ['ACUGUUU'] not in the 3p sequence (offset 0-3)"
+  },
+  {
+    "nombre": "hsa-miR-892b-3p",
+    "brazo_pedido": "3p",
+    "familia_TargetScan": "mir-892-3p",
+    "motivo": "family seed ['ACUGUUU'] not in the 3p sequence (offset 0-3)"
+  }
+]

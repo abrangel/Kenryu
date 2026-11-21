@@ -4,7 +4,7 @@
     "download_url": "https://maayanlab.cloud/Enrichr/",
     "latest_known": "live",
     "local": "live API",
-    "note": "Enrichment is queried live; libraries are always current when online. Local GMT copies (Reactome, WikiPathways, GO) are bundled for the offline path; KEGG is fetched on demand by the updater, never bundled (see DATA_LICENSES.md)."
+    "note": "Enrichment is queried live, but each library is requested BY EXACT NAME, so the live API returns the PINNED snapshot (GO_Biological_Process_2023, Reactome_Pathways_2024, WikiPathways_2019_Human, KEGG_2021_Human), not the newest version. Newer libraries exist (verified 2026-11-20 via Enrichr datasetStatistics): GO_Biological_Process_2026 (5,954 terms), WikiPathways_2024_Human (829), KEGG_2026 (352); Reactome_Pathways_2024 is the only Reactome version listed. Updating a library means changing its name in the engine and re-running the calibration (docs/validation/calibration-enrichr-route.md). Local GMT copies are bundled for the offline path; KEGG is fetched on demand by the updater, never bundled (see DATA_LICENSES.md)."
   },
   "mirbase": {
     "check_url": "https://www.mirbase.org/download/CURRENT/README/",

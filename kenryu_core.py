@@ -51,6 +51,108 @@ def clean_mirna_name_cloud(m: str, species: str = "hsa") -> str:
         return r
     return f"{species}-miR-{c}"
 
+# ── RESOLUCIÓN DE BRAZOS (-5p/-3p) ──────────────────────────────────────────
+# Audit 2026-11-21 (v1.56, scripts/audit_arm_resolution.py): 33 mature
+# human miRBase 23.1 names resolve to a TargetScan family whose key
+# carries no arm; in 14 hairpins both arms return exactly the same gene
+# set, which is impossible in a seed predictor. The fix verifies the arm
+# by SEED: the TargetScan family seed (miR_Family_Info.txt, column
+# "Seed+m8") must occur in the query's mature sequence (miRBase 23.1
+# mature.fa) starting at offset 0-3. The offset window tolerates the
+# 1-2 nt of 5' annotation drift between the miRBase version TargetScan
+# 8.0 was built on and miRBase 23.1 (miR-144-3p: seed at offset 3;
+# miR-802-5p: offset 0) while still rejecting the wrong arm, whose seed
+# is absent from its sequence entirely. A bare name (no arm) is not
+# checked: it resolves to the arm TargetScan modelled, the historical
+# guide strand.
+ARM_SEED_MAX_OFFSET = 3
+
+
+def mirna_seed(sequence: str) -> str:
+    """The seed of a mature miRNA: nucleotides 2-8 (1-indexed)."""
+    return sequence.strip().upper()[1:8]
+
+
+def parse_mirbase_sequences(path) -> dict:
+    """Mature miRNA sequences from a miRBase FASTA, human only:
+    {name without species prefix, lowercased: RNA sequence}.
+    E.g. {\"mir-107-3p\": \"AGCAGCAUUGUACAGGGCUAUCA\"}. `path` may be a
+    file path or an open text stream."""
+    seqs = {}
+    name = None
+    stream = path if hasattr(path, "read") else open(path, encoding="utf-8")
+    try:
+        for line in stream:
+            if line.startswith(">"):
+                name = line[1:].split()[0]
+            elif name and name.lower().startswith("hsa-"):
+                seqs[name[4:].lower()] = line.strip().upper()
+    finally:
+        if stream is not path:
+            stream.close()
+    return seqs
+
+
+def parse_family_seeds(path):
+    """TargetScan family seeds from miR_Family_Info.txt (human rows
+    only, Species ID 9606). Returns ({key: {seeds}}, [conflicts]):
+    keys are the lowercased family name (full and each '/'-separated
+    sub-part with the mir-/let- prefix rebuilt, as _parse_targetscan_txt
+    does) and the MiRBase ID without species prefix. A key with two
+    different seeds is a real ambiguity (e.g. the sub-part "520-3p"
+    belongs to two families): it is reported in `conflicts` and kept in
+    the map, and verify_arm_seed treats a multi-seed set as a match if
+    ANY of its seeds fits."""
+    seeds = {}
+    conflicts = []
+    stream = path if hasattr(path, "read") else open(path, encoding="utf-8")
+    try:
+        for line in stream:
+            if line.startswith("miR family"):
+                continue
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 5 or parts[2].strip() != "9606":
+                continue
+            family = parts[0].strip().lower()
+            seed = parts[1].strip().upper()
+            mirbase_id = parts[3].strip()
+            keys = {family}
+            subs = family.split("/")
+            m = re.match(r"^(mir-|let-)", subs[0])
+            prefix = m.group(1) if m else "mir-"
+            for i, sub in enumerate(subs):
+                sub = sub.strip()
+                if not sub:
+                    continue
+                keys.add(sub if i == 0 or sub.startswith(("mir-", "let-"))
+                         else prefix + sub)
+            if mirbase_id.lower().startswith("hsa-"):
+                keys.add(mirbase_id[4:].lower())
+            for key in keys:
+                if key in seeds and seed not in seeds[key]:
+                    conflicts.append((key, sorted(seeds[key]), seed))
+                seeds.setdefault(key, set()).add(seed)
+    finally:
+        if stream is not path:
+            stream.close()
+    return seeds, conflicts
+
+
+def verify_arm_seed(query_sequence: str, family_seeds) -> bool:
+    """True when one of the family seeds occurs in the query's mature
+    sequence starting at offset 0..ARM_SEED_MAX_OFFSET (the seed must
+    sit at the 5' end; a start at offset 4 or later is not annotation
+    drift any more). False with no sequence or no seed data."""
+    if not query_sequence or not family_seeds:
+        return False
+    seq = query_sequence.strip().upper()
+    return any(
+        seq.startswith(seed, off)
+        for seed in family_seeds
+        for off in range(ARM_SEED_MAX_OFFSET + 1)
+    )
+
+
 # ── CARGA DE DATOS ────────────────────────────────────────────────────────────
 def consensus_genes(gene_sets: list, mode: str) -> set:
     """Convergent genes of a miRNA panel, by consensus mode (pure function).

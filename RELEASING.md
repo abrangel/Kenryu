@@ -35,7 +35,11 @@ imports. The engine and the core move together. Before every sync:
    never by picking files by hand — a hand-picked list forgets a
    module. Check first which modules changed since the last synced
    version: `git log <prev-tag>..HEAD -- kenryu_core.py
-   kenryu_updater.py kenryu_engine.py static/`.
+   kenryu_updater.py kenryu_engine.py static/`. **New runtime data
+   files count as modules:** v1.58 added `local_db/mir_family_info.txt`
+   (the arm-verification seeds); a selective package must list it
+   explicitly, or the Space runs with `arm_verification: unavailable`.
+   The file is tracked, so a full `git archive` includes it.
 2. Before pushing to the Space, import the engine from the package
    itself: `cd <package> && python -c "import kenryu_engine"`. If
    the import fails there, it will fail on the Space.

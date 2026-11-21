@@ -4,6 +4,8 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.58] - 2026-11-21
+
 ### Added
 - Lipid benchmark (`docs/validation/lipid-benchmark.md`): one PMID
   per miRNA–gene pair, each checked on PubMed 20 November 2026.
@@ -58,6 +60,36 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   (`docs/validation/comparison-kenryu-baseline.json`).
 
 ### Fixed
+- **Arm resolution (-5p/-3p): a miRNA name with an arm no longer
+  silently receives the other arm's TargetScan targets.** Audit
+  (2026-11-21, v1.56, `scripts/audit_arm_resolution.py`): 33 mature
+  human miRBase 23.1 names resolve to a family whose key carries no
+  arm; in 14 hairpins both arms return exactly the same gene set,
+  which is impossible in a seed predictor. The fix verifies the arm
+  by SEED: the TargetScan family seed (`miR_Family_Info.txt`) must
+  occur in the query's mature sequence (miRBase 23.1) starting at
+  offset 0-3, which tolerates the 1-2 nt of 5' annotation drift
+  between miRBase versions (miR-144-3p: offset 3; miR-802-5p:
+  offset 0) while rejecting the wrong arm, whose seed is absent.
+  15 arms blocked (their predicted targets return empty, with an
+  explicit warning, listed as `arm_unverified` in the analyze
+  response, the CLI report and the UI). The seed check also catches
+  14 letter-drop collapses (the `m_no_letter` fallback merged
+  distinct paralogs, e.g. miR-519e-3p into the miR-17 family):
+  29 blocked in total, 303 armed names keep their targets, 0 swaps
+  (`docs/validation/arm_blocked.json`,
+  `docs/validation/arm-resolution.md`). The same swap lived in the
+  miRTarBase lookup (hsa-miR-107-5p received the -3p arm's 298
+  validated pairs via the bare-name fallback): the engine now guards
+  that fallback the same way, and the live Harmonizome fetch too.
+  The thesis panel does not change (all five miRNAs resolve to armed
+  family keys). Bare names and mouse are not checked (documented
+  limits). When a seed file is missing the verification reports
+  `arm_verification: unavailable` and the old behaviour returns,
+  loudly. New files: `local_db/mir_family_info.txt` (tracked;
+  downloaded by the updater with TargetScan 8.0) and
+  `tests/test_arm_resolution.py` (11 tests, including the full
+  332-name audit as a CI regression).
 - v1.57 verified live on the Space (commit ef1edc1): /health 1.57,
   commit 1d720ee, mirtarbase_mode official, 285 families; lipid
   panel 5 genes, 19 Enrichr terms in 3 groups [10, 7, 2], local 0

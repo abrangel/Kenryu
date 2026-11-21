@@ -350,11 +350,15 @@ from kenryu_core import (
     load_mirtarbase_official,
     load_mirtarbase_official_with_meta,
     local_enrichment,
+    mirna_seed,
     normalize_isomir,
     panel_convergence,
+    parse_family_seeds,
+    parse_mirbase_sequences,
     prioritize_genes,
     reverse_lookup,
     term_specificity,
+    verify_arm_seed,
     group_redundant_terms,
 )
 from kenryu_updater import (
@@ -492,19 +496,133 @@ def _parse_targetscan_txt(fileobj, species_id="9606"):
 
     return temp_db
 
-# ── BÚSQUEDA DE GENES POR miRNA ───────────────────────────────────────────────
-def get_targets_local(mirna: str, db=None) -> set:
-    """
-    Busca los genes diana de un miRNA.
+# ── VERIFICACIÓN DE BRAZOS (-5p/-3p) POR SEMILLA ───────────────────────────
+# Audit 2026-11-21 (v1.56): 33 miRNAs con brazo se resolvían en silencio a
+# una familia TargetScan sin brazo; en 14 horquillas ambos brazos
+# devolvían el mismo conjunto. La verificación compara la semilla de la
+# familia (miR_Family_Info.txt) con la secuencia madura del miRNA
+# (miRBase 23.1 mature.fa): la semilla debe aparecer al inicio de la
+# secuencia (offset 0-3, ver kenryu_core.verify_arm_seed). Sin los dos
+# archivos la verificación no está disponible: se devuelve el resultado
+# de antes con un aviso (fail-open ruidoso), y la respuesta de /analyze
+# lo dice en "arm_verification". Los dos archivos son datos con versión
+# (local_db/, el FASTA ya se distribuía; el de familias lo descarga el
+# actualizador junto con TargetScan 8.0).
+MIRBASE_MATURE_PATH = "local_db/mirbase_mature.fa"
+FAMILY_INFO_PATH = "local_db/mir_family_info.txt"
+FAMILY_INFO_ZIP = "data/mir_family_info.txt.zip"
+_ARM_MAPS = None  # (mirbase_sequences, family_seeds) | (None, None)
 
-    CORRECCIONES vs versión original:
-    - BUG 3 CORREGIDO: la búsqueda "difusa por número" devolvía el primer
-      match que contenía el número, sin importar si era la familia correcta.
-      Ej: buscar "106b" matcheaba "mir-106-5p/17-5p/..." que es la familia
-      INCORRECTA, devolviendo miles de genes mezclados.
-      Ahora la búsqueda difusa es más específica y solo se usa como último
-      recurso con log de advertencia.
-    """
+
+def _load_arm_seed_maps():
+    """Lee los dos archivos de semillas (una sola vez). Devuelve
+    (secuencias miRBase, semillas de familia) o (None, None) si falta
+    alguno: la verificación queda no disponible, nunca inventada."""
+    global _ARM_MAPS
+    if _ARM_MAPS is not None:
+        return _ARM_MAPS
+    seqs = None
+    fasta = BASE_DIR / MIRBASE_MATURE_PATH
+    if fasta.exists():
+        try:
+            seqs = parse_mirbase_sequences(fasta)
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudo leer {fasta}: {e}")
+    fam = None
+    info = BASE_DIR / FAMILY_INFO_PATH
+    if info.exists():
+        try:
+            fam, conflicts = parse_family_seeds(info)
+            if conflicts:
+                logger.warning(
+                    f"⚠️ miR_Family_Info: {len(conflicts)} claves con dos "
+                    f"semillas (se acepta cualquiera): {conflicts[:4]}")
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudo leer {info}: {e}")
+    elif (BASE_DIR / FAMILY_INFO_ZIP).exists():
+        try:
+            with zipfile.ZipFile(BASE_DIR / FAMILY_INFO_ZIP) as z:
+                inner = [n for n in z.namelist() if n.endswith(".txt")][0]
+                with z.open(inner) as fh:
+                    text = fh.read().decode("utf-8")
+            import io as _io
+            fam, conflicts = parse_family_seeds(_io.StringIO(text))
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudo leer {FAMILY_INFO_ZIP}: {e}")
+    _ARM_MAPS = (seqs, fam)
+    if seqs is None or fam is None:
+        logger.warning(
+            "⚠️ Verificación de brazos NO DISPONIBLE (falta "
+            "local_db/mirbase_mature.fa o local_db/mir_family_info.txt): "
+            "las dianas se devuelven como antes, sin comprobar el brazo.")
+    return _ARM_MAPS
+
+
+def arm_seed_maps():
+    """Mapas de semillas para la verificación de brazos (o (None, None)
+    si los archivos no están). Pensado para tests y para la auditoría."""
+    return _load_arm_seed_maps()
+
+
+def arm_verification_status() -> str:
+    """'active' cuando los dos archivos de semillas están cargados,
+    'unavailable' cuando falta alguno."""
+    seqs, fam = _load_arm_seed_maps()
+    return "active" if (seqs is not None and fam is not None) else "unavailable"
+
+
+def check_arm_resolution(mirna: str, db=None) -> dict:
+    """¿La familia TargetScan que responde a `mirna` modela de verdad
+    el brazo pedido? Devuelve {status, family_key, reason}:
+    - verified: la semilla de la familia está al inicio de la secuencia
+      madura del miRNA (offset 0-3).
+    - unverified: la semilla no está (el brazo pedido NO es el
+      modelado) o no se pudo comprobar (sin secuencia o sin semilla).
+    - not_applicable: el nombre no trae brazo (resuelve al brazo
+      modelado, la hebra guía histórica), el miRNA es de ratón, o no
+      hay datos locales.
+    - unavailable: faltan los archivos de semillas."""
+    m_clean = deep_clean_mirna(mirna)
+    if m_clean.startswith("mmu-"):
+        return {"status": "not_applicable", "family_key": None,
+                "reason": "mouse: no arm data"}
+    arm = re.search(r"-(5p|3p)$", m_clean)
+    if not arm:
+        return {"status": "not_applicable", "family_key": None,
+                "reason": "bare name resolves to the modelled arm"}
+    genes, key = _resolve_targetscan(mirna, db)
+    if not genes or key is None:
+        return {"status": "not_applicable", "family_key": key,
+                "reason": "no local targets to verify"}
+    if key == "__individual_file__":
+        return {"status": "verified", "family_key": key,
+                "reason": "individual TargetScan file named for this miRNA"}
+    seqs, fam = _load_arm_seed_maps()
+    if seqs is None or fam is None:
+        return {"status": "unavailable", "family_key": key,
+                "reason": "seed files missing"}
+    query_seq = seqs.get(m_clean)
+    if not query_seq:
+        return {"status": "unverified", "family_key": key,
+                "reason": f"{mirna} has no sequence in miRBase 23.1"}
+    family_seeds = fam.get(key)
+    if not family_seeds:
+        return {"status": "unverified", "family_key": key,
+                "reason": f"family '{key}' not in miR_Family_Info"}
+    if verify_arm_seed(query_seq, family_seeds):
+        return {"status": "verified", "family_key": key,
+                "reason": f"family seed {sorted(family_seeds)} in sequence"}
+    return {"status": "unverified", "family_key": key,
+            "reason": (f"family seed {sorted(family_seeds)} not in the "
+                       f"{arm.group(1)} sequence (offset 0-3)")}
+
+
+def _resolve_targetscan(mirna: str, db=None):
+    """Resuelve un miRNA a sus genes diana locales y a la clave de
+    familia TargetScan que respondió. Devuelve (genes, family_key);
+    family_key es "__individual_file__" cuando los genes vienen de un
+    archivo individual (el archivo lleva el nombre del miRNA, así que
+    el brazo está en el nombre del archivo) y None cuando no hay datos."""
     m_clean = deep_clean_mirna(mirna)            # ej. "mir-33a-5p"
     m_no_letter = re.sub(r'(\d+)[a-z]+(-\d+)', r'\1\2', m_clean)  # "mir-33-5p"
     m_no_suffix = re.sub(r'-(5p|3p)$', '', m_clean)         # "mir-33a"
@@ -520,7 +638,7 @@ def get_targets_local(mirna: str, db=None) -> set:
                 with open(fp, 'r', encoding='utf-8-sig') as f:
                     genes = {l.strip() for l in f if l.strip()}
                 logger.info(f"📂 {mirna}: {len(genes)} genes (archivo individual)")
-                return genes
+                return genes, "__individual_file__"
 
     # 2. DB global — variantes de nombre exactas
     db = TARGETSCAN_DB if db is None else db
@@ -528,7 +646,7 @@ def get_targets_local(mirna: str, db=None) -> set:
         res = db.get(key)
         if res:
             logger.info(f"🗄 {mirna} → '{key}': {len(res)} genes")
-            return set(res)
+            return set(res), key
 
     # 3. BUG 3 CORREGIDO: búsqueda en familias compuestas
     #    Busca el nombre exacto del miRNA dentro de las claves de la DB
@@ -539,7 +657,7 @@ def get_targets_local(mirna: str, db=None) -> set:
             # Match exacto de sub-parte: la clave en DB debe SER el miRNA
             if db_key == key_variant:
                 logger.info(f"🔍 {mirna} → match exacto sub-familia '{db_key}': {len(db_genes)} genes")
-                return set(db_genes)
+                return set(db_genes), db_key
 
     # 4. Último recurso: búsqueda por número base SOLO si es suficientemente
     #    específico (incluye el sufijo 5p/3p para evitar falsos positivos).
@@ -561,10 +679,95 @@ def get_targets_local(mirna: str, db=None) -> set:
             for k, v in db.items():
                 if token_pat.search(k):
                     logger.warning(f"⚠️ {mirna} → difuso (último recurso) '{k}': {len(v)} genes")
-                    return set(v)
+                    return set(v), k
 
     logger.warning(f"⚠️ {mirna}: sin datos en DB local")
-    return set()
+    return set(), None
+
+
+# ── BÚSQUEDA DE GENES POR miRNA ───────────────────────────────────────────────
+def get_targets_local(mirna: str, db=None) -> set:
+    """
+    Busca los genes diana de un miRNA.
+
+    CORRECCIONES vs versión original:
+    - BUG 3 CORREGIDO: la búsqueda "difusa por número" devolvía el primer
+      match que contenía el número, sin importar si era la familia correcta.
+      Ej: buscar "106b" matcheaba "mir-106-5p/17-5p/..." que es la familia
+      INCORRECTA, devolviendo miles de genes mezclados.
+      Ahora la búsqueda difusa es más específica y solo se usa como último
+      recurso con log de advertencia.
+    - BRAZO CORREGIDO (v1.58): si el nombre trae brazo (-5p/-3p) y la
+      familia que responde no lo indica, la semilla de la familia debe
+      aparecer al inicio de la secuencia madura del miRNA; si no, el
+      brazo pedido NO es el modelado y se devuelve vacío con aviso
+      (check_arm_resolution). Un nombre sin brazo no se comprueba.
+    """
+    genes, key = _resolve_targetscan(mirna, db)
+    if not genes or key is None:
+        return genes
+    check = check_arm_resolution(mirna, db)
+    if check["status"] == "unverified":
+        logger.warning(
+            f"⚠️ {mirna}: brazo no verificado (familia '{key}'): "
+            f"{check['reason']} — devolviendo vacío, no las dianas del otro brazo")
+        return set()
+    return genes
+
+
+def _validated_fallback_arm_ok(mirna: str, fallback_key: str) -> bool:
+    """The miRTarBase lookup fell back from an armed name to the bare
+    name (pre-23 naming: the bare key is the guide arm). Verify by seed,
+    as for TargetScan families: the query's mature sequence must carry
+    the bare key's family seed at offset 0-3. When the key is not a
+    TargetScan family at all (268 bare keys in the v9.0 index — viral,
+    removed or renamed miRNAs) the seed cannot be checked: the validated
+    pairs are kept, with a warning, because experimental evidence is not
+    dropped for an unanswerable question. Same when the seed files are
+    missing: keep, loudly."""
+    seqs, fam = _load_arm_seed_maps()
+    if seqs is None or fam is None:
+        logger.warning(
+            f"⚠️ {mirna}: no se pudo comprobar el brazo del respaldo "
+            f"validado a {fallback_key} (faltan los archivos de semillas)")
+        return True
+    qseq = seqs.get(deep_clean_mirna(mirna))
+    fseeds = fam.get(deep_clean_mirna(fallback_key))
+    if not qseq or not fseeds:
+        logger.warning(
+            f"⚠️ {mirna}: el respaldo validado a {fallback_key} no se "
+            f"puede comprobar por semilla (sin secuencia o sin familia) — "
+            f"se conserva")
+        return True
+    ok = verify_arm_seed(qseq, fseeds)
+    if not ok:
+        logger.warning(
+            f"⚠️ {mirna}: el respaldo validado a {fallback_key} es del "
+            f"otro brazo (semilla {sorted(fseeds)} ausente) — se descarta")
+    return ok
+
+
+def get_validated_evidence_checked(mirna, db, species="hsa"):
+    """get_validated_evidence + arm guard on the bare-name fallback:
+    an armed query whose exact name is not in the library falls back to
+    the bare name; if that bare key is the other arm's, the evidence is
+    dropped (it belongs to the other arm). An exact-name hit is the
+    miRNA's own evidence and is returned as-is."""
+    name = clean_mirna_name_cloud(mirna, species)
+    if name in db:
+        return get_validated_evidence(mirna, db, species)
+    ev = get_validated_evidence(mirna, db, species)
+    if not ev:
+        return {}
+    base = re.sub(r"-(5p|3p)$", "", name, flags=re.IGNORECASE)
+    return ev if _validated_fallback_arm_ok(mirna, base) else {}
+
+
+def get_validated_local_checked(mirna, db, species="hsa"):
+    """get_validated_local + the same arm guard (only levels
+    strong/weak/legacy count)."""
+    return {g for g, ev in get_validated_evidence_checked(mirna, db, species).items()
+            if ev.get("level") in ("strong", "weak", "legacy")}
 
 def family_labels_for_targets(mirnas, gene_sets, db):
     """TargetScan family key per miRNA (same order as gene_sets), for the
@@ -596,6 +799,8 @@ async def fetch_mirtarbase(mirna: str, species: str = "hsa") -> set:
                 if r.status_code == 200:
                     genes = {a['gene']['symbol'] for a in r.json().get('associations', [])}
                     if genes:
+                        if v != variants[0] and not _validated_fallback_arm_ok(mirna, v):
+                            continue
                         logger.info(f"🌐 miRTarBase {mirna}: {len(genes)} genes")
                         return genes
     except:
@@ -1617,7 +1822,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.57"
+APP_VERSION = "1.58"
 
 
 @asynccontextmanager
@@ -1870,7 +2075,7 @@ def panel_core(mirnas, mode="strict"):
     names, sets = [], []
     for m in [normalize_isomir(x.strip()) for x in mirnas if x.strip()]:
         local = get_targets_local(m)
-        remote = get_validated_local(m, MIRTARBASE_DB)
+        remote = get_validated_local_checked(m, MIRTARBASE_DB)
         combined = local if local else remote
         if combined:
             names.append(m)
@@ -2023,6 +2228,10 @@ async def analyze(req: AnalysisRequest):
     # ── RECOLECCIÓN DE GENES POR miRNA ───────────────────────────────────────────
     gene_sets, found_names = [], []
     missing_mirnas = []  # H-17 (v1.47): miRNAs sin datos en ninguna fuente.
+    arm_unverified = []  # v1.58: brazos que TargetScan no modela (ver
+    # check_arm_resolution): sus dianas predichas se bloquean, nunca se
+    # sustituyen por las del otro brazo.
+    arm_status = arm_verification_status()
     local_by_mirna, remote_by_mirna = {}, {}
     evidence_by_mirna = {}  # Ronda 3 (v1.48): {miRNA: {gen: evidencia}}
     source_by_mirna = {}  # por miRNA, qué fuente se usó (v1.46): un consenso
@@ -2039,10 +2248,15 @@ async def analyze(req: AnalysisRequest):
     load_mirtarbase_local()
     for m in mirnas:
         local  = get_targets_local(m, db)
+        if req.species != "mouse":
+            check = check_arm_resolution(m, db)
+            if check["status"] == "unverified":
+                arm_unverified.append({"mirna": m, "reason": check["reason"],
+                                       "family_key": check["family_key"]})
         # Validado: primero la librería local de miRTarBase; la API viva
         # de Harmonizome solo como respaldo (y nunca en modo offline).
-        remote = get_validated_local(m, MIRTARBASE_DB, species_prefix)
-        evidence = get_validated_evidence(m, MIRTARBASE_DB, species_prefix)
+        remote = get_validated_local_checked(m, MIRTARBASE_DB, species_prefix)
+        evidence = get_validated_evidence_checked(m, MIRTARBASE_DB, species_prefix)
         if not remote and not req.offline:
             remote = await fetch_mirtarbase(m, species_prefix)
             # La API viva no distingue niveles: sus genes son "legacy".
@@ -2121,6 +2335,7 @@ async def analyze(req: AnalysisRequest):
         "parameters": {
             "mirnas": found_names,
             "missing_mirnas": missing_mirnas,
+            "arm_unverified": [e["mirna"] for e in arm_unverified],
             "mode": mode,
             "years": req.years,
             "offline": req.offline,
@@ -2168,6 +2383,8 @@ async def analyze(req: AnalysisRequest):
             "common_genes": [],
             "found_mirnas": found_names,
             "missing_mirnas": missing_mirnas,
+            "arm_unverified": arm_unverified,
+            "arm_verification": arm_status,
             "convergence": convergence,
             "execution_manifest": manifest,
             "single_mirna_warning": (
@@ -2521,6 +2738,8 @@ async def analyze(req: AnalysisRequest):
         "common_genes": prioritized_common,
         "found_mirnas": found_names,
         "missing_mirnas": missing_mirnas,
+        "arm_unverified": arm_unverified,
+        "arm_verification": arm_status,
         "convergence": convergence,
         "execution_manifest": manifest,
         "single_mirna_warning": (

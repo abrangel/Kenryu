@@ -48,6 +48,15 @@ def write_report(result, out_dir):
         "",
     ]
     manifest = result.get("execution_manifest", {})
+    if result.get("arm_unverified"):
+        lines.append("## Brazos no modelados por TargetScan")
+        lines.append("")
+        for e in result["arm_unverified"]:
+            lines.append(f"- {e['mirna']}: {e['reason']} "
+                         f"(familia {e.get('family_key')})")
+        lines.append("Sus dianas predichas se bloquearon; no se sustituyeron "
+                     "por las del otro brazo.")
+        lines.append("")
     if manifest:
         params = manifest.get("parameters", {})
         lines.append("## Manifiesto de ejecución")

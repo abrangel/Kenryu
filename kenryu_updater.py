@@ -70,8 +70,13 @@ DATA_SOURCES = [
         "files": [
             {"url": "https://www.targetscan.org/vert_80/vert_80_data_download/Predicted_Targets_Info.default_predictions.txt.zip",
              "local": "data/targetscan_full.txt.zip", "verify": "zip"},
+            {"url": "https://www.targetscan.org/vert_80/vert_80_data_download/miR_Family_Info.txt.zip",
+             "local": "data/mir_family_info.txt.zip", "verify": "zip"},
         ],
         "note": "Local database (targetscan_full.txt.zip, 8.3 MB; renamed in v1.49 — the zip holds a .txt, not JSON). "
+                "miR_Family_Info.txt.zip (v1.58): the family seeds used to "
+                "verify -5p/-3p arms; the engine reads the extracted "
+                "local_db/mir_family_info.txt, or the zip. "
                 "No v9.0 release found as of 2026-11-18. Direct file URL "
                 "resolved from the data-download CGI 2026-11-18.",
     },

@@ -1,0 +1,266 @@
+[
+  {
+    "nombre": "hsa-miR-107-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 836
+  },
+  {
+    "nombre": "hsa-miR-107-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 836
+  },
+  {
+    "nombre": "hsa-miR-1193-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 319
+  },
+  {
+    "nombre": "hsa-miR-1197-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 255
+  },
+  {
+    "nombre": "hsa-miR-133b-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 711
+  },
+  {
+    "nombre": "hsa-miR-133b-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 711
+  },
+  {
+    "nombre": "hsa-miR-137-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 1314
+  },
+  {
+    "nombre": "hsa-miR-137-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 1314
+  },
+  {
+    "nombre": "hsa-miR-147b-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 19
+  },
+  {
+    "nombre": "hsa-miR-147b-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 19
+  },
+  {
+    "nombre": "hsa-miR-184-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 29
+  },
+  {
+    "nombre": "hsa-miR-184-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 29
+  },
+  {
+    "nombre": "hsa-miR-206-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 897
+  },
+  {
+    "nombre": "hsa-miR-217-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 461
+  },
+  {
+    "nombre": "hsa-miR-217-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 461
+  },
+  {
+    "nombre": "hsa-miR-326-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 516
+  },
+  {
+    "nombre": "hsa-miR-326-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 516
+  },
+  {
+    "nombre": "hsa-miR-346-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 194
+  },
+  {
+    "nombre": "hsa-miR-346-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 194
+  },
+  {
+    "nombre": "hsa-miR-375-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 304
+  },
+  {
+    "nombre": "hsa-miR-375-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 304
+  },
+  {
+    "nombre": "hsa-miR-421-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 450
+  },
+  {
+    "nombre": "hsa-miR-421-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 450
+  },
+  {
+    "nombre": "hsa-miR-429-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 1196
+  },
+  {
+    "nombre": "hsa-miR-429-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 1196
+  },
+  {
+    "nombre": "hsa-miR-448-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 686
+  },
+  {
+    "nombre": "hsa-miR-543-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 757
+  },
+  {
+    "nombre": "hsa-miR-543-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 757
+  },
+  {
+    "nombre": "hsa-miR-665-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 506
+  },
+  {
+    "nombre": "hsa-miR-665-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 506
+  },
+  {
+    "nombre": "hsa-miR-760-3p",
+    "brazo_pedido": "3p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 569
+  },
+  {
+    "nombre": "hsa-miR-760-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 569
+  },
+  {
+    "nombre": "hsa-miR-802-5p",
+    "brazo_pedido": "5p",
+    "brazos_en_TargetScan": [
+      "sin brazo"
+    ],
+    "n_genes": 391
+  }
+]

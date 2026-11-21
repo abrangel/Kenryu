@@ -227,6 +227,16 @@ function renderDashboard(data) {
         if (data.missing_mirnas && data.missing_mirnas.length) {
           html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">miRNAs sin datos en ninguna fuente (no entraron al consenso): ${data.missing_mirnas.map(escapeHtml).join(', ')}</div>`;
         }
+        // v1.58: brazos que TargetScan no modela (su semilla no está en
+        // la secuencia del brazo pedido): sus dianas se bloquearon, no
+        // se sustituyeron por las del otro brazo.
+        if (data.arm_unverified && data.arm_unverified.length) {
+          const arms = data.arm_unverified.map(e => `${e.mirna} (${escapeHtml(e.reason)})`).join('<br>');
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">Brazos no modelados por TargetScan (sin dianas predichas):<br>${arms}</div>`;
+        }
+        if (data.arm_verification === 'unavailable') {
+          html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">Verificación de brazos no disponible (faltan los archivos de semillas): los brazos no se comprobaron.</div>`;
+        }
         if (data.single_mirna_warning) {
           html += `<div style="margin-top:8px; color:var(--text-dim); font-size:11px;">${escapeHtml(data.single_mirna_warning)}</div>`;
         }
