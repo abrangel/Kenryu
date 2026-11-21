@@ -199,9 +199,19 @@ def test_validated_fallback_other_arm_is_dropped():
     has no pairs of its own, so the bare-name fallback handed it the
     -3p arm's 298 pairs. The guard drops them; the -3p arm keeps them
     (its seed matches the bare key's)."""
+    # Fixture DB, not the real index: the guard is what the test
+    # verifies, and CI has no real index (it is gitignored, built
+    # locally from the xlsx). "none" is tested-not-functional and
+    # never counts.
+    db = {"hsa-miR-107": {"ABCA1": {"level": "strong"},
+                           "GENE2": {"level": "weak"},
+                           "GENE3": {"level": "none"}}}
+    assert ke.get_validated_local_checked("hsa-miR-107-5p", db) == set()
+    assert ke.get_validated_local_checked("hsa-miR-107-3p", db) == {"ABCA1", "GENE2"}
+    # Real index, when present: the -3p arm keeps its 298 pairs.
     ke.load_mirtarbase_local()
-    assert ke.get_validated_local_checked("hsa-miR-107-5p", ke.MIRTARBASE_DB) == set()
-    assert len(ke.get_validated_local_checked("hsa-miR-107-3p", ke.MIRTARBASE_DB)) == 298
+    if ke.MIRTARBASE_DB:
+        assert len(ke.get_validated_local_checked("hsa-miR-107-3p", ke.MIRTARBASE_DB)) == 298
 
 
 @_needs_arm_data()
