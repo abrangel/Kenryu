@@ -3,24 +3,26 @@
 From the HGNC complete set (CC0, downloaded — never committed), map
 each TargetScan gene that is absent from the enrichment libraries to
 its unique current symbol in the libraries (the audit in
-scripts/audit_gene_symbols.py: 527 in GO/Reactome/WikiPathways, 11
-more only via KEGG = 538 entries). Ambiguous genes (several
-candidates in the libraries, 9) are NOT mapped; unmapped genes stay
+scripts/audit_gene_symbols.py). POLICY (2026-11-21): the previous
+symbol is preferred over an alias — a unique prev_symbol candidate
+wins; an ambiguous previous symbol is discarded, never rescued by
+an alias; aliases are used only when no previous symbol reaches the
+libraries. Ambiguous genes are NOT mapped; unmapped genes stay
 as they are.
 
-Collisions: 5 pairs of old symbols map to the same current symbol,
-and 45 targets are already TargetScan genes under their current name
-— the same gene under two symbols. Mapping merges them, so the
-universe shrinks from 13,035 to 13,030 distinct symbols. No key is
-itself a target (no chains), so one pass suffices.
+Collisions: several old symbols can map to the same current symbol,
+and some targets are already TargetScan genes under their current
+name — the same gene under two symbols. Mapping merges them, so the
+universe shrinks. No key is itself a target (no chains), so one
+pass suffices.
 
 The map is a versioned data file (local_db/hgnc_symbol_map.json).
 HGNC publishes no release number: the version is the download date,
 recorded in the file and in data_versions.json. Rebuild with:
-    python scripts/build_hgnc_symbol_map.py --hgnc /path/to/hgnc_complete_set.txt
+    python scripts/build_hgnc_symbol_map.py --hgnc /path/to/hgnc_complete_set.txt --download-date 2026-11-21
 The script refuses to write if the counts drift from the audit
-(538 entries, 527 + 11 split, 9 ambiguous) — that means the HGNC
-file changed, and the audit must be re-run first.
+— that means the HGNC file changed, and the audit must be
+re-run first.
 """
 
 import argparse
@@ -41,8 +43,8 @@ GMT_PATHS = {
 OUT = REPO / "local_db" / "hgnc_symbol_map.json"
 HGNC_URL = ("https://storage.googleapis.com/public-download-files/"
             "hgnc/tsv/tsv/hgnc_complete_set.txt")
-EXPECTED = {"entries": 538, "in_three_libraries": 527,
-            "kegg_only": 11, "ambiguous": 9}
+EXPECTED = {"entries": 543, "in_three_libraries": 532,
+            "kegg_only": 11, "ambiguous": 4}
 
 
 def main():
@@ -68,31 +70,51 @@ def main():
 
     import pandas as pd
     h = pd.read_csv(args.hgnc, sep="\t", dtype=str)
-    prev = {}
+    prev_map, alias_map = {}, {}
     for _, r in h.iterrows():
-        for col in ("prev_symbol", "alias_symbol"):
+        for col, d in (("prev_symbol", prev_map),
+                       ("alias_symbol", alias_map)):
             if pd.notna(r[col]):
                 for s in r[col].split("|"):
-                    prev.setdefault(s, set()).add(r["symbol"])
+                    d.setdefault(s, set()).add(r["symbol"])
 
+    def _in(cands, lib):
+        return sorted(c for c in cands if c in lib)
+
+    # POLICY (2026-11-21): previous symbol preferred over alias, at
+    # each level (the three libraries, then KEGG-only). An ambiguous
+    # previous symbol is discarded, never rescued by an alias.
     mapping, ambiguous = {}, {}
     n_kegg_only = 0
     for g in sorted(absent):
-        cands = prev.get(g)
-        if not cands:
-            continue
-        in3 = sorted(c for c in cands if c in u3)
-        in4 = sorted(c for c in cands if c in u4)
+        in3 = _in(prev_map.get(g, set()), u3)
         if len(in3) == 1:
             mapping[g] = in3[0]
-        elif len(in3) > 1:
-            # Several candidates in the three libraries: ambiguous,
-            # never mapped.
+            continue
+        if len(in3) > 1:
             ambiguous[g] = in3
-        elif len(in4) == 1:
+            continue
+        in3 = _in(alias_map.get(g, set()), u3)
+        if len(in3) == 1:
+            mapping[g] = in3[0]
+            continue
+        if len(in3) > 1:
+            ambiguous[g] = in3
+            continue
+        in4 = _in(prev_map.get(g, set()), u4)
+        if len(in4) == 1:
             mapping[g] = in4[0]
             n_kegg_only += 1
-        elif len(in4) > 1:
+            continue
+        if len(in4) > 1:
+            ambiguous[g] = in4
+            continue
+        in4 = _in(alias_map.get(g, set()), u4)
+        if len(in4) == 1:
+            mapping[g] = in4[0]
+            n_kegg_only += 1
+            continue
+        if len(in4) > 1:
             ambiguous[g] = in4
         # else: mapped to symbols no library holds — not mapped, and
         # not ambiguous either (audit: 311 of those).
@@ -133,7 +155,8 @@ def main():
         "hgnc_rows": len(h),
         "scope": "TargetScan genes absent from GO/Reactome/WikiPathways "
                  "with a unique current HGNC symbol in the libraries "
-                 "(audit: scripts/audit_gene_symbols.py). Ambiguous "
+                 "(audit: scripts/audit_gene_symbols.py). POLICY: "
+                 "prev_symbol preferred over alias_symbol; ambiguous "
                  "genes are NOT mapped.",
         "counts": counts,
         "collisions": collisions,

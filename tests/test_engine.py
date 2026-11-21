@@ -1099,8 +1099,10 @@ def test_annotate_specificity_uses_raw_term_for_translated_terms():
     # v1.59: valor exacto (cola hipergeométrica con el universo de
     # TargetScan ∩ biblioteca, N=7528 para Reactome); antes 100 muestras
     # daban 0,0/0,0/0,01. El panel tiene 19 genes (LCOR, mapa HGNC).
+    # Tras la política prev-sobre-alias (543 entradas): N=7531 para
+    # Reactome (GPAT3, LORICRIN y SEPTIN2 entran en la biblioteca).
     assert [t["specificity"] for t in terms] == pytest.approx(
-        [0.008291, 0.003613, 0.005124], abs=1e-6)
+        [0.008319, 0.003610, 0.005120], abs=1e-6)
     assert all(t["specificity"] < 0.01 for t in terms)
 
 

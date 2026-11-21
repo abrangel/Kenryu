@@ -122,29 +122,29 @@ single gene — ABCA1, SCN1A, KPNA3 — which is gene annotation, not
 pathway enrichment), even though some term or other is almost always
 hit.
 
-## 5-gene lists (thesis-like): engine criterion — DONE 2026-11-19; re-run 2026-11-21 (v1.59)
+## 5-gene lists (thesis-like): engine criterion — DONE 2026-11-19; re-run 2026-11-21 (v1.59), repeated with the prev-preference symbol map
 
 100 random 5-gene lists, seed 7, re-run with the engine's criterion
 (first 8 rows per library, adjusted p < 0.05). False-positive rate:
 
 | Library | FPR (engine) | FPR (all rows) | Significant terms in the top 8 (total over 100 lists) |
 |---|---|---|---|
-| GO Biological Process | 0.96 | 0.96 | 749 (~7.5 per list) |
-| Reactome | 0.79 | 0.79 | 546 |
-| WikiPathways | 0.83 | 0.83 | 396 |
-| KEGG | 0.63 | 0.63 | 259 |
+| GO Biological Process | 0.95 | 0.95 | 750 (~7.5 per list) |
+| Reactome | 0.85 | 0.85 | 546 |
+| WikiPathways | 0.86 | 0.86 | 406 |
+| KEGG | 0.63 | 0.63 | 261 |
 
 **Only 1 list of 100 came back without a significant term, under
 either criterion** (any library: 0.99). The count correction was real
-— 39 significant GO terms per list becomes ~7.5 in the top 8, the
+— 36 significant GO terms per list becomes ~7.5 in the top 8, the
 most the engine can publish — but the false-positive rate is
 identical, because the significant terms sit in the top rows. Control
 with the raw p-value (row[2]) instead of the adjusted one: GO 0.99,
-Reactome 1.00, WikiPathways 0.87, KEGG 0.91 — barely higher, which is
+Reactome 1.00, WikiPathways 0.90, KEGG 0.92 — barely higher, which is
 consistent with the adjusted p behaving like a correction over far
 fewer tests than the whole library.
 
-## 19-gene lists (cancer-like): DONE 2026-11-21 (v1.59)
+## 19-gene lists (cancer-like): DONE 2026-11-21 (v1.59), repeated with the prev-preference symbol map
 
 100 random 19-gene lists, seed 11, engine criterion (first 8 rows,
 adjusted p < 0.05). This replaces the 18-gene run of 2026-11-19
@@ -154,26 +154,26 @@ the cancer panel now has 19 genes after the v1.59 HGNC symbol map
 
 | Library | FPR (engine) | Significant terms in the top 8 (total over 100 lists) |
 |---|---|---|
-| GO Biological Process | 0.34 | 98 (~1.0 per list) |
-| Reactome | 0.23 | 56 |
-| WikiPathways | 0.21 | 81 |
-| KEGG | 0.14 | 41 |
+| GO Biological Process | 0.27 | 103 (~1.0 per list) |
+| Reactome | 0.19 | 64 |
+| WikiPathways | 0.22 | 70 |
+| KEGG | 0.14 | 40 |
 
-**61 of 100 random lists came back with at least one "significant"
+**52 of 100 random lists came back with at least one "significant"
 term in some library.** The per-library rates are the ones compared
-to the calibrated 5%: 0.14–0.34, still ~3–7× that. The any-library
+to the calibrated 5%: 0.14–0.27, still ~3–5× that. The any-library
 figure is not compared to 5% directly — with four calibrated
-libraries the expected value is ≈18.5% (1 − 0.95⁴) — so 0.61 is
-about 3.3× that. Control with the raw p-value instead of the adjusted
-one: GO 1.00, Reactome 1.00, WikiPathways 1.00, KEGG 0.96. The
-adjustment does cut that rate, but only to 0.14–0.34 per library.
+libraries the expected value is ≈18.5% (1 − 0.95⁴) — so 0.52 is
+about 2.8× that. Control with the raw p-value instead of the adjusted
+one: GO 1.00, Reactome 1.00, WikiPathways 1.00, KEGG 0.97. The
+adjustment does cut that rate, but only to 0.14–0.27 per library.
 The cancer panel's three terms (Developmental Biology
 0.0262, Recycling Pathway of L1 0.0473, Signaling by TGFBR3
 0.0473) therefore cannot be presented as significant findings;
 they are reported as exploratory, with their specificity values
 (0.83%, 0.36%, 0.51% exact) as the guard.
 
-## 100-gene lists: DONE 2026-11-19; re-run 2026-11-21 (v1.59) (30 lists, seed 13, TargetScan universe)
+## 100-gene lists: DONE 2026-11-19; re-run 2026-11-21 (v1.59), repeated with the prev-preference symbol map (30 lists, seed 13, TargetScan universe)
 
 The rate falls with list size, but does not reach the calibrated 5%
 at 100 genes either. Intervals are exact Clopper–Pearson 95%
@@ -183,24 +183,25 @@ interpretable — only the order of magnitude is.
 | Library | FPR (engine) | 95% CI (Clopper–Pearson) |
 |---|---|---|
 | GO Biological Process | 0.13 | 0.04–0.31 |
-| Reactome | 0.07 | 0.01–0.22 |
-| WikiPathways | 0.07 | 0.01–0.22 |
-| KEGG | 0.07 | 0.01–0.22 |
+| Reactome | 0.10 | 0.02–0.27 |
+| WikiPathways | 0.13 | 0.04–0.31 |
+| KEGG | 0.10 | 0.02–0.27 |
 
-**10 of 30 random lists came back with at least one "significant"
-term in some library (0.33, 95% CI 0.17–0.53; the calibrated
+**12 of 30 random lists came back with at least one "significant"
+term in some library (0.40, 95% CI 0.23–0.59; the calibrated
 expectation for four libraries is ≈0.185).** Control with the
 raw p-value: GO 1.00, Reactome 1.00, WikiPathways 1.00, KEGG 1.00.
 
-Size trend (any library): 5 genes 0.99 → 19 genes 0.61 → 100 genes
-0.33. The mechanism predicts this direction — with larger lists
+Size trend (any library): 5 genes 0.99 → 19 genes 0.52 → 100 genes
+0.40. The mechanism predicts this direction — with larger lists
 almost every term has an overlap, so BH over the returned terms
 approaches BH over the whole library — but the data do not support
 a clean size threshold N below which the adjusted p "is not an
-FDR" and above which it is: at 100 genes the rate is still 0.33 in
-any library, and every library's interval (GO 0.04–0.31; Reactome,
-WikiPathways and KEGG 0.01–0.22) includes 5% while any library
-(0.17–0.53) sits above it. The scoped claim stands: at the sizes
+FDR" and above which it is: at 100 genes the rate is still 0.40 in
+any library, and every library's interval (GO and WikiPathways
+0.04–0.31; Reactome and KEGG 0.02–0.27) includes 5% while any
+library (0.23–0.59) now sits above even the calibrated four-library
+expectation of ≈0.185. The scoped claim stands: at the sizes
 tested (5, 19 and 100 genes) the adjusted p returned by the Enrichr
 API is not equivalent to a standard FDR.
 File: `calibration-enrichr-K100-engine.json`.
@@ -214,15 +215,21 @@ checks whether the verdict depends on it.
 
 | Lists | Population | GO | Reactome | WikiPathways | KEGG | Any library |
 |---|---|---|---|---|---|---|
-| 5 genes | TargetScan (n=100) | 0.96 | 0.79 | 0.83 | 0.63 | 0.99 |
+| 5 genes | TargetScan (n=100) | 0.95 | 0.85 | 0.86 | 0.63 | 0.99 |
 | 5 genes | GMT union (n=50) | 1.00 | 0.58 | 0.84 | 0.56 | 1.00 |
-| 19 genes | TargetScan (n=100) | 0.34 | 0.23 | 0.21 | 0.14 | 0.61 |
+| 19 genes | TargetScan (n=100) | 0.27 | 0.19 | 0.22 | 0.14 | 0.52 |
 | 18 genes | GMT union (n=50) | 0.24 | 0.22 | 0.30 | 0.14 | 0.60 |
 
 The verdict does not change: the route is uncalibrated at both
-sizes in both populations (any-library 0.60–0.61 for 18/19-gene lists,
+sizes in both populations (any-library 0.52–0.60 for 18/19-gene lists,
 0.99–1.00 for 5-gene lists). The differences between populations are
-within sampling noise (n=50, standard error ≈ 0.07). The GMT-union
+within sampling noise (n=50, standard error ≈ 0.07). The re-runs use
+the same seeds (7, 11, 13) and the same random lists, so the
+comparison with the previous run is paired: the changes are a few
+lists — K5 GO −1, Reactome +6, WikiPathways +3, KEGG 0; K19 GO −7,
+Reactome −4, WikiPathways +1, KEGG 0; K100 GO 0, Reactome +1,
+WikiPathways +2, KEGG +1 — and lie within sampling error. No rise
+or fall is claimed; the verdict is unchanged. The GMT-union
 runs were not repeated for v1.59 (that population is the GMT genes
 themselves, unaffected by the symbol map); the 18-gene GMT row is
 therefore not size-matched to the 19-gene TargetScan row. Files:

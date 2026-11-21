@@ -467,7 +467,7 @@ KENRYU has been validated live against the deployed Space (`POST /api/v1/analyze
 |-------|--------|-------------|--------|
 | **Lipid panel** (UNIR master's thesis, 2026-03-29) | hsa-miR-33a-5p, hsa-miR-144-3p, hsa-miR-758-3p, hsa-miR-106b-5p, hsa-miR-33b-5p | **5 genes**: ABCA1, KPNA3, SCN1A, SNTB2, TSC22D2 | Local enrichment: 0 terms; 19 exploratory Enrichr terms in 3 groups, each sustained by a single gene; ABCA1 — OMIM 600046, >200 pathogenic ClinVar variants, trial NCT01456650 |
 | **Example panel** (live test, 2026-11-11) | hsa-miR-375, hsa-miR-29a-3p, hsa-miR-21-5p | **6 genes**: GMFB, KLF12, NFIA, PDE3A, SKI, SOX6 | Reproduces exactly the example report shipped with this repository |
-| **Cancer panel** (live test, 2026-11-11) | hsa-miR-21-5p, hsa-miR-155-5p, hsa-let-7a-5p | **19 genes**: AAK1, ACVR2A, AGO4, BNC2, BRWD3, CHD7, DCUN1D3, FOXP1, IL6R, KPNA4, LCOR, MEIS1, PURB, RDX, RPS6KA3, SESN3, UBN2, WNK3, XKR4 | Local enrichment: 0 terms; 3 Enrichr terms (all Reactome), exploratory (p-adj 0.0262, 0.0473, 0.0473): Developmental Biology (Reactome), Recycling Pathway of L1, Signaling by TGFBR3 |
+| **Cancer panel** (live test, 2026-11-21) | hsa-miR-21-5p, hsa-miR-155-5p, hsa-let-7a-5p | **19 genes**: AAK1, ACVR2A, AGO4, BNC2, BRWD3, CHD7, DCUN1D3, FOXP1, IL6R, KPNA4, LCOR, MEIS1, PURB, RDX, RPS6KA3, SESN3, UBN2, WNK3, XKR4 | Local enrichment: 0 terms; 3 Enrichr terms (all Reactome), exploratory (p-adj 0.0262, 0.0473, 0.0473): Developmental Biology (Reactome), Recycling Pathway of L1, Signaling by TGFBR3 |
 
 > **Reproduce the cancer panel yourself:**
 > ```bash

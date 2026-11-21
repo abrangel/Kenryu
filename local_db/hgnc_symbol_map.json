@@ -3,13 +3,13 @@
   "hgnc_downloaded": "2026-11-21",
   "hgnc_licence": "CC0 1.0 (https://www.genenames.org/about/license/)",
   "hgnc_rows": 45395,
-  "scope": "TargetScan genes absent from GO/Reactome/WikiPathways with a unique current HGNC symbol in the libraries (audit: scripts/audit_gene_symbols.py). Ambiguous genes are NOT mapped.",
+  "scope": "TargetScan genes absent from GO/Reactome/WikiPathways with a unique current HGNC symbol in the libraries (audit: scripts/audit_gene_symbols.py). POLICY: prev_symbol preferred over alias_symbol; ambiguous genes are NOT mapped.",
   "counts": {
-    "entries": 538,
-    "in_three_libraries": 527,
+    "entries": 543,
+    "in_three_libraries": 532,
     "kegg_only": 11,
-    "ambiguous": 9,
-    "distinct_targets": 533,
+    "ambiguous": 4,
+    "distinct_targets": 538,
     "collision_groups": 4,
     "merged_entries": 5,
     "targets_already_in_universe": 45,
@@ -83,10 +83,6 @@
     "ZFHX3"
   ],
   "ambiguous_not_mapped": {
-    "AGPAT9": [
-      "GPAT3",
-      "LPCAT1"
-    ],
     "B3GNT1": [
       "B3GNT2",
       "B4GAT1"
@@ -95,30 +91,13 @@
       "CHD6",
       "GET1"
     ],
-    "LOR": [
-      "LORICRIN",
-      "LOXL2"
-    ],
-    "MPP6": [
-      "MPHOSPH6",
-      "PALS2"
-    ],
     "MUM1": [
       "IRF4",
       "PWWP3A"
     ],
-    "NOV": [
-      "CCN3",
-      "PLXNA1",
-      "RPL10"
-    ],
     "QARS": [
       "EPRS1",
       "QARS1"
-    ],
-    "SEPT2": [
-      "SEPTIN2",
-      "SEPTIN6"
     ]
   },
   "mapping": {
@@ -134,6 +113,7 @@
     "ADRBK1": "GRK2",
     "ADRBK2": "GRK3",
     "AGPAT6": "GPAT4",
+    "AGPAT9": "GPAT3",
     "AHSA2": "AHSA2P",
     "ANKRD32": "SLF1",
     "APITD1-CORT": "CENPS-CORT",
@@ -476,6 +456,7 @@
     "LEPREL4": "P3H4",
     "LINS": "LINS1",
     "LOH12CR1": "BORCS5",
+    "LOR": "LORICRIN",
     "LPHN1": "ADGRL1",
     "LPHN2": "ADGRL2",
     "LPHN3": "ADGRL3",
@@ -510,6 +491,7 @@
     "MLLT4": "AFDN",
     "MLTK": "MAP3K20",
     "MPP2": "FOXM1",
+    "MPP6": "PALS2",
     "MRC1L1": "MRC1",
     "MRE11A": "MRE11",
     "MRP63": "MRPL57",
@@ -529,6 +511,7 @@
     "NHP2L1": "SNU13",
     "NOP9": "LTB4R2",
     "NOTCH2NL": "NOTCH2NLA",
+    "NOV": "CCN3",
     "NRD1": "NRDC",
     "NUPL1": "NUP58",
     "NUPL2": "NUP42",
@@ -593,6 +576,7 @@
     "SEPT10": "SEPTIN10",
     "SEPT11": "SEPTIN11",
     "SEPT12": "SEPTIN12",
+    "SEPT2": "SEPTIN2",
     "SEPT3": "SEPTIN3",
     "SEPT6": "SEPTIN6",
     "SEPT7": "SEPTIN7",

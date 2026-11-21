@@ -23,17 +23,27 @@ def _map():
 
 
 def test_symbol_map_file():
-    """The map is exactly the audited set: 538 entries (527 + 11),
-    9 ambiguous, AARS -> AARS1."""
+    """The map is exactly the audited set: 543 entries (532 + 11),
+    4 ambiguous, AARS -> AARS1. POLICY (2026-11-21): the previous
+    symbol is preferred over an alias — an ambiguous previous symbol
+    is discarded, never rescued by an alias. That recovers 5 genes
+    the merged logic left ambiguous (AGPAT9, LOR, MPP6, NOV, SEPT2)
+    and leaves 4 discarded (B3GNT1, CHD5, MUM1, QARS)."""
     doc = _map()
-    assert len(doc["mapping"]) == 538
-    assert doc["counts"]["in_three_libraries"] == 527
+    assert len(doc["mapping"]) == 543
+    assert doc["counts"]["in_three_libraries"] == 532
     assert doc["counts"]["kegg_only"] == 11
-    assert len(doc["ambiguous_not_mapped"]) == 9
+    assert len(doc["ambiguous_not_mapped"]) == 4
     assert doc["mapping"]["AARS"] == "AARS1"
-    assert "AGPAT9" not in doc["mapping"]
-    assert "AGPAT9" in doc["ambiguous_not_mapped"]
+    assert doc["mapping"]["AGPAT9"] == "GPAT3"
+    assert doc["mapping"]["LOR"] == "LORICRIN"
+    assert doc["mapping"]["MPP6"] == "PALS2"
+    assert doc["mapping"]["NOV"] == "CCN3"
+    assert doc["mapping"]["SEPT2"] == "SEPTIN2"
+    assert sorted(doc["ambiguous_not_mapped"]) == [
+        "B3GNT1", "CHD5", "MUM1", "QARS"]
     assert doc["hgnc_licence"].startswith("CC0")
+    assert doc["hgnc_downloaded"] == "2026-11-21"
 
 
 def test_targetscan_loader_maps_symbols():
@@ -92,10 +102,14 @@ def test_ambiguous_and_current_symbols_untouched():
     """Ambiguous genes are never mapped, and current symbols pass
     through unchanged."""
     db = ke.load_local_data()
-    assert ke.map_gene_symbol("AGPAT9") == "AGPAT9"
+    assert ke.map_gene_symbol("B3GNT1") == "B3GNT1"
+    assert ke.map_gene_symbol("CHD5") == "CHD5"
+    assert ke.map_gene_symbol("MUM1") == "MUM1"
+    assert ke.map_gene_symbol("QARS") == "QARS"
     assert ke.map_gene_symbol("ABCA1") == "ABCA1"
     assert ke.map_gene_symbol("AARS") == "AARS1"
+    assert ke.map_gene_symbol("AGPAT9") == "GPAT3"
     # Ambiguous genes stay in the universe under their own symbol:
-    # AGPAT9 is a TargetScan gene and is NOT replaced by GPAT3/LPCAT1.
+    # B3GNT1 is a TargetScan gene and is NOT replaced by B3GNT2/B4GAT1.
     universe = set().union(*db.values())
-    assert "AGPAT9" in universe
+    assert "B3GNT1" in universe

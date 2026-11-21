@@ -4,6 +4,47 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Fixed
+- **HGNC map policy: previous symbol preferred over alias.** The audit
+  (`scripts/audit_gene_symbols.py`) and the builder
+  (`scripts/build_hgnc_symbol_map.py`) merged `prev_symbol` and
+  `alias_symbol` into one candidate set. Now the previous symbol is
+  preferred: a unique prev candidate wins; an ambiguous previous
+  symbol is discarded, never rescued by an alias; aliases are used
+  only when no previous symbol reaches the libraries. The map grows
+  538 → 543 entries (532 in GO/Reactome/WikiPathways + 11 KEGG-only),
+  recovering AGPAT9 → GPAT3, LOR → LORICRIN, MPP6 → PALS2,
+  NOV → CCN3 and SEPT2 → SEPTIN2; 4 genes stay ambiguous and
+  unmapped (B3GNT1, CHD5, MUM1, QARS). The universe stays 12,985
+  distinct symbols (the 5 new targets were not in it). The audit
+  JSON now records the HGNC download date (2026-11-21) and the
+  policy. Reference panels unchanged; the cancer specificities move
+  in the fourth decimal (Reactome N 7,528 → 7,531): 0.83% / 0.36% /
+  0.51% rounded, unchanged. Local calibration re-run with the same
+  seeds (7, 11, 3): the TargetScan-column rates are identical
+  (N-1 K5 GO 8.3%, Strict K2 GO 19.3%, thesis-like GO 0.0%). Enrichr
+  calibration re-run with the same seeds (7, 11, 13): K5 95/85/86/63,
+  K19 27/19/22/14 (52% any), K100 13/10/13/10 (40% any) — the verdict
+  is unchanged (the route is uncalibrated at all sizes), and at
+  100 genes the any-library interval (0.23–0.59) now sits above the
+  calibrated expectation of ≈0.185.
+- **Calibration wording.** The local-calibration doc no longer says
+  the small rises "come from the symbol map": the re-runs use the
+  same seeds, so the comparison is paired, and the differences are
+  a handful of panels (at most 7 of 300) within sampling error — no
+  rise is claimed.
+
+### Changed
+- `paper.md` trimmed 1,733 → 1,624 words (whole file; 1,577 body,
+  1,662 splitting hyphenated words), so the count no longer depends
+  on the counting method. Detail moved to `docs/`: the live
+  convergence-test parameters (`docs/validation/convergence.md`),
+  the 139,399 miRNA sets and DIANA's interaction types
+  (`docs/comparison.md`), and the open question on Enrichr's
+  adjusted-p mechanism (`docs/validation/calibration-enrichr-route.md`
+  and the maintainers' email draft). Substance and AI disclosure
+  untouched.
+
 ## [1.59] - 2026-11-21
 
 ### Added

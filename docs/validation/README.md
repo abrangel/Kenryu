@@ -41,9 +41,14 @@ this table) is no longer computed: the TargetScan universe has been the
 background since v1.54. Previous values (2026-11-19, v1.53 data):
 N-1 K5 13.3% / 7.3% (GO), 16.3% / 11.7% (Reactome), 5.7% / 3.3% (WP);
 Strict K2 28.7% / 17.0%, 20.0% / 12.7%, 12.7% / 7.3%; thesis-like
-(65 panels) 3.1% / 1.5%, 3.1% / 3.1%, 0% / 0%. The small rises come
-from the symbol map: more genes are recognised by the libraries, so a
-random list has slightly more chances to hit a term.
+(65 panels) 3.1% / 1.5%, 3.1% / 3.1%, 0% / 0%. The re-runs use the
+same seeds (7, 11, 3), so the comparison is paired: the differences
+are a handful of panels — at most 7 of 300 in the TargetScan column
+(Strict K2 GO, 51 → 58), 3 of 300 in N-1 K5 GO (22 → 25), 1 panel in
+thesis-like GO (1 of 65 → 0 of 66) — and lie within sampling error.
+No rise is claimed. The runs were repeated 2026-11-21 with the
+prev-preference symbol map (543 entries); the numbers above are
+unchanged.
 Positive controls were weak (miR-17 recovers "cell cycle", E2F and TGF
 but its strongest terms are generic; let-7 recovers only "MAPK"; miR-34
 returns no terms) and are not presented as validation: they use
