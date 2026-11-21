@@ -167,8 +167,29 @@ v9.0 (no v10.0 file is shipped), so its startup and memory do not
 change. If the user later chooses the runtime-download option for
 the Space, these are the numbers that deployment would pay.
 
-## Step G — Publication: PENDING
+## Step G — Publication: DONE (2026-11-21)
 
-Version 2.0 with CHANGELOG and paper updated; option to use the
-9.0 index and reproduce old results; data versions fixed in the
-manifest.
+- Commit `7395fbc` ("v2.0: miRTarBase 10.0 adoption (measured)", 26
+  files), pushed to main; CI run 44933927759 **success** (test,
+  gitleaks, smoke). Tag `v2.0` pushed; release
+  https://github.com/abrangel/Kenryu/releases/tag/v2.0.
+- CHANGELOG `[2.0]`; paper.md 1,665 words (10.0, clip_only,
+  sensitivity 358/643, 284 tests); READMEs, DATA_LICENSES.md,
+  data_versions.json (local 10.0); APP_VERSION 2.0; OpenAPI
+  regenerated (2.0, 10 paths); `.gitignore` covers
+  `local_db/mirtarbase_v10.json.gz`.
+- Space sync: package `space-sync-v200/` (git archive + build_info
+  2.0/7395fbc; import verified from the package; NO index file in
+  the package — the Space keeps its v9.0 index on disk). One commit
+  `82f86f1` ("v2.0: miRTarBase 10.0 adoption (code; data stays
+  v9.0)", 6 files, Dockerfile and README untouched, no index
+  uploaded). Space rebuilt clean and Running; container log:
+  "KENRYU v2.0 listo — 285 familias miRNA cargadas" and
+  "miRTarBase local: índice oficial miRTarBase 9.0, 2947 miRNAs"
+  (the v9.0 fallback, as designed). **check_space.py 2.0 7395fbc →
+  ALL PASS 12/12** (lipids 5 genes, 19 terms, 3 groups [10, 7, 2],
+  local 0; cancer 19 genes, 3 terms, specs [0.0084, 0.0036, 0.0051],
+  local 0). Rollback Space commit 7d9d494.
+- Open decision (user's): whether the Space should download the
+  official CSV at runtime and build the v10.0 index there, or keep
+  serving v9.0.
