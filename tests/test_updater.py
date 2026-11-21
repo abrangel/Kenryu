@@ -185,7 +185,8 @@ def test_health_reports_data_sources():
     # KEGG GMT it says "not loaded" instead of the pinned record.
     assert r.json()["data_sources"] == ke.loaded_data_versions()
     assert set(r.json()["data_sources"]) == {"mirbase", "targetscan",
-                                             "mirtarbase", "enrichr", "kegg"}
+                                             "mirtarbase", "enrichr", "kegg",
+                                             "hgnc"}
 
 
 # ── Download + install ─────────────────────────────────────────────────────

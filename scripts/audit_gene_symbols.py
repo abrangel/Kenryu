@@ -56,7 +56,10 @@ def main():
 
     import kenryu_engine as ke
 
-    db = ke.load_local_data()
+    # Raw data: the audit measures the pre-mapping baseline, so the
+    # HGNC map must NOT be applied here (load_local_data maps by
+    # default since v1.59).
+    db = ke.load_local_data(mapped=False)
     universe = set().union(*db.values())
     libs = {name: ke.load_gmt_library(str(p)) for name, p in GMT_PATHS.items()}
     lib_genes = {name: set().union(*terms.values()) if terms else set()

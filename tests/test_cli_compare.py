@@ -46,7 +46,7 @@ def test_compare_endpoint():
     d = r.json()
     by_name = {p["name"]: p for p in d["panels"]}
     assert by_name["lipid"]["genes"] == ["ABCA1", "KPNA3", "SCN1A", "SNTB2", "TSC22D2"]
-    assert len(by_name["cancer"]["genes"]) == 18
+    assert len(by_name["cancer"]["genes"]) == 19  # v1.59: +LCOR (HGNC map)
     assert d["n_union"] == len(set(by_name["lipid"]["genes"]) | set(by_name["cancer"]["genes"]))
     assert d["pairwise"][0]["a"] == "lipid"
 

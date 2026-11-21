@@ -20,12 +20,12 @@
   "perms": 10000,
   "seed": 7,
   "nulo": {
-    "media": 2.514,
+    "media": 2.579,
     "mediana": 2.0,
     "p95": 6,
     "p99": 9,
-    "max": 23
+    "max": 19
   },
-  "p_empirico": 0.1366863313668633,
+  "p_empirico": 0.14388561143885611,
   "p_minimo_resoluble": 0.0001
 }

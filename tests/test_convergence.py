@@ -58,8 +58,10 @@ def test_cancer_panel_reproduces_reference():
     assert r["k_names"] == 3
     assert r["k_effective"] == 3
     assert r["same_family_warning"] is False
-    assert r["genes_observed"] == 18
-    assert 0.05 < r["p_by_tolerance"]["0.25"] < 0.20  # reference: 0.102
+    # v1.59: 19, not 18 — the HGNC map unifies C10orf12 (miR-21-5p,
+    # miR-155-5p) with LCOR (let-7-5p): the same gene under two symbols.
+    assert r["genes_observed"] == 19
+    assert 0.05 < r["p_by_tolerance"]["0.25"] < 0.20  # reference: 0.082
 
 
 def test_p_is_a_range_across_tolerances_with_resolution():

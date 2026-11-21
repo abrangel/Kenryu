@@ -191,7 +191,7 @@ def test_health_endpoint():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "OK"
-    assert body["version"] == "1.58"
+    assert body["version"] == "1.59"
     assert body["db_families"] >= 5  # fallback: the 5 panel .txt files
     assert body["raw_files"] == 5
 
@@ -507,10 +507,10 @@ def test_analyze_offline_marks_genes_beyond_research_cap_not_evaluated():
 
 
 def test_analyze_offline_cancer_panel_researches_prioritized_genes():
-    """v1.46 (H-06): en el panel de cáncer (18 genes, strict) los 5
+    """v1.46 (H-06): en el panel de cáncer (19 genes, strict) los 5
     investigados deben ser los de mayor prioridad por validación en
     miRTarBase (AGO4, MEIS1, PURB, RPS6KA3, WNK3), no los 5 primeros
-    alfabéticos (AAK1, ACVR2A, AGO4, BNC2, BRWD3). Los 13 restantes son
+    alfabéticos (AAK1, ACVR2A, AGO4, BNC2, BRWD3). Los 14 restantes son
     'no evaluado', nunca 'baja' por no haberse investigado. Excepción
     v1.52: sin ningún miRTarBase local (clon fresco) no hay validación
     que priorice, así que los 5 son los alfabéticos, con 25 ("baja")."""
@@ -521,7 +521,7 @@ def test_analyze_offline_cancer_panel_researches_prioritized_genes():
             "years": 10, "mode": "strict", "offline": True})
     assert r.status_code == 200
     d = r.json()
-    assert len(d["common_genes"]) == 18
+    assert len(d["common_genes"]) == 19  # v1.59: +LCOR (HGNC map)
     val = d["validation"]
     researched = {g for g, s in val["genes"].items() if s["level"] != "not_evaluated"}
     not_ev = {g for g, s in val["genes"].items() if s["level"] == "not_evaluated"}
@@ -532,7 +532,7 @@ def test_analyze_offline_cancer_panel_researches_prioritized_genes():
     # v1.52: sin ningún miRTarBase local (clon fresco: el GMT ya no está
     # en el repo), todos los genes empatan a 0 validación y el tope de 5
     # cae a los 5 primeros alfabéticos, con 25 puntos ("baja", solo
-    # TargetScan); los 13 restantes quedan sin evaluar.
+    # TargetScan); los 14 restantes quedan sin evaluar.
     if _OFFICIAL.exists():
         expected = {"AAK1", "AGO4", "CHD7", "IL6R", "MEIS1"}
     elif _GMT.exists():
@@ -540,7 +540,7 @@ def test_analyze_offline_cancer_panel_researches_prioritized_genes():
     else:
         expected = {"AAK1", "ACVR2A", "AGO4", "BNC2", "BRWD3"}
     assert researched == expected
-    assert len(not_ev) == 13
+    assert len(not_ev) == 14
     assert all(val["genes"][g]["score"] is None for g in not_ev)
     # Con validación local los 5 investigados son media/alta (low 0); sin
     # ningún miRTarBase local los 5 son "baja" (25, solo TargetScan).
@@ -1085,21 +1085,22 @@ def test_annotate_specificity_uses_raw_term_for_translated_terms():
     ke.TARGETSCAN_DB = ke.load_local_data()
     ke.load_gmt_libraries()
     cancer = ["AAK1", "ACVR2A", "AGO4", "BNC2", "BRWD3", "CHD7", "DCUN1D3",
-              "FOXP1", "IL6R", "KPNA4", "MEIS1", "PURB", "RDX", "RPS6KA3",
-              "SESN3", "UBN2", "WNK3", "XKR4"]
+              "FOXP1", "IL6R", "KPNA4", "LCOR", "MEIS1", "PURB", "RDX",
+              "RPS6KA3", "SESN3", "UBN2", "WNK3", "XKR4"]
     terms = [
         {"Term": "Biología del desarrollo", "RawTerm": "Developmental Biology",
-         "Source": "Reactome", "Pval": 0.0176},
+         "Source": "Reactome", "Pval": 0.0262},
         {"Term": "Vía de reciclaje de L1", "RawTerm": "Recycling Pathway of L1",
-         "Source": "Reactome", "Pval": 0.0424},
+         "Source": "Reactome", "Pval": 0.0473},
         {"Term": "Señalización mediante TGFBR3", "RawTerm": "Signaling by TGFBR3",
-         "Source": "Reactome", "Pval": 0.0424},
+         "Source": "Reactome", "Pval": 0.0473},
     ]
     ke.annotate_enrichment_specificity(terms, cancer)
-    # Unreleased: valor exacto (cola hipergeométrica con el universo de
-    # TargetScan ∩ biblioteca, N=7337); antes 100 muestras daban 0,0/0,0/0,01.
+    # v1.59: valor exacto (cola hipergeométrica con el universo de
+    # TargetScan ∩ biblioteca, N=7528 para Reactome); antes 100 muestras
+    # daban 0,0/0,0/0,01. El panel tiene 19 genes (LCOR, mapa HGNC).
     assert [t["specificity"] for t in terms] == pytest.approx(
-        [0.006081, 0.003224, 0.004837], abs=1e-6)
+        [0.008291, 0.003613, 0.005124], abs=1e-6)
     assert all(t["specificity"] < 0.01 for t in terms)
 
 

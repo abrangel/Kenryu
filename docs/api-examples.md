@@ -58,7 +58,7 @@ print(d["execution_manifest"]["reproduce"])     # the curl command that repeats 
 
 Payload (`docs/examples/analyze-cancer-n1.json`): the three-miRNA
 cancer panel, N-1 mode, offline. N-1 admits genes missed by one
-miRNA, so the panel grows from 18 genes (Strict) to 188 — and the
+miRNA, so the panel grows from 19 genes (Strict) to 188 — and the
 convergence p rises to ≈0.5, which is what the test is for: the count
 is not unusual. The manifest's `reproduce` command is the exact call
 to repeat the run.
@@ -78,11 +78,11 @@ and the cancer panel, both Strict. Abridged response:
 {
   "panels": [
     {"name": "lipid", "genes": ["ABCA1", "KPNA3", "SCN1A", "SNTB2", "TSC22D2"]},
-    {"name": "cancer", "genes": ["AGO4", "MEIS1", "... 18 genes ..."]}
+    {"name": "cancer", "genes": ["AGO4", "MEIS1", "LCOR", "... 19 genes ..."]}
   ],
-  "n_union": 23
+  "n_union": 24
 }
 ```
 
-The two panels share no gene (`n_union` 23 = 5 + 18): the lipid and
+The two panels share no gene (`n_union` 24 = 5 + 19): the lipid and
 cancer convergences are disjoint sets.

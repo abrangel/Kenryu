@@ -28,16 +28,22 @@ python validate_random_panels.py --panels 300 --size 2 --mode strict --seed 11 -
 python validate_random_panels.py --panels 200 --size 5 --mode strict --min-genes 4 --max-genes 6 --seed 3 --out /tmp/r_thesis.json
 ```
 
-## Results (2026-11-19, v1.53 data, same TargetScan base and GMT libraries)
+## Results (2026-11-21, v1.59 data: HGNC symbol map applied; same TargetScan base and GMT libraries)
 
-| Scenario | GO (A / C / B) | Reactome (A / C / B) | WikiPathways (A / C / B) |
+| Scenario | GO (actual / TargetScan) | Reactome (actual / TargetScan) | WikiPathways (actual / TargetScan) |
 |---|---|---|---|
-| N-1, 5 miRNAs, 300 panels, median 16 genes | 13.3% / 7.3% / 2.3% | 16.3% / 11.7% / 4.7% | 5.7% / 3.3% / 1.0% |
-| Strict, 2 miRNAs, 300 panels, median 46 genes | 28.7% / 17.0% / 2.0% | 20.0% / 12.7% / 4.0% | 12.7% / 7.3% / 1.3% |
-| Thesis-like: strict, 5 miRNAs, 4–6 genes, 65 panels | 3.1% / 1.5% / 0.0% | 3.1% / 3.1% / 3.1% | 0% / 0% / 0% |
+| N-1, 5 miRNAs, 300 panels, median 16 genes | 13.0% / 8.3% | 15.7% / 11.7% | 5.7% / 3.7% |
+| Strict, 2 miRNAs, 300 panels, median 46 genes | 29.0% / 19.3% | 20.3% / 13.3% | 12.0% / 7.3% |
+| Thesis-like: strict, 5 miRNAs, 4–6 genes, 66 panels | 3.0% / 0.0% | 3.0% / 3.0% | 0% / 0% |
 
-The `validation_random_panels_*.json` files are the original runs; the
-`bgB-*.json` files add the third (panel-union) column to the same runs.
+The panel-union background (v1.49, third column in earlier versions of
+this table) is no longer computed: the TargetScan universe has been the
+background since v1.54. Previous values (2026-11-19, v1.53 data):
+N-1 K5 13.3% / 7.3% (GO), 16.3% / 11.7% (Reactome), 5.7% / 3.3% (WP);
+Strict K2 28.7% / 17.0%, 20.0% / 12.7%, 12.7% / 7.3%; thesis-like
+(65 panels) 3.1% / 1.5%, 3.1% / 3.1%, 0% / 0%. The small rises come
+from the symbol map: more genes are recognised by the libraries, so a
+random list has slightly more chances to hit a term.
 Positive controls were weak (miR-17 recovers "cell cycle", E2F and TGF
 but its strongest terms are generic; let-7 recovers only "MAPK"; miR-34
 returns no terms) and are not presented as validation: they use

@@ -4,6 +4,84 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.59] - 2026-11-21
+
+### Added
+- **HGNC gene-symbol map applied at load** (`local_db/hgnc_symbol_map.json`,
+  538 entries, built by `scripts/build_hgnc_symbol_map.py` from the HGNC
+  complete set, CC0, downloaded 2026-11-21; the builder refuses to write
+  if the counts drift from the audit). TargetScan target sets and the
+  miRTarBase index keys are mapped to current HGNC symbols when data is
+  loaded (`load_local_data(mapped=True)` is the default; the pickle cache
+  keeps the raw content, `mapped=False` returns it). Ambiguous genes (9)
+  are never mapped; evidence merges when two symbols fall on the same
+  current symbol, keeping the best level and the union of PMIDs and
+  experiments. Test suite: `tests/test_gene_symbols.py` (4 tests).
+- Gene-symbol audit (`scripts/audit_gene_symbols.py`,
+  `docs/validation/gene-symbol-audit.json`, 2026-11-21): 2,496 of
+  13,035 TargetScan genes (19.1%) appear in none of the three local
+  enrichment libraries (GO, Reactome, WikiPathways; KEGG excluded —
+  against all four the count is 2,424). C-digit-orf names: 318.
+  KIAA/FAM/LOC: 232 (the audit's reported 246 could not be
+  reproduced under any definition tried: KIAA 68, FAM 164, LOC 0).
+  HGNC recovers 527 of the 2,496 with a unique current symbol in
+  the libraries (21.1%; 11 more only via KEGG), 9 ambiguous, 311
+  mapped to symbols the libraries do not hold, 1,649 unmapped.
+  AARS → AARS1 test passes.
+
+### Changed
+- **Cancer panel: 18 → 19 genes (LCOR).** C10orf12 (a target of
+  miR-21-5p and miR-155-5p) and LCOR (a target of let-7a-5p) are the
+  same gene under two symbols; the Strict intersection missed it
+  before the map. Lipid (5 genes) and control (6 genes) panels
+  unchanged. Cancer n-1 unchanged (188 genes). Convergence (cancer,
+  ±25% seed 7, 10,000 perms): p = 0.0816; at ±10% (seed 11, 5,000
+  perms) p = 0.0422 — it crosses 0.05 at the stricter tolerance,
+  so the panel holds at the reference tolerance, not as a general
+  claim (`docs/validation/convergence.md` reworded). Enrichr live
+  adjusted p for the 19-gene panel: 0.0262 / 0.0473 / 0.0473 (same
+  three terms); exact specificities 0.83% / 0.36% / 0.51%. TargetScan
+  universe 13,035 → 12,985 distinct symbols; Reactome ∩ universe
+  7,337 → 7,528 (GO 10,095; WikiPathways 4,537; KEGG 5,117).
+- Calibration re-run on the mapped universe (12,985 genes; see
+  `docs/validation/calibration-enrichr-route.md` and
+  `docs/validation/README.md`). Local route (TargetScan background):
+  N-1 K5 GO 8.3% (was 7.3%), Reactome 11.7% (unchanged), WikiPathways
+  3.7% (was 3.3%); Strict K2 GO 19.3% (was 17.0%), Reactome 13.3%
+  (was 12.7%), WikiPathways 7.3% (unchanged); thesis-like GO 0.0%
+  (was 1.5%), Reactome 3.0% (was 3.1%), WikiPathways 0.0% (unchanged).
+  Live Enrichr route, engine criterion: 5-gene lists GO 0.96 (was
+  0.98), Reactome 0.79 (was 0.75), WikiPathways 0.83 (was 0.86), KEGG
+  0.63 (was 0.56), any 0.99 (was 1.00); the cancer-size run is now
+  19 genes (`calibration-enrichr-K19-engine.json`, replacing K18):
+  GO 0.34, Reactome 0.23, WikiPathways 0.21, KEGG 0.14, any 0.61
+  (K18 was 0.30/0.18/0.19/0.10/0.51); 100-gene lists GO 0.13 (was
+  0.10), Reactome 0.07 (was 0.03), WikiPathways 0.07 (was 0.17), KEGG
+  0.07 (was 0.23), any 0.33 (was 0.37) — every library's 95%
+  interval still includes 5%, so no size threshold can be claimed.
+  The small rises come from the symbol map: more genes are
+  recognised by the libraries, so a random list has slightly more
+  chances to hit a term.
+
+### Fixed
+- **Historical effect of the arm fix (v1.58): results from versions
+  up to 1.57 are not reliable for the 29 blocked names.** Until
+  1.58, hsa-miR-519e-3p returned the miR-17 family's 1,385 genes,
+  and 28 more names resolved to the wrong arm or the wrong family.
+  Any result published or computed with ≤1.57 for those names must
+  be re-run on 1.58. The thesis panel is unaffected. Recorded in
+  paper.md (Validation and use) and `docs/validation/arm-resolution.md`.
+- Arm audit, second check (`scripts/audit_arm_unverified_high.py`,
+  `docs/validation/arm-unverified-high.json`, 2026-11-21): in the
+  three reference panels (lipid, cancer, control), NO gene reaches
+  "alta" only via validated pairs whose arm could not be verified —
+  and more precisely, the bare-name fallback never even triggers
+  there (every panel miRNA has an exact hit in the index: 185, 224,
+  58, 1,141, 103, 666, 970, 673, 512, 283 pairs). The "alta" genes
+  (ABCA1; AGO4, MEIS1; NFIA) rest on exact-name evidence. The
+  fail-open policy for unverifiable keys (kept, with a warning) is
+  locked in by a test, not just documented.
+
 ## [1.58] - 2026-11-21
 
 ### Added
@@ -1190,38 +1268,7 @@ reprodujo exactamente como decía la auditoría.
 ## [Unreleased]
 
 ### Added
-- Gene-symbol audit (`scripts/audit_gene_symbols.py`,
-  `docs/validation/gene-symbol-audit.json`, 2026-11-21): 2,496 of
-  13,035 TargetScan genes (19.1%) appear in none of the three local
-  enrichment libraries (GO, Reactome, WikiPathways; KEGG excluded —
-  against all four the count is 2,424). C-digit-orf names: 318.
-  KIAA/FAM/LOC: 232 (the audit's reported 246 could not be
-  reproduced under any definition tried: KIAA 68, FAM 164, LOC 0).
-  HGNC (complete set, CC0, downloaded 2026-11-21) recovers 527 of
-  the 2,496 with a unique current symbol in the libraries (21.1%;
-  11 more only via KEGG), 9 ambiguous, 311 mapped to symbols the
-  libraries do not hold, 1,649 unmapped. AARS → AARS1 test passes.
-  The recovery is appreciable: applying the mapping at load time is
-  the next milestone.
-
 ### Fixed
-- **Historical effect of the arm fix (v1.58): results from versions
-  up to 1.57 are not reliable for the 29 blocked names.** Until
-  1.58, hsa-miR-519e-3p returned the miR-17 family's 1,385 genes,
-  and 28 more names resolved to the wrong arm or the wrong family.
-  Any result published or computed with ≤1.57 for those names must
-  be re-run on 1.58. The thesis panel is unaffected. Recorded in
-  paper.md (Validation and use) and `docs/validation/arm-resolution.md`.
-- Arm audit, second check (`scripts/audit_arm_unverified_high.py`,
-  `docs/validation/arm-unverified-high.json`, 2026-11-21): in the
-  three reference panels (lipid, cancer, control), NO gene reaches
-  "alta" only via validated pairs whose arm could not be verified —
-  and more precisely, the bare-name fallback never even triggers
-  there (every panel miRNA has an exact hit in the index: 185, 224,
-  58, 1,141, 103, 666, 970, 673, 512, 283 pairs). The "alta" genes
-  (ABCA1; AGO4, MEIS1; NFIA) rest on exact-name evidence. The
-  fail-open policy for unverifiable keys (kept, with a warning) is
-  locked in by a test, not just documented.
 - `CITATION.cff` so the software can be cited from GitHub.
 - Cancer-panel case study (`docs/case-study-cancer-panel.md`): second
   computational validation (18-gene Strict core, live run 2026-11-11).

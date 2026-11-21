@@ -9,7 +9,7 @@
   "k_efectivo": 3,
   "tamanos_dianas": [
     304,
-    1264,
+    1262,
     384
   ],
   "genes_comunes_observados": 6,
@@ -17,12 +17,12 @@
   "perms": 10000,
   "seed": 7,
   "nulo": {
-    "media": 6.71,
+    "media": 6.739,
     "mediana": 6.0,
     "p95": 13,
-    "p99": 19,
+    "p99": 20,
     "max": 124
   },
-  "p_empirico": 0.5685431456854314,
+  "p_empirico": 0.5726427357264273,
   "p_minimo_resoluble": 0.0001
 }

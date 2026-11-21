@@ -15,19 +15,21 @@ empirical p-values to full precision). Run from the repo root:
 python convergence_test.py --mirnas hsa-miR-33a-5p hsa-miR-144-3p hsa-miR-758-3p hsa-miR-106b-5p hsa-miR-33b-5p --mode strict --perms 10000 --seed 7
 ```
 
-## Results (Strict mode, 10,000 permutations, seed 7; 2026-11-20)
+## Results (Strict mode, 10,000 permutations, seed 7; 2026-11-20, re-run 2026-11-21 after the v1.59 HGNC symbol map)
 
 | Panel | Effective families | Genes observed | Null (median, p95) | Empirical p |
 |---|---|---|---|---|
-| Lipid (thesis) | 4 of 5 names | 5 | 2, 6 | 0.137 |
+| Lipid (thesis) | 4 of 5 names | 5 | 2, 6 | 0.14 |
 | Control (example) | 3 | 6 | 6, 13 | 0.57 |
-| Cancer | 3 | 18 | 10, 20 | 0.10 |
+| Cancer | 3 | 19 | 10, 21 | 0.08 |
 
-No convergence is unusual at 0.05. Sensitivity: varying the
+No convergence is unusual at 0.05 at the reference tolerance. Sensitivity: varying the
 size-matching tolerance between ±10% and ±50%, the cancer panel
-stays between 0.06 and 0.10 and the lipid panel between 0.10 and
-0.14 (cancer at ±10%, 5,000 permutations, seed 11: p = 0.059;
-`docs/validation/convergence-cancer-tol010.json`).
+stays between 0.04 and 0.09 and the lipid panel between 0.11 and
+0.15 (cancer at ±10%, 5,000 permutations, seed 11: p = 0.042;
+`docs/validation/convergence-cancer-tol010.json`). The cancer p
+crosses 0.05 at the tightest tolerance, so the conclusion is stated
+at the reference tolerance, not as a blanket claim.
 
 ## In the report (API)
 
@@ -65,5 +67,6 @@ in pathway enrichment (the local route returns 0 terms).
 The size matching controls only the number of targets, not "popular"
 genes with long 3′UTRs, which are shared by many miRNAs and inflate
 the null for every panel. Treat the exact p with caution; the
-conclusion (nothing unusual at 0.05) is robust to the tolerance
-range tested.
+conclusion at the reference tolerance (nothing unusual at 0.05) is
+robust, but at ±10% the cancer panel is marginally below 0.05
+(p = 0.042), so the claim is not tolerance-proof.

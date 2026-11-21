@@ -9,20 +9,20 @@
   "k_efectivo": 3,
   "tamanos_dianas": [
     384,
-    556,
+    555,
     1207
   ],
-  "genes_comunes_observados": 18,
-  "genes_comunes_sin_deduplicar": 18,
+  "genes_comunes_observados": 19,
+  "genes_comunes_sin_deduplicar": 19,
   "perms": 5000,
   "seed": 11,
   "nulo": {
-    "media": 9.847,
+    "media": 9.933,
     "mediana": 9.0,
     "p95": 18,
     "p99": 24,
     "max": 40
   },
-  "p_empirico": 0.05878824235152969,
+  "p_empirico": 0.042191561687662464,
   "p_minimo_resoluble": 0.0002
 }

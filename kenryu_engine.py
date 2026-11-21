@@ -180,6 +180,9 @@ def load_mirtarbase_local():
             else:
                 MIRTARBASE_META = None
                 logger.warning(f"⚠️ Sin miRTarBase local ({official} ni {path} existen).")
+        # v1.59: las claves de gen se normalizan con el mapa HGNC al
+        # cargar, igual que los conjuntos de TargetScan.
+        MIRTARBASE_DB = _apply_symbol_map_to_mirtarbase(MIRTARBASE_DB)
     return MIRTARBASE_DB
 
 
@@ -369,12 +372,19 @@ from kenryu_updater import (
     make_async_client,
 )
 
-def load_local_data():
+def load_local_data(mapped=True):
+    """TargetScan DB (familia -> lista de genes). Con mapped=True (por
+    defecto) los símbolos se normalizan con el mapa HGNC al cargar; con
+    mapped=False se devuelve el contenido crudo (lo usan la auditoría
+    de símbolos y el constructor del mapa, que miden sobre datos sin
+    mapear). La caché .pkl guarda siempre el contenido crudo."""
     cache_path = Path("local_db/targetscan_db.pkl")
     if cache_path.exists():
         logger.info("⚡ Cargando caché .pkl...")
         try:
-            return pd.read_pickle(cache_path)
+            raw = pd.read_pickle(cache_path)
+            return (_apply_symbol_map_to_targetscan(raw) if mapped
+                    else raw)
         except:
             pass
 
@@ -412,7 +422,8 @@ def load_local_data():
             Path("local_db").mkdir(exist_ok=True)
             pd.to_pickle(final_db, cache_path)
             logger.info(f"✅ {len(final_db)} familias de miRNA cargadas.")
-            return final_db
+            return (_apply_symbol_map_to_targetscan(final_db) if mapped
+                    else final_db)
         except Exception as e:
             logger.error(f"❌ Error con {src.name}: {e}")
 
@@ -569,6 +580,88 @@ def arm_verification_status() -> str:
     'unavailable' cuando falta alguno."""
     seqs, fam = _load_arm_seed_maps()
     return "active" if (seqs is not None and fam is not None) else "unavailable"
+
+
+# ── NORMALIZACIÓN DE SÍMBOLOS DE GEN (HGNC, v1.59) ──────────────────────────
+# 2.496 de 13.035 genes de TargetScan no aparecen en ninguna biblioteca
+# local de enriquecimiento; HGNC recupera 527 con un símbolo actual
+# único en las bibliotecas (+11 solo vía KEGG). El mapa
+# (local_db/hgnc_symbol_map.json, 538 entradas, CC0) se aplica al
+# cargar: a los conjuntos de TargetScan y a las claves del índice
+# miRTarBase (y al fetch vivo de Harmonizome), para que las dos capas
+# hablen con símbolos actuales. Los genes ambiguos nunca se mapean.
+# Sin el archivo, los símbolos pasan tal cual, con un aviso (fail-open
+# ruidoso). El mapa es un dato con versión; se reconstruye con
+# scripts/build_hgnc_symbol_map.py.
+HGNC_MAP_PATH = "local_db/hgnc_symbol_map.json"
+_HGNC_MAP = None  # dict old -> current | {} (archivo ausente)
+
+
+def _load_hgnc_map():
+    """Lee el mapa de símbolos HGNC (una sola vez). Devuelve {} si el
+    archivo falta o no se puede leer: los símbolos pasan sin mapear."""
+    global _HGNC_MAP
+    if _HGNC_MAP is not None:
+        return _HGNC_MAP
+    path = BASE_DIR / HGNC_MAP_PATH
+    _HGNC_MAP = {}
+    if path.exists():
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            _HGNC_MAP = dict(doc.get("mapping") or {})
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudo leer {path}: {e}")
+    if not _HGNC_MAP:
+        logger.warning(
+            "⚠️ Mapa de símbolos HGNC no disponible "
+            f"({HGNC_MAP_PATH}): los símbolos antiguos no se normalizan.")
+    return _HGNC_MAP
+
+
+def map_gene_symbol(symbol: str) -> str:
+    """Símbolo actual HGNC para `symbol`, o el mismo símbolo si no
+    está en el mapa (ambiguo, sin mapear, o ya actual)."""
+    return _load_hgnc_map().get(symbol, symbol)
+
+
+def _apply_symbol_map_to_targetscan(db):
+    """Un conjunto de dianas por familia con los símbolos normalizados
+    (sin duplicados; los consumidores usan sets)."""
+    return {k: list(dict.fromkeys(map_gene_symbol(g) for g in v))
+            for k, v in db.items()}
+
+
+_LEVEL_RANK = {"strong": 3, "weak": 2, "legacy": 1, "none": 0}
+
+
+def _apply_symbol_map_to_mirtarbase(db):
+    """Claves de gen del índice validado con los símbolos normalizados.
+    Si dos símbolos antiguos caen en el mismo actual dentro de un
+    miRNA, se fusiona la evidencia quedándose el mejor nivel (con los
+    PMIDs y experimentos unidos)."""
+    out = {}
+    for mirna, genes in db.items():
+        if isinstance(genes, dict):
+            merged = {}
+            for gene, ev in genes.items():
+                new = map_gene_symbol(gene)
+                if new not in merged:
+                    merged[new] = dict(ev)
+                else:
+                    cur = merged[new]
+                    if (_LEVEL_RANK.get(ev.get("level"), 0)
+                            > _LEVEL_RANK.get(cur.get("level"), 0)):
+                        cur["level"] = ev["level"]
+                    cur["pmids"] = sorted(
+                        set(cur.get("pmids") or [])
+                        | set(ev.get("pmids") or []))
+                    cur["experiments"] = sorted(
+                        set(cur.get("experiments") or [])
+                        | set(ev.get("experiments") or []))
+            out[mirna] = merged
+        else:
+            out[mirna] = {map_gene_symbol(g) for g in genes}
+    return out
 
 
 def check_arm_resolution(mirna: str, db=None) -> dict:
@@ -802,7 +895,7 @@ async def fetch_mirtarbase(mirna: str, species: str = "hsa") -> set:
                         if v != variants[0] and not _validated_fallback_arm_ok(mirna, v):
                             continue
                         logger.info(f"🌐 miRTarBase {mirna}: {len(genes)} genes")
-                        return genes
+                        return {map_gene_symbol(g) for g in genes}
     except:
         pass
     return set()
@@ -1822,7 +1915,7 @@ async def get_gene_details(gene: str, client: httpx.AsyncClient) -> dict:
 # H-21 (v1.47): una sola constante de versión — la usan FastAPI, /health y
 # la respuesta de /analyze (engine_version), para que la exportación no
 # dependa de un literal fijo en el frontend.
-APP_VERSION = "1.58"
+APP_VERSION = "1.59"
 
 
 @asynccontextmanager
