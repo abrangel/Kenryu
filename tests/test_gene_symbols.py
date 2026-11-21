@@ -53,12 +53,39 @@ def test_targetscan_loader_maps_symbols():
 def test_mirtarbase_loader_maps_symbols():
     """The validated index carries AARS for hsa-miR-124-3p (and four
     more miRNAs) under its old symbol; after loading, the evidence
-    key is AARS1."""
-    ke.load_mirtarbase_local()
-    assert ke.MIRTARBASE_DB, "local miRTarBase index not loaded"
-    ev = ke.get_validated_evidence("hsa-miR-124-3p", ke.MIRTARBASE_DB)
+    key is AARS1. The fixture stands in for the real index, which is
+    gitignored and absent in CI; the real index is only asserted when
+    it is actually loaded. A second fixture checks the merge: two old
+    symbols falling on one current symbol keep the best level and the
+    union of PMIDs."""
+    fixture = {
+        "hsa-miR-124-3p": {
+            "AARS": {"level": "weak", "pmids": [12345678],
+                     "experiments": ["CLIP-seq"]},
+        },
+        "hsa-miR-21-5p": {
+            "FAM21A": {"level": "weak", "pmids": [111],
+                       "experiments": ["HITS-CLIP"]},
+            "FAM21B": {"level": "strong", "pmids": [222],
+                       "experiments": ["Luciferase"]},
+        },
+    }
+    mapped = ke._apply_symbol_map_to_mirtarbase(fixture)
+    ev = ke.get_validated_evidence("hsa-miR-124-3p", mapped)
     assert "AARS1" in ev
     assert "AARS" not in ev
+    ev21 = ke.get_validated_evidence("hsa-miR-21-5p", mapped)
+    assert "WASHC2A" in ev21
+    assert "FAM21A" not in ev21 and "FAM21B" not in ev21
+    assert ev21["WASHC2A"]["level"] == "strong"
+    assert sorted(ev21["WASHC2A"]["pmids"]) == [111, 222]
+    # Real index, only when it is loaded (gitignored, absent in CI).
+    ke.load_mirtarbase_local()
+    if ke.MIRTARBASE_DB:
+        ev_real = ke.get_validated_evidence("hsa-miR-124-3p",
+                                            ke.MIRTARBASE_DB)
+        assert "AARS1" in ev_real
+        assert "AARS" not in ev_real
 
 
 def test_ambiguous_and_current_symbols_untouched():
