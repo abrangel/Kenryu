@@ -91,6 +91,71 @@ who trusts the dossier alone would miss that miR-758 and miR-144
 also regulate ABCA1, and would read miR-106b → ABCA1 as weak when
 the literature has a functional paper with a rescue experiment.
 
+**The percentages are not reliable estimates.** The strong
+recovery is 2 of 5 pairs: the exact two-sided 95%
+Clopper–Pearson interval is 5%–85% (verified with scipy; the
+any-level recovery of 3 of 5 has interval 15%–95%). With five
+cases, "40%" describes this panel, it does not estimate the
+database's recovery rate.
+
+### Checked again against miRTarBase 2025 (v10.0) — the gap is not a version problem
+
+Checked 20 November 2026 on the official v10.0 CSV
+(`hsa_MTI.csv`, 4,004,967 rows, 4,004,479 human, 1,730,809
+human pairs; Cui et al., *Nucleic Acids Res* 2025;53(D1):D147–D156,
+doi 10.1093/nar/gkae1072, PMID 39578692), with the same check
+script (`scripts/check_mirtarbase_v10.py`): **none of the four
+PMIDs appears in any row of the whole file, all species included.**
+The ABCA1 rows (696 total) are mostly without a PMID: only 42
+carry one, 654 do not.
+
+Part of the gap is a naming problem. At the miRNA level, ignoring
+the arm, v10.0 does have the pairs: `hsa-miR-758 → ABCA1`,
+`hsa-miR-144 → ABCA1` and `hsa-miR-106b → ABCA1`, all weak
+CLIP-seq with no PMID. The papers say "miR-758" and "miR-144";
+the base uses "hsa-miR-758-3p" and "hsa-miR-144-3p". An
+arm-insensitive match recovers the pairs — but only as weak
+CLIP-seq rows from datasets, not as the luciferase papers. The
+four PMIDs are still absent: the curation gap is real, and the
+normalization gap sits on top of it.
+
+The v10.0 paper explains both halves. Its LLAMA3 8B model only
+aids manual curation (text classification + named-entity
+recognition to highlight sentences; experimental methods matched
+by dictionary; "all data were manually verified before database
+entry"). Strong evidence is still reporter assay / Western blot /
+qPCR, and CLIP-seq "provide weaker experimental evidence
+compared to more robust methods such as Luciferase Reporter Assay
+and Western Blotting". The weak explosion comes from CLIP data:
+413 human CLIP-seq + 60 PAR-CLIP datasets (September 2021–June
+2024) contribute 1,433,920 human MTIs — dataset-derived rows
+with no single paper PMID, which is why the new ABCA1 rows have
+none.
+
+The index was rebuilt from the v10.0 CSV
+(`build_mirtarbase_official.py` now reads CSV as well as xlsx;
+the rebuilt v9.0 index is identical to the live one, so the
+builder is unchanged for the old format) and compared pair by
+pair with the v9.0 index. **For the five lipid genes, the
+evidence is identical in both versions: 8 of 8 pairs, same levels
+and same PMIDs.** Updating to v10.0 would not change the lipid
+panel at all. It would change the other reference panels:
+cancer has 1 level change (miR-155-5p → AGO4 strong → weak,
+same PMID 20584899) and 2 pairs gone (miR-21-5p → IL6R was
+"none"; let-7a-5p → IL6R was weak); control has 2 level changes
+(miR-21-5p → NFIA strong → weak, same PMID 24980967;
+miR-21-5p → SOX6 none → strong, same PMID 32757994) and 2 new
+weak pairs (miR-375 → NFIA and miR-375 → SOX6, no PMIDs).
+Overall, 8,190 of the 320,428 pairs present in both versions
+changed level. A version change is therefore still a milestone
+that needs the reference panels, the calibration and this
+benchmark re-run — but it does not fix the ABCA1 gap.
+
+Terms: the v10.0 paper is CC BY-NC 4.0; the site's own data
+terms remain unverified (mirtarbase.cuhk.edu.cn was unreachable
+on 2026-11-20, as on 2026-11-19). The raw CSV is never committed;
+the derived index stays local, as with v9.0.
+
 ## SNTB2 — weak, dataset-level only
 
 | miRNA | Level | PMID | What the paper shows |

@@ -47,22 +47,31 @@ BUILD_INFO_PATH = BASE_DIR / "local_db" / "build_info.json"
 _COMMIT_RE = re.compile(r"[0-9a-f]{7,40}")
 
 
-def _git_head():
-    """Short HEAD of this checkout, but only when it is the GitHub repo.
+def _running_in_space():
+    """True when this process runs in a Hugging Face Space.
 
-    A checkout whose remote is anything else (the Hugging Face Space
-    repo, a Docker image) has a different history: its HEAD is not
-    the GitHub commit, so it must not be used. A checkout with no
-    remote at all is a local copy of the code — its HEAD is fine.
-    Returns None when there is no usable git HEAD.
+    Primary signal: the SPACE_ID environment variable, which Hugging
+    Face sets at runtime for every Space (docs: Spaces Overview,
+    "Built-in environment variables"). Fallback: a checkout whose
+    git origin is huggingface.co — that checkout tracks the Space
+    repo, so its HEAD is the Space's commit, not GitHub's. A fork
+    on another service (GitLab, ...) matches neither, so its HEAD
+    is the code that runs.
     """
+    if os.environ.get("SPACE_ID"):
+        return True
     try:
         remote = subprocess.run(["git", "config", "--get", "remote.origin.url"],
                                 cwd=BASE_DIR, capture_output=True, text=True,
                                 timeout=5)
-        url = remote.stdout.strip()
-        if url and "abrangel/Kenryu" not in url:
-            return None
+        return "huggingface.co" in remote.stdout
+    except Exception:
+        return False
+
+
+def _git_head():
+    """Short HEAD of this checkout, or None when there is no usable git."""
+    try:
         out = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
                              cwd=BASE_DIR, capture_output=True, text=True,
                              timeout=5)
@@ -78,17 +87,18 @@ def _git_head():
 def load_commit_hash():
     """Short GitHub commit hash of the code running here, or "unknown".
 
-    Rule: if this checkout is the GitHub repo (or has no remote),
-    the git HEAD is the code that runs — always prefer it, even when
-    build_info.json has the same version with a different commit.
-    build_info.json is used only when there is no GitHub git (the
-    Space, Docker): there the file the sync wrote is the only record
-    of the GitHub commit, and it only counts when its version
-    matches the running engine.
+    Rule: in a Space (SPACE_ID set, or a Hugging Face origin),
+    build_info.json is the only record of the GitHub commit — the
+    Space's own HEAD is a different history. Everywhere else the
+    git HEAD is the code that runs and always wins, even against a
+    same-version build_info.json. When git is unavailable (a Docker
+    image without .git), the version-matched build_info.json is the
+    fallback.
     """
-    head = _git_head()
-    if head:
-        return head
+    if not _running_in_space():
+        head = _git_head()
+        if head:
+            return head
     try:
         data = json.loads(BUILD_INFO_PATH.read_text(encoding="utf-8"))
         if isinstance(data, dict) and data.get("version") == APP_VERSION:

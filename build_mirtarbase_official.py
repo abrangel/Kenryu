@@ -68,37 +68,68 @@ def _clean_gene(value):
     return None
 
 
-def build(xlsx_path, out_path):
-    import openpyxl
+def _read_rows(path):
+    """Yield data rows (as dicts keyed by the v9.0/v10.0 column names).
 
-    wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
+    Accepts the v9.0 xlsx and the v10.0 CSV. The CSV has a UTF-8 BOM
+    (encoding="utf-8-sig") and formats Entrez ID / PMID with ".0"
+    (e.g. 17179747.0); both are normalized here so the rest of the
+    builder sees the same values it saw from the xlsx.
+    """
+    if str(path).lower().endswith(".csv"):
+        import csv as _csv
+        with open(path, encoding="utf-8-sig", newline="") as fh:
+            for row in _csv.DictReader(fh):
+                yield {k: _norm_num(v) for k, v in row.items()}
+        return
+    import openpyxl
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     ws = wb[wb.sheetnames[0]]
     rows = ws.iter_rows(values_only=True)
     header = [str(c) for c in next(rows)]
-    i_mir = header.index("miRNA")
-    i_gene = header.index("Target Gene")
-    i_exp = header.index("Experiments")
-    i_sup = header.index("Support Type")
-    i_pmid = header.index("References (PMID)")
+    for r in rows:
+        yield dict(zip(header, r))
 
+
+def _norm_num(v):
+    # v10.0 CSV writes numbers as "17179747.0"; the xlsx gives ints.
+    if isinstance(v, str) and v.endswith(".0") and v[:-2].isdigit():
+        return int(v[:-2])
+    return v
+
+
+def build(xlsx_path, out_path, version="miRTarBase 9.0"):
     # (mirna, gene) -> {"level": str, "pmids": set, "experiments": set}
     index = {}
     n_rows = 0
     n_recovered = 0
     n_skipped = 0
+    n_nonhuman = 0
     level_counts = Counter()
-    for r in rows:
+    for r in _read_rows(xlsx_path):
         n_rows += 1
-        mirna = r[i_mir].strip() if isinstance(r[i_mir], str) else None
-        gene = _clean_gene(r[i_gene])
-        if gene and hasattr(r[i_gene], "month"):
+        # Human only: v9.0 says "Homo sapiens", v10.0 says "hsa".
+        # The v9.0 file is human-only, so this is a no-op there.
+        sp_mir = (r.get("Species (miRNA)") or "").strip()
+        sp_gene = (r.get("Species (Target Gene)") or "").strip()
+        if sp_mir or sp_gene:
+            if sp_mir not in ("Homo sapiens", "hsa") or \
+                    sp_gene not in ("Homo sapiens", "hsa"):
+                n_nonhuman += 1
+                continue
+        mirna = r.get("miRNA")
+        mirna = mirna.strip() if isinstance(mirna, str) else None
+        gene = _clean_gene(r.get("Target Gene"))
+        if gene and hasattr(r.get("Target Gene"), "month"):
             n_recovered += 1
         if not mirna or not gene:
             n_skipped += 1
             continue
-        support = (r[i_sup] or "").strip()
-        pmid = r[i_pmid]
-        experiments = (r[i_exp] or "").strip()
+        support = r.get("Support Type")
+        support = support.strip() if isinstance(support, str) else ""
+        pmid = r.get("References (PMID)")
+        experiments = r.get("Experiments")
+        experiments = experiments.strip() if isinstance(experiments, str) else ""
         entry = index.setdefault(mirna, {}).setdefault(
             gene, {"level": "none", "pmids": set(), "experiments": set()})
         if support == STRONG:
@@ -132,9 +163,9 @@ def build(xlsx_path, out_path):
             }
 
     payload = {
-        "version": "miRTarBase 9.0",
+        "version": version,
         "source": "https://mirtarbase.cuhk.edu.cn/",
-        "built_from": "hsa_MTI.xlsx",
+        "built_from": Path(xlsx_path).name,
         "built_at": datetime.now(timezone.utc).isoformat(),
         "rows_read": n_rows,
         "pairs": n_pairs,
@@ -146,7 +177,7 @@ def build(xlsx_path, out_path):
         json.dump(payload, fh, separators=(",", ":"))
     print(f"rows: {n_rows}  pairs: {n_pairs}  miRNAs: {len(mirnas)}")
     print(f"levels: {dict(level_counts)}")
-    print(f"recovered Excel-mangled gene symbols: {n_recovered}  skipped rows: {n_skipped}")
+    print(f"recovered Excel-mangled gene symbols: {n_recovered}  skipped rows: {n_skipped}  non-human rows: {n_nonhuman}")
     print(f"wrote {out} ({out.stat().st_size / 1e6:.1f} MB)")
     return payload
 
@@ -155,4 +186,5 @@ if __name__ == "__main__":
     xlsx = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_XLSX
     out = (sys.argv[2] if len(sys.argv) > 2 else
            str(Path(__file__).parent / "local_db" / "mirtarbase_official.json.gz"))
-    build(xlsx, out)
+    version = "miRTarBase 10.0" if str(xlsx).lower().endswith(".csv") else "miRTarBase 9.0"
+    build(xlsx, out, version=version)

@@ -1149,6 +1149,48 @@ def test_health_reports_commit_hash_from_build_info(tmp_path, monkeypatch):
     assert r.json()["commit"] == "abc1234"
 
 
+def test_space_id_uses_build_info(tmp_path, monkeypatch):
+    # SPACE_ID is the robust Space signal (Hugging Face sets it at
+    # runtime): with it set, build_info.json is the only source of
+    # the GitHub commit, even though this checkout is the GitHub repo.
+    info = tmp_path / "build_info.json"
+    info.write_text(json.dumps({"commit": "abc1234", "version": ke.APP_VERSION}))
+    monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
+    monkeypatch.setenv("SPACE_ID", "Kenryu007/Bioinformatica")
+    with TestClient(ke.app) as client:
+        r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["commit"] == "abc1234"
+
+
+def test_gitlab_fork_uses_git_head(tmp_path, monkeypatch):
+    # A copy on another service (a GitLab fork) has no SPACE_ID and
+    # its remote is not Hugging Face: its HEAD is the code that
+    # runs, so it must win over a same-version build_info.json.
+    import subprocess
+    from pathlib import Path
+    real_run = subprocess.run
+
+    def _fake(*args, **kwargs):
+        if "config" in args[0]:
+            return subprocess.CompletedProcess(
+                args=args[0], returncode=0,
+                stdout="https://gitlab.com/someone/Kenryu.git\n")
+        return real_run(*args, **kwargs)
+
+    head = subprocess.check_output(
+        ["git", "rev-parse", "--short", "HEAD"],
+        cwd=Path(__file__).resolve().parent.parent, text=True).strip()
+    info = tmp_path / "build_info.json"
+    info.write_text(json.dumps({"commit": "e7d6eb0", "version": ke.APP_VERSION}))
+    monkeypatch.setattr(ke, "BUILD_INFO_PATH", info)
+    monkeypatch.setattr(ke.subprocess, "run", _fake)
+    with TestClient(ke.app) as client:
+        r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["commit"] == head
+
+
 def test_health_prefers_git_head_over_matching_build_info(tmp_path, monkeypatch):
     # Mismo número de versión, distinto commit: el archivo no debe
     # ganar. El HEAD de git es el código que realmente corre.
