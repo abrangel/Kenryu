@@ -18,7 +18,7 @@ closed by inspection and has no regression test — a gap, not a proof.
 | H-07 | Alta | Frontend sends the calendar year (2026) as `years` | **Closed — verified in code** | `static/script.js:81-85` computes `years` from the selected start year | None cited |
 | H-08 | Alta | Reflected/DOM XSS via systematic `innerHTML` | **Closed — verified** | `escapeHtml` used 45×; remaining `innerHTML` are static literals (spinner icons) or integer-built year options | `tests/test_frontend_safety.py` (25 tests) |
 | H-09 | Alta | Pinned deps with known CVEs (15 unique) | **Closed — verified executable** | `pip-audit -r requirements.txt` → "No known vulnerabilities found" (2026-11-22) | None (pip-audit is not a CI job) |
-| H-10 | Alta | No size/rate/validation limits on /analyze, /compare, /batch | **Closed — partial** | `AnalysisRequest`: miRNAs 1–50, years 1–50, `mode` is a Literal (invalid → 422). No rate limiting | Pydantic validation tests |
+| H-10 | Alta | No size/rate/validation limits on /analyze, /compare, /batch | **Closed — verified** | `AnalysisRequest`: miRNAs 1–50, years 1–50, `mode` is a Literal (invalid → 422). Rate limit: 60 requests/min per IP (`X-Forwarded-For` first hop), `/health` exempt, `KENRYU_RATE_LIMIT=0` disables it (v1.50). Verified live on the public Space 2026-11-22: 60 × 200 then 429 with `Retry-After: 60` | `tests/test_rate_limit.py` (4 tests) |
 | H-11 | Alta | `paper.bib` author/title/year/page errors; Zenodo DOI 404 | **Closed — verified** | `paper.bib` header records the 2026-11-19 corrections; `CITATION.cff` DOI 10.5281/zenodo.20564689 resolves | None (documentation claim) |
 | H-12 | Alta | `build_synthesis` asserts causality, cites `[i+1]` with no referent | **Closed — verified in code** | `kenryu_core.py` (v1.47): "sin clinical_evidence no se afirma causalidad ni se cita un índice [i+1]" | None cited |
 | H-13 | Media | UTF-8 BOM corrupts gene symbols in `data/hsa-miR-*.txt` | **Closed — verified** | Reads use `encoding='utf-8-sig'` (`kenryu_engine.py:456, 752`) | Suite |
@@ -35,23 +35,28 @@ closed by inspection and has no regression test — a gap, not a proof.
 
 ## Result
 
-**23 of 23 closed.** 0 open with impact on results. Two are closed with a
+**23 of 23 closed.** 0 open with impact on results. One is closed with a
 stated limitation rather than a full fix:
 
-- **H-10** — size and validation limits exist; there is no rate limit.
-  Residual risk is low (the public Space sits behind Hugging Face's
-  infrastructure), and it is documented here rather than hidden.
 - **H-20** — fixed in code with a simulated-Windows test; never executed
   on a real Windows machine.
 
-## Gaps this table found (no regression test yet)
+(Correction 2026-11-22: H-10 was listed here as "no rate limit". That
+was wrong — the rate limit was added in v1.50, commit f20a09d, the
+same commit that closed the other H-10 items. It is 60 requests/min
+per IP with `/health` exempt, and it was verified live on the public
+Space on 2026-11-22: 60 × 200, then 429 with `Retry-After: 60`.)
 
-- H-02: nothing in CI guards that a KEGG/Harmonizome GMT is never
-  committed again.
-- H-09: `pip-audit` is not a CI job; the 2026-11-22 clean result is a
-  one-off check, not a guard.
-- H-18: no grep-based test guards against fixed confidence literals
-  returning.
+## Gaps this table found — closed 2026-11-22
+
+- H-02: `tests/test_repo_hygiene.py` — no KEGG/Harmonizome GMT and no
+  derived miRTarBase index may be tracked; only the three allowlisted
+  GMTs may be tracked.
+- H-09: `pip-audit` is now a CI job (fails the build on a known
+  vulnerability in the pinned requirements).
+- H-18: `tests/test_repo_hygiene.py` — no fixed confidence literal
+  (85/88/92/95) may sit next to "confidence" in the engine or the UI.
+  Each guard was verified fail-first.
 
 ## Round 3 pendings (still open, from PAPER-REVIEW §8/§16)
 
