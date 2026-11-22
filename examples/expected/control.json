@@ -1,0 +1,29 @@
+{
+  "panel": "control",
+  "name": "Control panel",
+  "mirnas": [
+    "hsa-miR-375",
+    "hsa-miR-29a-3p",
+    "hsa-miR-21-5p"
+  ],
+  "mode": "strict",
+  "engine_version": "2.0",
+  "mirtarbase_version": "9.0",
+  "mirtarbase_detail": "miRTarBase 9.0 official index (browser-download-20261119T175731.926638135Z-0-hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, 396,758 pairs)",
+  "common_genes": [
+    "GMFB",
+    "KLF12",
+    "NFIA",
+    "PDE3A",
+    "SKI",
+    "SOX6"
+  ],
+  "evidence": {
+    "NFIA": "strong",
+    "GMFB": "none",
+    "KLF12": "none",
+    "PDE3A": "none",
+    "SKI": "none",
+    "SOX6": "none"
+  }
+}

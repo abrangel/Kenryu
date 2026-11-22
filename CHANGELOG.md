@@ -34,6 +34,23 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   no fixed confidence literal (85/88/92/95) may sit next to
   "confidence" in the engine or the UI (H-18). Each guard was
   verified fail-first.
+- **Reviewer path** (`examples/`): the three reference panels with
+  their expected results and a single verification command
+  (`python examples/verify_examples.py`). It prints the miRTarBase
+  version it used per panel (9.0 / 10.0 / legacy GMT / not loaded)
+  and, without an index, verifies the consensus genes in reduced mode
+  instead of comparing evidence levels. The command also runs in CI
+  (smoke job, before the synthetic index is copied in).
+
+### Fixed
+- **Windows: tests read text files as UTF-8.** The first Windows CI
+  run failed in 8 tests: `Path.read_text()` without an encoding
+  defaults to cp1252 on Windows, which cannot decode the Spanish UI
+  files (`static/index.html`, `static/script.js`) and silently
+  mojibakes `report.md` and `docs/openapi.json`. All text reads in
+  the tests now pass `encoding="utf-8"`; the engine and CLI already
+  did. The smoke job's output directory is now relative instead of
+  `/tmp`, which Python on Windows does not resolve.
 
 ## [2.0] - 2026-11-21
 

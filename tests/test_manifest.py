@@ -69,8 +69,8 @@ def test_cli_determinism_end_to_end(tmp_path):
     out1, out2 = tmp_path / "out1", tmp_path / "out2"
     assert cli.main([str(panel), "--offline", "--out", str(out1)]) == 0
     assert cli.main([str(panel), "--offline", "--out", str(out2)]) == 0
-    d1 = json.loads((out1 / "analysis.json").read_text())
-    d2 = json.loads((out2 / "analysis.json").read_text())
+    d1 = json.loads((out1 / "analysis.json").read_text(encoding="utf-8"))
+    d2 = json.loads((out2 / "analysis.json").read_text(encoding="utf-8"))
     assert d1["convergence"] == d2["convergence"]
     assert d1["execution_manifest"] == d2["execution_manifest"]
     assert d1["common_genes"] == d2["common_genes"]
@@ -87,7 +87,7 @@ def test_cli_determinism_end_to_end(tmp_path):
                 else ["ABCA1", "KPNA3", "SCN1A", "SNTB2", "TSC22D2"])
     assert d1["common_genes"] == expected
     # The kept report carries the manifest, not just the JSON.
-    assert "Manifiesto de ejecución" in (out1 / "report.md").read_text()
+    assert "Manifiesto de ejecución" in (out1 / "report.md").read_text(encoding="utf-8")
 
 
 def test_manifest_commit_is_the_real_head():

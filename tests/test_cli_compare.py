@@ -18,7 +18,7 @@ def test_cli_offline(tmp_path):
     out = tmp_path / "out"
     rc = cli.main([str(p), "--offline", "--out", str(out)])
     assert rc == 0
-    data = json.loads((out / "analysis.json").read_text())
+    data = json.loads((out / "analysis.json").read_text(encoding="utf-8"))
     # v1.48 (Ronda 3): con el índice oficial de miRTarBase, NFIA tiene
     # validación experimental (n_val=2) y sube al primer puesto por
     # prioridad; con el GMT anterior (sin NFIA) el orden era alfabético.
@@ -31,7 +31,7 @@ def test_cli_offline(tmp_path):
                 else ["NFIA", "GMFB", "KLF12", "PDE3A", "SKI", "SOX6"] if official.exists()
                 else ["GMFB", "KLF12", "NFIA", "PDE3A", "SKI", "SOX6"])
     assert data["common_genes"] == expected
-    assert (out / "report.md").read_text().startswith("# KENRYU")
+    assert (out / "report.md").read_text(encoding="utf-8").startswith("# KENRYU")
     assert (out / "venn.png").stat().st_size > 1000
     assert (out / "heatmap.png").stat().st_size > 1000
 
@@ -128,8 +128,8 @@ def test_validation_ui_hooks():
     """The web page must have a place to SHOW the validation dossier
     (table + heatmap) and the gene panel must use the real score."""
     import re
-    html = (Path(__file__).resolve().parent.parent / "static" / "index.html").read_text()
-    js = (Path(__file__).resolve().parent.parent / "static" / "script.js").read_text()
+    html = (Path(__file__).resolve().parent.parent / "static" / "index.html").read_text(encoding="utf-8")
+    js = (Path(__file__).resolve().parent.parent / "static" / "script.js").read_text(encoding="utf-8")
     assert "validation-container" in html
     assert "heatmap-container" in html
     assert "validation-badge" in html
@@ -144,8 +144,8 @@ def test_reverse_lookup_ui_and_explanations():
     """The page must EXPLAIN every graphic in plain language and offer the
     reverse lookup (gene -> miRNAs) as a visible control."""
     import re
-    html = (Path(__file__).resolve().parent.parent / "static" / "index.html").read_text()
-    js = (Path(__file__).resolve().parent.parent / "static" / "script.js").read_text()
+    html = (Path(__file__).resolve().parent.parent / "static" / "index.html").read_text(encoding="utf-8")
+    js = (Path(__file__).resolve().parent.parent / "static" / "script.js").read_text(encoding="utf-8")
     assert "Búsqueda inversa" in html
     assert 'id="reverse-gene"' in html
     assert "reverseLookup" in js
@@ -161,8 +161,8 @@ def test_reverse_panel_below_results_and_examples_and_proteins():
     """Reverse lookup must NOT clutter the front: it sits BELOW the results
     grid. The dashboard also offers one-click examples and a Proteins card."""
     import re
-    html = (Path(__file__).resolve().parent.parent / "static" / "index.html").read_text()
-    js = (Path(__file__).resolve().parent.parent / "static" / "script.js").read_text()
+    html = (Path(__file__).resolve().parent.parent / "static" / "index.html").read_text(encoding="utf-8")
+    js = (Path(__file__).resolve().parent.parent / "static" / "script.js").read_text(encoding="utf-8")
     assert html.index('id="results-grid"') < html.index('id="reverse-panel"')
     assert "loadExample('lipidos')" in html
     assert "loadExample('cancer')" in html

@@ -1,0 +1,29 @@
+{
+  "panel": "lipid",
+  "name": "Lipid panel (thesis)",
+  "mirnas": [
+    "hsa-miR-33a-5p",
+    "hsa-miR-33b-5p",
+    "hsa-miR-144-3p",
+    "hsa-miR-758-3p",
+    "hsa-miR-106b-5p"
+  ],
+  "mode": "strict",
+  "engine_version": "2.0",
+  "mirtarbase_version": "9.0",
+  "mirtarbase_detail": "miRTarBase 9.0 official index (browser-download-20261119T175731.926638135Z-0-hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, 396,758 pairs)",
+  "common_genes": [
+    "ABCA1",
+    "KPNA3",
+    "SCN1A",
+    "SNTB2",
+    "TSC22D2"
+  ],
+  "evidence": {
+    "ABCA1": "strong",
+    "SNTB2": "weak",
+    "TSC22D2": "weak",
+    "KPNA3": "none",
+    "SCN1A": "none"
+  }
+}

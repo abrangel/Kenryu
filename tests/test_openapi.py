@@ -18,7 +18,7 @@ def _client():
 
 
 def test_openapi_export_is_in_sync():
-    exported = json.loads((ROOT / "docs" / "openapi.json").read_text())
+    exported = json.loads((ROOT / "docs" / "openapi.json").read_text(encoding="utf-8"))
     with _client() as client:
         live = client.get("/openapi.json").json()
     assert exported["openapi"] == live["openapi"]
@@ -40,7 +40,7 @@ def test_example_payloads_run():
     ]
     with _client() as client:
         for name, path, fields in cases:
-            payload = json.loads((EXAMPLES / name).read_text())
+            payload = json.loads((EXAMPLES / name).read_text(encoding="utf-8"))
             r = client.post(path, json=payload)
             assert r.status_code == 200, name
             for f in fields:

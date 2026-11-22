@@ -740,7 +740,7 @@ def test_script_js_rigor_bar_uses_validation_score_only():
     """H-18: la barra 'Rigor Científico' usa solo el puntaje real del
     dossier; sin él muestra 'Sin evaluar', nunca un 85 fijo."""
     from pathlib import Path
-    js = (Path(__file__).parent.parent / "static" / "script.js").read_text()
+    js = (Path(__file__).parent.parent / "static" / "script.js").read_text(encoding="utf-8")
     assert "confidence?.score" not in js
     assert "|| 85" not in js
     assert "Sin evaluar" in js
@@ -812,7 +812,7 @@ def test_script_js_no_hardcoded_version():
     exportación usa JSON.stringify para el YAML y lee la versión del
     backend."""
     from pathlib import Path
-    js = (Path(__file__).parent.parent / "static" / "script.js").read_text()
+    js = (Path(__file__).parent.parent / "static" / "script.js").read_text(encoding="utf-8")
     assert "v1.38" not in js
     assert "JSON.stringify(m)" in js
     assert "engine_version" in js
@@ -873,7 +873,7 @@ def test_script_js_escapes_external_data_in_innerhtml():
     consenso, términos de enriquecimiento, texto de síntesis) se escapan
     antes de insertarse con innerHTML."""
     from pathlib import Path
-    js = (Path(__file__).parent.parent / "static" / "script.js").read_text()
+    js = (Path(__file__).parent.parent / "static" / "script.js").read_text(encoding="utf-8")
     assert "function escapeHtml" in js
     # Búsqueda inversa: el gen que escribe el usuario se refleja en la página.
     assert "escapeHtml(data.gene)" in js
@@ -895,7 +895,7 @@ def test_paper_md_describes_real_algorithm():
     """H-04: paper.md no afirma evidencia dual obligatoria; describe la
     intersección TargetScan + verificación posterior."""
     from pathlib import Path
-    text = (Path(__file__).parent.parent / "paper.md").read_text()
+    text = (Path(__file__).parent.parent / "paper.md").read_text(encoding="utf-8")
     assert "requires dual evidence" not in text
     assert "dual-evidence convergence" not in text
     assert "dual-evidence consensus" not in text
@@ -907,7 +907,7 @@ def test_case_study_describes_real_strict_mode():
     miRTarBase para cada miRNA, ni que cada gen lleve evidencia
     PubMed/OMIM (solo los investigados)."""
     from pathlib import Path
-    text = (Path(__file__).parent.parent / "docs" / "case-study-cancer-panel.md").read_text()
+    text = (Path(__file__).parent.parent / "docs" / "case-study-cancer-panel.md").read_text(encoding="utf-8")
     assert "validated in miRTarBase for every miRNA" not in text
     assert "Each gene in the JSON carries its PubMed" not in text
     assert "post-hoc" in text
