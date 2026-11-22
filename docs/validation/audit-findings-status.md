@@ -28,18 +28,16 @@ closed by inspection and has no regression test — a gap, not a proof.
 | H-17 | Media | Consensus edge cases: duplicates skew N-1/N-2, invalid `mode` silently falls to n-2, miRNAs without data dropped silently | **Closed — verified** | Dedup in core (`kenryu_core.py:166-168`); `mode` is a Literal (422); `missing_mirnas` reported | Consensus tests in the suite |
 | H-18 | Media | Fixed "confidence" values (85/88/92/95) in `gene_details` and the UI | **Closed — verified** | No fixed 85/88/92/95 literals in the engine or the UI (grep clean) | None (a grep-based test could guard it) |
 | H-19 | Media | `data_versions.json` stale; `targetscan_full.json.zip` is really a `.txt` | **Closed — verified** | `data_versions.json` updated in v2.0 (local miRTarBase 10.0); versions pinned in the manifest | Manifest/version tests |
-| H-20 | Media | pytest fails on Windows (CRLF 161 vs 157 bytes) | **Closed — in code, not on real Windows** | `test_transform_html_fasta_writes_lf_bytes` simulates Windows `write_text`; the transform passes `newline="\n"`. Never run on a real Windows machine | `tests/test_updater.py:451-461` |
+| H-20 | Media | pytest fails on Windows (CRLF 161 vs 157 bytes) | | H-20 | Media | pytest fails on Windows (CRLF 161 vs 157 bytes) | **Closed — verified on real Windows** | The suite runs on real Windows and macOS in CI (matrix ubuntu/windows/macos-latest; run 45053793711 green 2026-11-22). The first Windows run failed in 8 tests — `read_text()` without an encoding defaults to cp1252 on Windows (fixed: `encoding="utf-8"` in the tests) — plus a `/tmp` path in the smoke job (now relative). `test_transform_html_fasta_writes_lf_bytes` still guards the CRLF case | CI matrix + `tests/test_updater.py:451-461` |
 | H-21 | Media | YAML/Markdown injection in `exportMarkdown()`; fixed version `v1.38` | **Closed — verified** | Version comes from the backend (`lastData.engine_version`); miRNAs serialised with `JSON.stringify` (`static/script.js:770-795`) | None cited |
 | H-22 | Baja | Dockerfile: `chmod 777 local_db`, `build-essential` in the final image, no digest pin | **Closed — verified** | Base image pinned by digest; `build-essential` purged after install; `chmod 755`; non-root user `kenryu` | None (Docker build is not in CI) |
 | H-23 | Baja | Minor doc inconsistencies (SECURITY.md placeholder + "NutriKen", old licence in `pyproject.toml`, duplicated `index.html`, "18k+" targets) | **Closed — verified** | `pyproject.toml` licence MIT; `index.html` gone from the root; no "18k" claim in README/paper; `SECURITY.md` clean of NutriKen/placeholder (grep clean) | None (documentation claim) |
 
 ## Result
 
-**23 of 23 closed.** 0 open with impact on results. One is closed with a
-stated limitation rather than a full fix:
-
-- **H-20** — fixed in code with a simulated-Windows test; never executed
-  on a real Windows machine.
+**23 of 23 closed.** 0 open with impact on results, and no remaining
+limitation: H-20 (Windows) was the last one, and the suite now runs
+on real Windows and macOS in CI (run 45053793711 green, 2026-11-22).
 
 (Correction 2026-11-22: H-10 was listed here as "no rate limit". That
 was wrong — the rate limit was added in v1.50, commit f20a09d, the
