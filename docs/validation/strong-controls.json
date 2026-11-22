@@ -1,6 +1,7 @@
 {
-  "version": "1.54",
-  "pooled_sensitivity_strong": 0.5358090185676393,
+  "engine_version": "2.0",
+  "mirtarbase_version": "miRTarBase 9.0 official index (browser-download-20261119T175731.926638135Z-0-hsa_MTI.xlsx, 957,040 rows, 2,947 miRNAs, 396,758 pairs)",
+  "pooled_sensitivity_strong": 0.5371352785145889,
   "controls": [
     {
       "mirna": "hsa-miR-21-5p",
@@ -9,32 +10,32 @@
       "n_weak": 476,
       "n_targetscan": 384,
       "sensitivity_strong": 0.348,
-      "sensitivity_weak": 0.202,
+      "sensitivity_weak": 0.204,
       "top_terms": [
         {
           "term": "MicroRNAs in cancer",
           "source": "KEGG",
-          "p_adj": 5.812050587259808e-12
+          "p_adj": 3.6101491466766503e-12
         },
         {
           "term": "Regulation Of Apoptotic Process (GO:0042981)",
           "source": "GO",
-          "p_adj": 2.7679715751665413e-11
+          "p_adj": 1.907660632975372e-11
         },
         {
           "term": "Positive Regulation Of Apoptotic Process (GO:0043065)",
           "source": "GO",
-          "p_adj": 1.6646532137808886e-09
+          "p_adj": 1.2545609049029577e-09
         },
         {
           "term": "Signaling by Interleukins",
           "source": "Reactome",
-          "p_adj": 5.789084800279302e-07
+          "p_adj": 4.023561160584437e-07
         },
         {
           "term": "Hepatitis B",
           "source": "KEGG",
-          "p_adj": 1.2580334306588358e-06
+          "p_adj": 9.201214833560771e-07
         }
       ]
     },
@@ -45,32 +46,32 @@
       "n_weak": 148,
       "n_targetscan": 545,
       "sensitivity_strong": 0.581,
-      "sensitivity_weak": 0.257,
+      "sensitivity_weak": 0.25,
       "top_terms": [
         {
           "term": "PPARA Activates Gene Expression",
           "source": "Reactome",
-          "p_adj": 2.7343493405537902e-05
+          "p_adj": 2.3072231317024527e-05
         },
         {
           "term": "Regulation of Lipid Metabolism by PPARalpha",
           "source": "Reactome",
-          "p_adj": 2.7343493405537902e-05
+          "p_adj": 2.3072231317024527e-05
         },
         {
           "term": "Positive Regulation Of Cellular Catabolic Process (GO:0031331)",
           "source": "GO",
-          "p_adj": 0.00011584429012307069
+          "p_adj": 9.667662691687665e-05
         },
         {
           "term": "Metabolism of Lipids",
           "source": "Reactome",
-          "p_adj": 0.0003314960994814911
+          "p_adj": 0.00033944682250445645
         },
         {
           "term": "Metabolism of Steroids",
           "source": "Reactome",
-          "p_adj": 0.00039083834297544174
+          "p_adj": 0.0004068254850793726
         }
       ]
     },
@@ -81,32 +82,32 @@
       "n_weak": 584,
       "n_targetscan": 1207,
       "sensitivity_strong": 0.696,
-      "sensitivity_weak": 0.303,
+      "sensitivity_weak": 0.307,
       "top_terms": [
         {
           "term": "MicroRNAs in cancer",
           "source": "KEGG",
-          "p_adj": 1.5953470632657132e-14
+          "p_adj": 1.1040628779756693e-14
         },
         {
           "term": "Cellular Senescence",
           "source": "Reactome",
-          "p_adj": 3.8304939215878094e-08
+          "p_adj": 1.234544099983414e-07
         },
         {
           "term": "Human cytomegalovirus infection",
           "source": "KEGG",
-          "p_adj": 3.5573162832450303e-07
+          "p_adj": 2.8170708507924455e-07
         },
         {
           "term": "Non-small cell lung cancer",
           "source": "KEGG",
-          "p_adj": 3.5573162832450303e-07
+          "p_adj": 2.8170708507924455e-07
         },
         {
           "term": "Proteoglycans in cancer",
           "source": "KEGG",
-          "p_adj": 3.5573162832450303e-07
+          "p_adj": 2.8170708507924455e-07
         }
       ]
     },
@@ -115,34 +116,34 @@
       "expected": "immune response / inflammation (SOCS1)",
       "n_strong": 173,
       "n_weak": 707,
-      "n_targetscan": 556,
-      "sensitivity_strong": 0.486,
-      "sensitivity_weak": 0.141,
+      "n_targetscan": 555,
+      "sensitivity_strong": 0.491,
+      "sensitivity_weak": 0.144,
       "top_terms": [
         {
           "term": "Regulation Of Transcription By RNA Polymerase II (GO:0006357)",
           "source": "GO",
-          "p_adj": 1.0458469111712982e-07
+          "p_adj": 9.741855091292998e-08
         },
         {
           "term": "Pathways in cancer",
           "source": "KEGG",
-          "p_adj": 2.8934527251311756e-07
+          "p_adj": 2.3790697454708643e-07
         },
         {
-          "term": "Integrated Breast Cancer Pathway WP1984",
-          "source": "WikiPathways",
-          "p_adj": 1.7839856594580582e-06
+          "term": "Positive Regulation Of Nucleic Acid-Templated Transcription (GO:1903508)",
+          "source": "GO",
+          "p_adj": 6.577976864498442e-07
+        },
+        {
+          "term": "Regulation Of DNA-templated Transcription (GO:0006355)",
+          "source": "GO",
+          "p_adj": 1.0092378076229403e-06
         },
         {
           "term": "Epstein-Barr virus infection",
           "source": "KEGG",
-          "p_adj": 2.3682138814631456e-06
-        },
-        {
-          "term": "Measles",
-          "source": "KEGG",
-          "p_adj": 2.3682138814631456e-06
+          "p_adj": 2.326427711800749e-06
         }
       ]
     },
@@ -151,34 +152,34 @@
       "expected": "cell cycle / p53 / apoptosis (BCL2, CDK4/6)",
       "n_strong": 124,
       "n_weak": 604,
-      "n_targetscan": 755,
+      "n_targetscan": 754,
       "sensitivity_strong": 0.411,
       "sensitivity_weak": 0.129,
       "top_terms": [
         {
           "term": "Breast cancer",
           "source": "KEGG",
-          "p_adj": 3.4060673955204704e-10
+          "p_adj": 2.2217769977983114e-10
         },
         {
           "term": "MicroRNAs in cancer",
           "source": "KEGG",
-          "p_adj": 3.4060673955204704e-10
+          "p_adj": 2.2217769977983114e-10
         },
         {
           "term": "Pathways in cancer",
           "source": "KEGG",
-          "p_adj": 1.5562590618194937e-09
+          "p_adj": 9.012885357126753e-10
         },
         {
           "term": "Breast cancer pathway WP4262",
           "source": "WikiPathways",
-          "p_adj": 2.57746958130554e-09
+          "p_adj": 2.816566438064426e-09
         },
         {
           "term": "Signaling Pathways in Glioblastoma WP2261",
           "source": "WikiPathways",
-          "p_adj": 2.57746958130554e-09
+          "p_adj": 2.816566438064426e-09
         }
       ]
     },
@@ -189,32 +190,32 @@
       "n_weak": 1097,
       "n_targetscan": 1385,
       "sensitivity_strong": 0.688,
-      "sensitivity_weak": 0.396,
+      "sensitivity_weak": 0.402,
       "top_terms": [
         {
           "term": "Negative Regulation Of Macromolecule Metabolic Process (GO:0010605)",
           "source": "GO",
-          "p_adj": 3.526714331385613e-07
+          "p_adj": 2.2059907447055643e-07
         },
         {
           "term": "Human T-cell leukemia virus 1 infection",
           "source": "KEGG",
-          "p_adj": 3.828225046280562e-07
+          "p_adj": 2.8355193370253944e-07
         },
         {
           "term": "Pancreatic cancer",
           "source": "KEGG",
-          "p_adj": 3.828225046280562e-07
+          "p_adj": 2.8355193370253944e-07
         },
         {
           "term": "Pathways in cancer",
           "source": "KEGG",
-          "p_adj": 9.01743248940685e-07
+          "p_adj": 6.270510575751287e-07
         },
         {
           "term": "Negative Regulation Of G1/S Transition Of Mitotic Cell Cycle (GO:2000134)",
           "source": "GO",
-          "p_adj": 1.0028165164913752e-06
+          "p_adj": 9.758926451420757e-07
         }
       ]
     },
@@ -225,32 +226,32 @@
       "n_weak": 1491,
       "n_targetscan": 1522,
       "sensitivity_strong": 0.742,
-      "sensitivity_weak": 0.298,
+      "sensitivity_weak": 0.303,
       "top_terms": [
         {
           "term": "MicroRNAs in cancer",
           "source": "KEGG",
-          "p_adj": 2.2191333444383764e-12
+          "p_adj": 1.4838074514164037e-12
         },
         {
           "term": "Pathways in cancer",
           "source": "KEGG",
-          "p_adj": 4.313421465601438e-12
+          "p_adj": 2.6120014887835252e-12
         },
         {
           "term": "PI3K-Akt signaling pathway",
           "source": "KEGG",
-          "p_adj": 4.528430933907456e-12
+          "p_adj": 2.8065373080246677e-12
         },
         {
           "term": "PI3K-Akt Signaling Pathway WP4172",
           "source": "WikiPathways",
-          "p_adj": 6.851041690186233e-11
+          "p_adj": 5.093638805319049e-11
         },
         {
           "term": "Breast cancer",
           "source": "KEGG",
-          "p_adj": 2.4851437392598234e-10
+          "p_adj": 1.780687820796234e-10
         }
       ]
     },
@@ -259,34 +260,34 @@
       "expected": "extracellular matrix / collagen",
       "n_strong": 102,
       "n_weak": 159,
-      "n_targetscan": 1264,
+      "n_targetscan": 1263,
       "sensitivity_strong": 0.676,
-      "sensitivity_weak": 0.528,
+      "sensitivity_weak": 0.541,
       "top_terms": [
         {
           "term": "Extracellular Matrix Organization",
           "source": "Reactome",
-          "p_adj": 3.421061760914819e-11
+          "p_adj": 2.689868542556109e-11
         },
         {
           "term": "Small cell lung cancer",
           "source": "KEGG",
-          "p_adj": 8.152760830887427e-11
+          "p_adj": 5.82288861632475e-11
         },
         {
           "term": "PI3K-Akt signaling pathway",
           "source": "KEGG",
-          "p_adj": 1.2196375490589113e-10
+          "p_adj": 7.366742375039219e-11
         },
         {
           "term": "Focal adhesion",
           "source": "KEGG",
-          "p_adj": 5.082785233922006e-10
+          "p_adj": 3.735824771599946e-10
         },
         {
           "term": "Integrin Cell Surface Interactions",
           "source": "Reactome",
-          "p_adj": 1.893056260689578e-09
+          "p_adj": 1.3869847135066198e-09
         }
       ]
     }

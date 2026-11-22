@@ -1,5 +1,6 @@
 {
-  "version": "1.54",
+  "engine_version": "2.0",
+  "mirtarbase_version": "miRTarBase 10.0 official index (browser-download-20261121T051026.655291545Z-0-hsa_MTI.csv, 4,004,967 rows, 3,048 miRNAs, 1,730,805 pairs)",
   "pooled_sensitivity_strong": 0.5567651632970451,
   "controls": [
     {

@@ -4,6 +4,23 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Fixed
+- **Version reconciliation (paper + READMEs + controls).** The paper
+  and READMEs described the data layer as the miRTarBase 10.0 index,
+  but the public service runs the 9.0 index and the 10.0 index exists
+  only on the author's machine (its redistribution terms are
+  unverifiable — the site returns 404). The paper now reports both
+  control sets — 6 of 8 verdicts on both, TargetScan sensitivity 405
+  of 754 (54%) on 9.0 and 358 of 643 (56%) on 10.0 — and says a
+  stranger can verify the 9.0 figures on the public service. The 9.0
+  controls were re-run with engine 2.0
+  (`docs/validation/strong-controls.json`; one target moved, 404 →
+  405, via CEP83 recovered by the HGNC map). The READMEs now state
+  the public service runs 9.0 and 10.0 is local-only; the stale
+  "13,035 human target genes" is corrected to 13,016 (post-HGNC-map
+  universe) in the paper and both READMEs. Paper word count 1,663
+  after trimming detail into `docs/` (limit 750–1,750).
+
 ## [2.0] - 2026-11-21
 
 ### Added
