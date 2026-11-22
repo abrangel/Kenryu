@@ -21,6 +21,20 @@ All notable changes to KENRYU are documented here. The format follows [Keep a Ch
   universe) in the paper and both READMEs. Paper word count 1,663
   after trimming detail into `docs/` (limit 750–1,750).
 
+### Added
+- **CI on Windows and macOS.** The `test` and `smoke` jobs now run
+  on a matrix of ubuntu-latest, windows-latest and macos-latest
+  (H-20 was only ever verified by a simulated-Windows test). The
+  smoke steps run under bash on all three OSes.
+- **Dependency audit in CI.** New `pip-audit` job (H-09): fails the
+  build on any known vulnerability in the pinned requirements.
+- **Repo-hygiene regression tests** (`tests/test_repo_hygiene.py`):
+  no KEGG/Harmonizome GMT or derived miRTarBase index may be tracked
+  in git (H-02), only the three allowlisted GMTs may be tracked, and
+  no fixed confidence literal (85/88/92/95) may sit next to
+  "confidence" in the engine or the UI (H-18). Each guard was
+  verified fail-first.
+
 ## [2.0] - 2026-11-21
 
 ### Added

@@ -8,7 +8,15 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # H-20 (2026-11-22): the install and the suite never ran on real
+    # Windows or macOS — the CRLF fix was only ever verified by a
+    # simulated-Windows test. The matrix runs the full suite on all
+    # three, so a platform failure is caught here, not by a reviewer.
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.11
@@ -23,6 +31,25 @@ jobs:
           pip install pytest pytest-cov httpx
       - name: Run tests
         run: pytest -v --cov=kenryu_engine --cov=kenryu_core --cov-report=term-missing
+
+  pip-audit:
+    # H-09 (2026-11-22): the pinned dependencies were verified clean
+    # by a one-off pip-audit run; this job makes that check a guard, so
+    # a future CVE in a pinned version fails the build. One OS is
+    # enough for a dependency scan.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Audit pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          pip-audit -r requirements.txt
 
   gitleaks:
     # Secret scan over the full history: fail the build if a credential
@@ -43,7 +70,14 @@ jobs:
     # install path a reviewer (or a colleague) would actually take.
     # The synthetic official index (tests/fixtures/) stands in for the
     # gitignored real one, so the official-format code path is exercised.
-    runs-on: ubuntu-latest
+    # Matrix (2026-11-22): the install path is checked on all three
+    # OSes; the steps run under bash (Git Bash on Windows) so the same
+    # commands work everywhere.
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.11
@@ -52,11 +86,13 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install package
+        shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e .
       - name: CLI smoke test (thesis panel, offline)
+        shell: bash
         run: |
           cp tests/fixtures/mirtarbase_official_synthetic.json.gz local_db/mirtarbase_official.json.gz
           printf 'hsa-miR-33a-5p\nhsa-miR-33b-5p\nhsa-miR-144-3p\nhsa-miR-758-3p\nhsa-miR-106b-5p\n' > /tmp/panel-tesis.txt
